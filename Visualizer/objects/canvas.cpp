@@ -209,13 +209,18 @@ bool box::isClicked(sf::Vector2i mousePos) {
 }
 // End of class box
 
+// Step Struct
+//
+
+
 // Class Visual_graph
 
 void Visual_graph::add_node(float x, float y) {
     std::cerr << "Adding node at (" << x << ", " << y << ")" << std::endl;
+
     nodes.emplace_back(x, y, node_radius, color_of_state[0], sf::Color::Black, outline_thickness);
-    state.push_back(0);
-    nodes.back().setLabel(std::to_string(nodes.size()), 24);
+    nodes_state.push_back(0);
+    nodes.back().setLabel(std::to_string(nodes.size() - 1), 24);
 }
 
 void Visual_graph::add_edge(int u, int v, int w = 1) {
@@ -229,12 +234,31 @@ void Visual_graph::add_edge(int u, int v, int w = 1) {
         }
         edges.emplace_back(u, v);
         edge_weights.push_back(w);
+        edges_state.push_back(0);
     }
+}
+
+void Visual_graph::add_history(int i, Step step) {
+    step_history.push_back({i, step});
 }
 
 void Visual_graph::setPosition(size_t index, float x, float y) {
     if (index < nodes.size()) {
         nodes[index].setPosition(x, y);
+    }
+}
+
+void Visual_graph::setNodeState(int i, int st) {
+    if(nodes_state.size() > i) {
+        nodes_state[i] = st;
+        std::cout << "DONE TO CHANGE COLOR\n";
+    }
+}
+
+void Visual_graph::setEdgeState(int i, int st) {
+    if(edges_state.size() > i) {
+        edges_state[i] = st;
+        std::cout << "DONE TO CHANGE COLOR\n";
     }
 }
 
@@ -259,7 +283,7 @@ void Visual_graph::draw(sf::RenderWindow& window) {
     }
 
     for(size_t i = 0; i < nodes.size(); i++) {
-        nodes[i].setColor(color_of_state[state[i]]);
+        nodes[i].setColor(color_of_state[nodes_state[i]]);
         nodes[i].draw(window);
     }
 }
@@ -267,6 +291,7 @@ void Visual_graph::draw(sf::RenderWindow& window) {
 void Visual_graph::draw(sf::RenderWindow& window, bool draw_weights) {
     edge temp_edge(0, 0, 0, 0, sf::Color::White, edge_thickness);
     for(size_t i = 0; i < edges.size(); i++) {
+        temp_edge.setColor(color_of_state[edges_state[i]]);
         int u = edges[i].first;
         int v = edges[i].second;
         sf::Vector2f pos_u = nodes[u].getPosition();
@@ -285,7 +310,8 @@ void Visual_graph::draw(sf::RenderWindow& window, bool draw_weights) {
     }
 
     for(size_t i = 0; i < nodes.size(); i++) {
-        nodes[i].setColor(color_of_state[state[i]]);
+        nodes[i].setColor(color_of_state[nodes_state[i]]);
+
         nodes[i].draw(window);
     }
 }

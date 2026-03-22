@@ -160,21 +160,30 @@ public:
     bool isClicked(sf::Vector2i mousePos);
 };
 
+
+
 class Visual_graph {
 private:
     float node_radius = 30.0f;
     float outline_thickness = 4.0f;
     float edge_thickness = 8.0f;
-    std::vector<int> state;
+    std::vector<int> nodes_state;
+    std::vector<int> edges_state;
     std::vector<node> nodes;
     std::vector<std::pair<int, int>> edges;
     std::vector<int> edge_weights;
 
-    sf::Color color_of_state[3] = {sf::Color::Cyan, sf::Color::Green, sf::Color::Red};
+    std::vector<std::pair<int,Step>> step_history;
+
+    sf::Color color_of_state[4] = {sf::Color::White, sf::Color::Green, sf::Color::Red, sf::Color::Yellow};
 public:
     // lấy bán kính của node/
     int getRadius() {
         return node_radius;
+    }
+
+    float getEdgeThinkness() {
+        return edge_thickness;
     }
 
     // lấy tọa độ của node thứ index
@@ -185,14 +194,29 @@ public:
         return sf::Vector2f(0, 0);
     }
 
+    std::vector<std::pair<int,int>>& getEdgeList() {
+        return edges;
+    }
+
+    std::vector<int>& getEdgeWeightsList () {
+        return edge_weights;
+    }
+
     // thêm node vào đồ thị
     void add_node(float x, float y);
 
     // thêm cạnh giữa 2 node u, v
     void add_edge(int u, int v, int w);
 
+    // add history
+    void add_history(int i, Step step);
+
     // đặt lại tọa độ của node thứ index
     void setPosition(size_t index, float x, float y);
+
+    void setNodeState(int i, int st);
+
+    void setEdgeState(int i, int st);
 
     // tìm xem có node nào chứa (x, y) khộng
     int find_node_stored(float x, float y);
