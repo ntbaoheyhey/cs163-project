@@ -7,7 +7,7 @@
 #include <string>
 
 #include "global.h"
-#include "../objects/box.h"
+#include "../objects/canvas.h"
 #include "shortest_path.h"
 
 void openWindow();

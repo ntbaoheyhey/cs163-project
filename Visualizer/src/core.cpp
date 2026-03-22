@@ -1,7 +1,11 @@
 #include "../headers/core.h"
 
 void openWindow() {
-    window.create(sf::VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}), "Data Structure Visualizer");
+    sf::ContextSettings settings;
+    settings.antiAliasingLevel = 8;
+    // khủ răng cưa
+
+    window.create(sf::VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}), "Data Structure Visualizer", sf::Style::Default, sf::State::Windowed, settings);
     window.setFramerateLimit(60);
 
     if (!loadFonts()) {

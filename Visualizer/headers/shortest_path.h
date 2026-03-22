@@ -5,7 +5,8 @@
 #include <vector>
 
 #include "global.h"
-#include "../objects/box.h"
+#include "../objects/canvas.h"
+
 
 class dijsktra {
 public: 
@@ -13,6 +14,7 @@ public:
     std::vector<std::vector<std::pair<int, int>>> adj; 
     
     dijsktra(int n);
+    void clear();
     void add_edge(int u, int v, int weight);
     void find_shortest_path(int start);
 };
