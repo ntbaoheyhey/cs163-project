@@ -1,0 +1,156 @@
+CS163 VISUALIZER - SKELETON REPOSITORY GUIDE
+
+1. PURPOSE OF THE SKELETON
+This skeleton is designed so the whole team can work in parallel on a C++ + SFML + CMake project while keeping the codebase easy to merge, test, and maintain. The most important principle is to clearly separate:
+- data structure logic
+- animation state / steps
+- SFML rendering
+- UI / screens / input handling
+
+2. MEANING OF EACH FOLDER
+
+/docs
+- report/: where the written report is prepared
+- meeting-notes/: stores meeting notes, conventions, and task tracking
+- demo-script/: contains the presentation script and demo video plan
+
+/resources
+- fonts/: fonts used in the SFML application
+- icons/: icons for buttons and UI elements
+- images/: illustrations, logos, backgrounds, or other assets
+- input/: sample input files for each module
+  - linked_list/
+  - heap/
+  - trie/
+  - graph/
+- pseudocode/: pseudocode or code snippets shown and highlighted in the UI
+  - linked_list/
+  - heap/
+  - trie/
+  - graph/
+
+/src
+- main.cpp: entry point of the program
+- app/: application flow, global state, and screen switching
+- core/: shared components such as Step, VisualNode, VisualEdge, and PlaybackController
+- ui/: buttons, input boxes, sliders, panels, and screens
+- renderer/: SFML drawing code
+- layout/: position calculation for nodes and edges of each structure
+- modules/: the logic and visualizer of each data structure module
+- utils/: parser, resource manager, random generator, and common helpers
+
+/tests
+- separate tests for each module
+
+/scripts
+- build.sh: build script
+- run.sh: run script
+
+3. ARCHITECTURE PRINCIPLE
+Do not mix SFML rendering directly into data structure logic.
+
+Recommended:
+- modules/.../SinglyLinkedList.cpp, Heap.cpp, Trie.cpp, Graph.cpp
+  -> contain the actual data structure and algorithm logic
+- modules/.../*Visualizer.cpp
+  -> convert operations into a list of Step objects
+- renderer/*Renderer.cpp
+  -> receive Step data and draw using SFML
+
+Avoid:
+- putting sf::RenderWindow inside data structure classes
+- handling algorithm logic and rendering directly in the same class
+
+4. SUGGESTED FLOW
+User interacts with the UI
+-> module processes the logic
+-> module generates vector<Step>
+-> PlaybackController manages the current step
+-> Renderer reads the step and draws it on the screen
+
+5. SUGGESTED TEAM ASSIGNMENT
+Each member should own one main module:
+- linked_list/
+- heap/
+- trie/
+- graph/
+
+One member should also act as the integrator and take care of:
+- app/
+- core/
+- ui/
+- renderer/
+- code merging
+
+6. FILE CONVENTIONS
+- Every class should be split into a .h file and a .cpp file
+- Class names should match file names
+- If a new module is added, keep the same structure
+- Do not rename shared folders unless the team agrees first
+
+7. GIT WORKFLOW CONVENTIONS
+Use separate branches instead of coding directly on main.
+Example:
+- main
+- dev
+- feature/linked-list
+- feature/heap
+- feature/trie
+- feature/graph
+- feature/ui-core
+
+Suggested workflow:
+- create a branch from dev
+- code and commit on your own branch
+- push to remote
+- open a pull request
+- merge only after review
+
+8. THINGS TO DECIDE EARLY
+- finalize a shared Step format for the whole team
+- finalize the screen layout: control panel / visualization / code panel
+- finalize the resource paths and font loading strategy
+- finalize the input format for each module
+- finalize the common color and highlight style
+
+9. DEVELOPMENT PRIORITY
+Phase 1:
+- project builds successfully with CMake
+- SFML window opens successfully
+- basic UI layout is visible
+
+Phase 2:
+- complete core components: Step, VisualNode, PlaybackController
+- support next / previous / auto play
+
+Phase 3:
+- each member implements their own module
+- each module can return a list of Step objects
+
+Phase 4:
+- connect renderer + pseudocode highlight + input file support
+- run full integration testing and prepare demo
+
+10. COMMON MISTAKES
+- tightly coupling logic and rendering
+- each member inventing a different Step format
+- inconsistent input/output format across modules
+- merging too late after structures have already diverged
+- hardcoding font paths that only work on one person's machine
+
+11. PRACTICAL RECOMMENDATIONS
+- prioritize a working MVP first
+- each module only needs to be stable for the required operations
+- the graph module does not need to be forced into CRUD if the assignment does not require it
+- keep commits small, clear, and easy to review
+
+12. QUICK TEAM CHECKLIST
+[ ] CMake project builds successfully
+[ ] SFML window opens successfully
+[ ] Fonts load from resources/fonts
+[ ] UI has next / previous / play / pause / speed controls
+[ ] Each module can generate Step objects
+[ ] Renderer can draw nodes and edges
+[ ] Code panel can highlight the relevant line
+[ ] Sample input files exist in resources/input
+[ ] Report content exists in docs/report
