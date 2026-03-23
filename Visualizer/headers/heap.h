@@ -8,3 +8,4 @@
 #include "../objects/canvas.h"
 
 void heap_page();
+
