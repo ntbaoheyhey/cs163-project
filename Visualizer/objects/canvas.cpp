@@ -1,6 +1,7 @@
 #include "canvas.h"
 #include <vector> 
 
+
 sf::Text setCenterText(sf::Text text) {
     sf::FloatRect textBounds = text.getLocalBounds();
     text.setOrigin({textBounds.size.x / 2.f, textBounds.size.y / 2.f});
@@ -87,11 +88,11 @@ bool button::isClicked(sf::Vector2i mousePos) {
 
 node::node(float x, float y, float radius, sf::Color fillColor, sf::Color outlineColor = sf::Color::Black, float outlineThickness = 2.0f) : text(font_impact, "", 14) {
     shape.setPosition({x, y});
+    currentPos = {x,y};
     shape.setRadius(radius);
     shape.setFillColor(fillColor);
     shape.setOutlineColor(outlineColor);
     shape.setOutlineThickness(outlineThickness);
-
     // set origin to center for easier click detection
     shape.setOrigin({radius, radius});
 }
@@ -135,6 +136,32 @@ void node::setColor(sf::Color color) {
     shape.setFillColor(color);
 }
 
+void node::updatePosition(float deltaTime){
+    if (!isMoving) return; // Nếu không moving thì không làm gì cả
+
+    // 1. Cập nhật đồng hồ thời gian của riêng Node
+    elapsedTime += deltaTime;
+
+    // 2. Tính toán hệ số hoàn thành 't' [0.0 -> 1.0]
+    float t = elapsedTime / duration;
+
+    // Giới hạn t không vượt quá 1.0
+    if (t > 1.0f) {
+        t = 1.0f;
+    }
+
+    // 3. Áp dụng công thức LERP cho cả X và Y
+    // current = start + (target - start) * t;
+    currentPos.x = startPos.x + (targetPos.x - startPos.x) * t;
+    currentPos.y = startPos.y + (targetPos.y - startPos.y) * t;
+    setPosition(currentPos.x, currentPos.y);
+
+    // 4. Kiểm tra xem đã đến đích chưa
+    if (t >= 1.0f) {
+        isMoving = false; // Tắt cờ di chuyển
+        // Lúc này currentPos == targetPos hoàn toàn
+    }
+}
 // End of class Node
 
 // Class Edge
@@ -518,3 +545,11 @@ void Visual_graph::draw(sf::RenderWindow& window, bool draw_weights) {
 }
 
 // End of class Visual_graph
+
+void startNodeMovement(node& Node, sf::Vector2f newDestination, float speedSeconds) {
+    Node.startPos = Node.currentPos; // Lưu lại điểm xuất phát
+    Node.targetPos = newDestination;   // Đặt điểm đích
+    Node.duration = speedSeconds;      // Đặt tốc độ bay
+    Node.elapsedTime = 0.0f;           // Reset đồng hồ
+    Node.isMoving = true;             // Bật cờ di chuyển
+}

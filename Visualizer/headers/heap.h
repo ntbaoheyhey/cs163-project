@@ -9,3 +9,8 @@
 
 void heap_page();
 
+struct Animation{
+    void swap(node &a, node &b){
+      
+    }
+};

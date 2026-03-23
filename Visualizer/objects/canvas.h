@@ -12,6 +12,7 @@
 
 sf::Text setCenterText(sf::Text text);
 
+
 void setCenterText(sf::Text& text);
 
 bool in_rect(sf::Vector2i mousePos, sf::FloatRect rect);
@@ -76,6 +77,16 @@ private:
     sf::CircleShape shape;
     sf::Text text;
 public:
+    // Quản lý vị trí
+    sf::Vector2f currentPos; // Vị trí đang vẽ ra màn hình
+    sf::Vector2f startPos;   // Vị trí lúc bắt đầu animation
+    sf::Vector2f targetPos;  // Vị trí đích cần đến
+
+    // Quản lý thời gian animation
+    bool isMoving = false;
+    float elapsedTime = 0.0f; // Thời gian đã trôi qua kể từ lúc bắt đầu swap
+    float duration = 1.0f;    // Tổng thời gian animation (VD: 0.5 giây)
+
     // tọa độ, bán kính, màu nền, màu viền, độ dày viền
     node(float x, float y, float radius, sf::Color fillColor, sf::Color outlineColor, float outlineThickness);
 
@@ -105,6 +116,9 @@ public:
 
     // kiểm tra xem node có được click bằng chuột trái hay không
     bool isClicked(sf::Vector2i mousePos);
+
+    // cập nhật tình hình di chuyển của node này
+    void updatePosition(float deltaTime);
 
     void printInfo();
 };
@@ -248,4 +262,8 @@ public:
 
     // vẽ đồ thị có trọng số lên cửa sổ
     void draw(sf::RenderWindow& window, bool draw_weights);
+
 };
+
+// dùng để bắt đầu cho node di chuyển
+void startNodeMovement(node& Node, sf::Vector2f newDestination, float speedSeconds);
