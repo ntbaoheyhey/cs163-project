@@ -22,7 +22,7 @@ private:
     sf::RectangleShape shape;
     sf::Text text;
 public:
-    // tọa độ, kịch thước, mày, chữ, cỡ chữ
+    // tọa độ, kịch thước, màu, chữ, cỡ chữ
     button(float x, float y, float width, float height, sf::Color color, const std::string labelText, unsigned int charSize);
 
     // lấy tọa độ của button

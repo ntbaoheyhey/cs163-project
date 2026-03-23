@@ -1,5 +1,5 @@
 #include "../headers/core.h"
-
+#include "../headers/heap.h"
 void openWindow() {
     sf::ContextSettings settings;
     settings.antiAliasingLevel = 8;
@@ -17,7 +17,7 @@ void openWindow() {
 void main_menu_page() {
 
     button option_button(WINDOW_WIDTH/2 - 100, WINDOW_HEIGHT/2 - 50, 200, 50, sf::Color::White, "Option", 24);
-
+    button ducminh(0, 0, 100, 100, sf::Color::Cyan, "minh", 24);
     bool is_mouse_left_pressed = 0;
     bool is_mouse_left_pressed_last = 1;
 
@@ -31,9 +31,17 @@ void main_menu_page() {
         window.clear(sf::Color::Black);
 
         option_button.draw(window);
+
+
+        
+        ducminh.draw(window);
         if(option_button.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
             option_page();
         }
+        if(ducminh.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
+            heap_page();
+        }
+        
         window.display();
 
         is_mouse_left_pressed_last = is_mouse_left_pressed;
@@ -70,3 +78,4 @@ void option_page() {
         is_mouse_left_pressed_last = is_mouse_left_pressed;
     }
 }
+
