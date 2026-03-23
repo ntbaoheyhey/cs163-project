@@ -24,7 +24,11 @@ button::button(float x, float y, float width, float height, sf::Color color, con
     label = labelText;
     shape.setPosition({x, y});
     shape.setSize({width, height});
+    shape.setRadius(8.0f);  // less rounded corners
+    shape.setCornerPointCount(20);
     shape.setFillColor(color);
+    shape.setOutlineColor(sf::Color(200, 200, 200));
+    shape.setOutlineThickness(2.0f);
 
     text = sf::Text(font_impact, label, charSize);
     text.setFillColor(sf::Color::Black);
@@ -41,6 +45,15 @@ sf::Vector2f button::getPosition() {
 
 void button::setColor(sf::Color color) {
     shape.setFillColor(color);
+}
+
+void button::setOutline(sf::Color color, float thickness) {
+    shape.setOutlineColor(color);
+    shape.setOutlineThickness(thickness);
+}
+
+bool button::contains(sf::Vector2i mousePos) {
+    return shape.getGlobalBounds().contains(sf::Vector2f(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y)));
 }
 
 void button::setLabel(const std::string& newLabel) {
@@ -125,7 +138,7 @@ void node::setColor(sf::Color color) {
 // End of class Node
 
 // Class Edge
-void edge::setPoints(float x1, float y1, float x2, float y2) {
+void edge::setPoints(float x1, float y1, float x2, float y2, bool directed, float radius) {
     float d = std::sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 
     shape.setSize({d, thickness});
@@ -133,6 +146,35 @@ void edge::setPoints(float x1, float y1, float x2, float y2) {
     shape.rotate(-shape.getRotation()); 
     shape.rotate(sf::radians(std::atan2(y2 - y1, x2 - x1)));
     shape.setPosition({x1, y1});
+
+    has_arrow = directed;
+    if (directed) {
+        // Create arrow head as a triangle
+        const float arrow_size = 25.0f;
+        radius -= 5;
+
+
+        sf::Vector2f dir(x2 - x1, y2 - y1);
+        float len = std::sqrt(dir.x*dir.x + dir.y*dir.y);
+        if (len > 0.001f) {
+            dir /= len;
+            // Position arrow tip at distance equal to node radius from target node
+            sf::Vector2f tip = sf::Vector2f(x2, y2) - dir * radius;
+            sf::Vector2f base = tip - dir * arrow_size;
+
+            sf::Vector2f perp(-dir.y, dir.x);
+            sf::Vector2f left = base + perp * (arrow_size * 0.5f);
+            sf::Vector2f right = base - perp * (arrow_size * 0.5f);
+
+            arrow.setPointCount(3);
+            arrow.setPoint(0, tip);
+            arrow.setPoint(1, left);
+            arrow.setPoint(2, right);
+            arrow.setFillColor(shape.getFillColor());
+            arrow.setOutlineColor(sf::Color::Black);
+            arrow.setOutlineThickness(2.0f);
+        }
+    }
 }
 
 
@@ -151,7 +193,11 @@ box::box(float x, float y, float width, float height, sf::Color color, const std
     label = labelText;
     shape.setPosition({x, y});
     shape.setSize({width, height});
+    shape.setRadius(8.0f);
+    shape.setCornerPointCount(20);
     shape.setFillColor(color);
+    shape.setOutlineColor(sf::Color(180, 180, 180));
+    shape.setOutlineThickness(2.0f);
 
     text = sf::Text(font_impact, label, charSize);
     text.setFillColor(sf::Color::Black);
@@ -168,6 +214,15 @@ sf::Vector2f box::getPosition() {
 
 void box::setColor(sf::Color color) {
     shape.setFillColor(color);
+}
+
+void box::setOutline(sf::Color color, float thickness) {
+    shape.setOutlineColor(color);
+    shape.setOutlineThickness(thickness);
+}
+
+bool box::contains(sf::Vector2i mousePos) {
+    return shape.getGlobalBounds().contains(sf::Vector2f(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y)));
 }
 
 void box::setLabel(const std::string& newLabel) {
@@ -207,6 +262,113 @@ bool box::isClicked(sf::Vector2i mousePos) {
     }
     return false;
 }
+
+// RoundedRectangleShape definitions
+RoundedRectangleShape::RoundedRectangleShape(const sf::Vector2f& size_, float radius_, std::size_t pointCount_) {
+    size = size_;
+    radius = radius_;
+    pointCount = pointCount_;
+    update();
+}
+
+void RoundedRectangleShape::setSize(const sf::Vector2f& size_) {
+    size = size_;
+    update();
+}
+
+const sf::Vector2f& RoundedRectangleShape::getSize() const {
+    return size;
+}
+
+void RoundedRectangleShape::setRadius(float radius_) {
+    radius = radius_;
+    update();
+}
+
+float RoundedRectangleShape::getRadius() const {
+    return radius;
+}
+
+void RoundedRectangleShape::setCornerPointCount(std::size_t count) {
+    pointCount = count;
+    update();
+}
+
+std::size_t RoundedRectangleShape::getPointCount() const {
+    return pointCount * 4;
+}
+
+sf::Vector2f RoundedRectangleShape::getPoint(std::size_t index) const {
+    if (radius == 0) {
+        switch (index) {
+            case 0: return sf::Vector2f(0, 0);
+            case 1: return sf::Vector2f(size.x, 0);
+            case 2: return sf::Vector2f(size.x, size.y);
+            case 3: return sf::Vector2f(0, size.y);
+            default: return sf::Vector2f(0, 0);
+        }
+    }
+
+    std::size_t corner = index / pointCount;
+    std::size_t localIndex = index % pointCount;
+    const float PI = 3.14159265358979323846f;
+    float angle = PI + corner * (PI / 2.0f) + (localIndex * (PI / 2.0f) / (pointCount - 1));
+
+    sf::Vector2f center;
+    switch (corner) {
+        case 0: center = sf::Vector2f(radius, radius); break;
+        case 1: center = sf::Vector2f(size.x - radius, radius); break;
+        case 2: center = sf::Vector2f(size.x - radius, size.y - radius); break;
+        case 3: center = sf::Vector2f(radius, size.y - radius); break;
+        default: center = sf::Vector2f(0.f, 0.f); break;
+    }
+
+    return center + sf::Vector2f(std::cos(angle) * radius, std::sin(angle) * radius);
+}
+
+// Node methods moved to cpp
+sf::Vector2f node::getPosition() {
+    return shape.getPosition();
+}
+
+int node::getRadius() {
+    return shape.getRadius();
+}
+
+void node::setPosition(float x, float y) {
+    shape.setPosition({x, y});
+    text.setPosition({x, y});
+}
+
+void node::setRadius(float radius) {
+    shape.setRadius(radius);
+    shape.setOrigin({radius, radius});
+}
+
+void node::draw(sf::RenderWindow& window) {
+    window.draw(shape);
+    window.draw(text);
+}
+
+void node::printInfo() {
+    sf::Vector2f pos = shape.getPosition();
+    std::cout << "Node at (" << pos.x << ", " << pos.y << ")" << std::endl;
+}
+
+// Edge draw
+void edge::draw(sf::RenderWindow& window) {
+    window.draw(shape);
+    if (has_arrow) {
+        window.draw(arrow);
+    }
+}
+
+// Box draw
+void box::draw(sf::RenderWindow& window) {
+    window.draw(shape);
+    window.draw(text);
+}
+
 // End of class box
 
 // Step Struct
@@ -218,24 +380,39 @@ bool box::isClicked(sf::Vector2i mousePos) {
 void Visual_graph::add_node(float x, float y) {
     std::cerr << "Adding node at (" << x << ", " << y << ")" << std::endl;
 
-    nodes.emplace_back(x, y, node_radius, color_of_state[0], sf::Color::Black, outline_thickness);
+    nodes.emplace_back(x, y, node_radius, color_of_node_state[0], sf::Color::Black, outline_thickness);
     nodes_state.push_back(0);
     nodes.back().setLabel(std::to_string(nodes.size() - 1), 24);
 }
 
-void Visual_graph::add_edge(int u, int v, int w = 1) {
+void Visual_graph::add_edge(int u, int v, int w, bool directed_flag) {
     if (u < nodes.size() && v < nodes.size()) {
-        if(u > v) std::swap(u, v);
+        bool effective_directed = directed_flag ? true : directed;
+
+        if (!effective_directed) {
+            if(u > v) std::swap(u, v);
+        }
+
+        // If edge already exists, update weight and keep state
         for(int i=0;i<edges.size();i++) {
-            if(edges[i].first == u and edges[i].second == v) {
-                edges.erase(edges.begin() + i);
-                edge_weights.erase(edge_weights.begin() + i);
+            if(edges[i].first == u && edges[i].second == v) {
+                edge_weights[i] = w;
+                return;
             }
         }
+
         edges.emplace_back(u, v);
         edge_weights.push_back(w);
         edges_state.push_back(0);
     }
+}
+
+void Visual_graph::setDirected(bool value) {
+    directed = value;
+}
+
+bool Visual_graph::isDirected() const {
+    return directed;
 }
 
 void Visual_graph::add_history(int i, Step step) {
@@ -251,14 +428,12 @@ void Visual_graph::setPosition(size_t index, float x, float y) {
 void Visual_graph::setNodeState(int i, int st) {
     if(nodes_state.size() > i) {
         nodes_state[i] = st;
-        std::cout << "DONE TO CHANGE COLOR\n";
     }
 }
 
 void Visual_graph::setEdgeState(int i, int st) {
     if(edges_state.size() > i) {
         edges_state[i] = st;
-        std::cout << "DONE TO CHANGE COLOR\n";
     }
 }
 
@@ -278,12 +453,14 @@ void Visual_graph::draw(sf::RenderWindow& window) {
         int v = edges[i].second;
         sf::Vector2f pos_u = nodes[u].getPosition();
         sf::Vector2f pos_v = nodes[v].getPosition();
-        temp_edge.setPoints(pos_u.x, pos_u.y, pos_v.x, pos_v.y);
+
+        temp_edge.setColor(color_of_edge_state[edges_state[i]]);
+        temp_edge.setPoints(pos_u.x, pos_u.y, pos_v.x, pos_v.y, directed, getRadius());
         temp_edge.draw(window);
     }
 
     for(size_t i = 0; i < nodes.size(); i++) {
-        nodes[i].setColor(color_of_state[nodes_state[i]]);
+        nodes[i].setColor(color_of_node_state[nodes_state[i]]);
         nodes[i].draw(window);
     }
 }
@@ -291,26 +468,50 @@ void Visual_graph::draw(sf::RenderWindow& window) {
 void Visual_graph::draw(sf::RenderWindow& window, bool draw_weights) {
     edge temp_edge(0, 0, 0, 0, sf::Color::White, edge_thickness);
     for(size_t i = 0; i < edges.size(); i++) {
-        temp_edge.setColor(color_of_state[edges_state[i]]);
+        temp_edge.setColor(color_of_edge_state[edges_state[i]]);
         int u = edges[i].first;
         int v = edges[i].second;
         sf::Vector2f pos_u = nodes[u].getPosition();
         sf::Vector2f pos_v = nodes[v].getPosition();
-        temp_edge.setPoints(pos_u.x, pos_u.y, pos_v.x, pos_v.y);
+        temp_edge.setPoints(pos_u.x, pos_u.y, pos_v.x, pos_v.y, directed, getRadius());
         temp_edge.draw(window);
 
         if(draw_weights) {
-            sf::Text weight_text(font_impact, std::to_string(edge_weights[i]), 14 + edge_thickness);
+            sf::Text weight_text(font_impact, std::to_string(edge_weights[i]), 20 + edge_thickness);
             weight_text.setFillColor(sf::Color::Black);
             sf::FloatRect textBounds = weight_text.getLocalBounds();
             weight_text.setOrigin({textBounds.size.x / 2.f, textBounds.size.y / 2.f});
-            weight_text.setPosition({(pos_u.x + pos_v.x) / 2.f, std::max((pos_u.y + pos_v.y) / 2.f - 2 * edge_thickness, edge_thickness)});
-            window.draw(weight_text);
+            
+            // Calculate perpendicular offset to place weight above the edge
+            float dx = pos_v.x - pos_u.x;
+            float dy = pos_v.y - pos_u.y;
+            float edge_length = std::sqrt(dx * dx + dy * dy);
+            
+            if(edge_length > 0) {
+                // Perpendicular vector (rotated 90 degrees)
+                float perp_x = -dy / edge_length;
+                float perp_y = dx / edge_length;
+                
+                // Ensure weight is always placed above the edge (smaller y = higher)
+                // If perp_y > 0, reverse the direction
+                if(perp_y > 0) {
+                    perp_x = -perp_x;
+                    perp_y = -perp_y;
+                }
+                
+                // Position weight at edge midpoint + perpendicular offset
+                float offset_dist = 20.0f;
+                float weight_x = (pos_u.x + pos_v.x) / 2.f + perp_x * offset_dist;
+                float weight_y = (pos_u.y + pos_v.y) / 2.f + perp_y * offset_dist;
+                
+                weight_text.setPosition({weight_x, weight_y});
+                window.draw(weight_text);
+            }
         }
     }
 
     for(size_t i = 0; i < nodes.size(); i++) {
-        nodes[i].setColor(color_of_state[nodes_state[i]]);
+        nodes[i].setColor(color_of_node_state[nodes_state[i]]);
 
         nodes[i].draw(window);
     }
