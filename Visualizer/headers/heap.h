@@ -9,3 +9,4 @@
 
 void heap_page();
 
+sf::Vector2f getHeapNodePosition(int heapIndex, float windowWidth, float startY, float verticalSpacing);
