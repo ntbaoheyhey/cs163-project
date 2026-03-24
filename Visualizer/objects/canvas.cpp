@@ -553,3 +553,4 @@ void startNodeMovement(node& Node, sf::Vector2f newDestination, float speedSecon
     Node.elapsedTime = 0.0f;           // Reset đồng hồ
     Node.isMoving = true;             // Bật cờ di chuyển
 }
+
