@@ -104,7 +104,10 @@ public:
 
     // đặt lại label và cỡ chữ
     void setLabel(const std::string &newLabel, unsigned int charSize);
-
+    
+    // đặt lại màu viền
+    void setOutlineColor(sf::Color color);
+    
     // đổi màu node
     void setColor(sf::Color color);
 

@@ -136,6 +136,10 @@ void node::setColor(sf::Color color) {
     shape.setFillColor(color);
 }
 
+void node::setOutlineColor(sf::Color color) {
+    shape.setOutlineColor(color);
+}
+
 void node::updatePosition(float deltaTime){
     if (!isMoving) return; // Nếu không moving thì không làm gì cả
 
