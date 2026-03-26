@@ -1,5 +1,6 @@
 #include "../headers/heap.h"
 #include <vector>
+#include <string>
 
 // Hàm tính tọa độ cho node. Lưu ý: 'heapIndex' phải bắt đầu từ 1 (1-based index)
 // Nếu mảng của bạn bắt đầu từ 0, hãy truyền vào (index + 1)
@@ -28,6 +29,13 @@ sf::Vector2f getHeapNodePosition(int heapIndex, float windowWidth, float startY,
     return sf::Vector2f(x, y);
 }
 
+int convert_str(std::string &s){
+    int res = 0;
+    for (char c: s){
+        res = res*10 + (c-'0');
+    }
+    return res;
+}
 enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT};
 
     struct AnimationStep {
@@ -37,6 +45,7 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT};
     };
 
     struct min_heap {
+        std::string val{"0"};
         std::vector<int> v;
         std::vector<node> nodelist;
         std::vector<edge> edgelist;
@@ -77,7 +86,7 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT};
             
             int i = v.size() - 1;
             edge canh(position.x, position.y, nodelist[(i-1)/2].currentPos.x, nodelist[(i-1)/2].currentPos.y, 
-            sf::Color::White, 10);
+            sf::Color::White, 5);
             edgelist.push_back(canh);
 
             while(i) {
@@ -94,6 +103,7 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT};
         }
 
         void pop(){
+            if (!v.size()) return;
             std::swap(v.back(), v[0]);
             animation_queue.push_back({ActionType::HIGHLIGHT, int(0), int(v.size()-1)});
             animation_queue.push_back({SWAPUI, int(0), int(v.size()-1)});
@@ -143,19 +153,22 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT};
 
 void heap_page(){
 
-    button insert_button(0, WINDOW_HEIGHT - 100, 100, 50, sf::Color::Cyan, "insert", 24);
-    button pop_button(200, WINDOW_HEIGHT - 100, 100, 50, sf::Color::Cyan, "pop", 24);
-    button undo_button(400, WINDOW_HEIGHT - 100, 100, 50, sf::Color::Cyan, "undo", 24);
+    button insert_button(10, WINDOW_HEIGHT - 300, 100, 50, sf::Color::Cyan, "insert", 24);
+    button pop_button(10, WINDOW_HEIGHT - 225, 100, 50, sf::Color::Cyan, "pop", 24);
+    box valIn_box(135, WINDOW_HEIGHT - 300, 75, 50, sf::Color::Magenta, "0", 24);
+    sf::RectangleShape bgmain({1500.f, 600.f});    
+    bgmain.setOrigin(bgmain.getGeometricCenter());
+    bgmain.setPosition({800 , 300});
+    bgmain.setFillColor(sf::Color(85, 145, 56));
     
     sf::Clock clock;
     
     min_heap core_heap;
+    bool isBoxPress = false;
     bool isInsertPress = false;
     bool onInsertPress = false;
     bool isPopPress = false;
     bool onPopPress = false;
-    bool isUndoPress = false;
-    bool onUndoPress = false;
     int test = 100;
     while(window.isOpen()){
 
@@ -163,36 +176,83 @@ void heap_page(){
         if (dt>=1.f/60.f){
             clock.restart();
             while (const std::optional event = window.pollEvent())
-        {
-            if (event->is<sf::Event::Closed>())
-                window.close();
-        }
+            {
+                if (event->is<sf::Event::Closed>())
+                    window.close();
 
-            window.clear(sf::Color::Black);
+                // 1. Chỉ xử lý khi có sự kiện CLICK CHUỘT (MouseButtonPressed)
+                if (const auto* mouseEvent = event->getIf<sf::Event::MouseButtonPressed>()) {
+                    if (mouseEvent->button == sf::Mouse::Button::Left) {
+                        // Truyền window vào để lấy tọa độ chuột tương đối so với cửa sổ
+                        if (valIn_box.isClicked(sf::Mouse::getPosition(window))) {
+                            isBoxPress = true;  // Click vào box -> Bật nhập liệu
+                        } else {
+                            isBoxPress = false; // Click ra ngoài -> Tắt nhập liệu
+                        }
+                    }
+                }
+
+                // 2. Chỉ xử lý khi có sự kiện GÕ PHÍM (TextEntered) và Box đang được chọn
+                if (isBoxPress) {
+                    if (const auto* textEvent = event->getIf<sf::Event::TextEntered>()) {
+                        char32_t unicode = textEvent->unicode;
+                        
+                        // Xử lý Backspace (mã ASCII = 8)
+                        if (unicode == '\b' || unicode == 8) {
+                            if (core_heap.val.size() > 0) core_heap.val.pop_back();
+                        }
+                        // Xử lý nhập số (từ '0' đến '9')
+                        else if (unicode >= '0' && unicode <= '9') {
+                            // Bỏ số '0' ở đầu nếu có
+                            if (core_heap.val.size() == 1 && core_heap.val[0] == '0') {
+                                core_heap.val = "";
+                            }
+                            // Giới hạn độ dài số nhập vào (ví dụ: tối đa 3 chữ số để số không tràn node)
+                            if (core_heap.val.size() < 3) {
+                                core_heap.val.push_back(static_cast<char>(unicode));
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Cập nhật nhãn cho Box
+            if (core_heap.val.size() == 0) core_heap.val = "0";
+            valIn_box.setLabel(core_heap.val);
+
+            window.clear(sf::Color(212, 188, 112, 0.71));
             
+            window.draw(bgmain);
             insert_button.draw(window);
             pop_button.draw(window);
-            undo_button.draw(window);
+            valIn_box.draw(window);
 
+            insert_button.isPress = insert_button.isClicked(sf::Mouse::getPosition(window));
+            pop_button.isPress = pop_button.isClicked(sf::Mouse::getPosition(window));
 
-            isInsertPress = insert_button.isClicked(sf::Mouse::getPosition(window));
-            isPopPress = pop_button.isClicked(sf::Mouse::getPosition(window));
-    
-            if (isInsertPress && !onInsertPress && core_heap.hasAnimation == false) {
-                core_heap.push(test--);
-                core_heap.hasAnimation = true;
-            }
-            onInsertPress = isInsertPress;
+            // BUTTONS
+            if (!core_heap.hasAnimation){
 
-            if (isPopPress && !onPopPress && core_heap.hasAnimation == false) {
-                core_heap.pop();
-            }
-            onPopPress = isPopPress;
+            if (insert_button.isPress && !insert_button.onPress && core_heap.v.size()<31) {
+                core_heap.push(convert_str(core_heap.val));
+                isBoxPress = false;
+            }     
+            insert_button.onPress = insert_button.isPress;
             
+            if (pop_button.isPress && !pop_button.onPress){
+                core_heap.pop();
+                isBoxPress = false;
+            }
+            pop_button.onPress = pop_button.isPress;
+
+        }
+
 
             if (!core_heap.isAnimate) {
                 if (core_heap.cur_step < core_heap.animation_queue.size()) {
+                    core_heap.hasAnimation = true;
                     auto animation = core_heap.animation_queue[core_heap.cur_step];
+                    std::cout << animation.type << '\n';
                     switch (animation.type)
                     {
                     case ActionType::SWAPNODE:
@@ -218,8 +278,11 @@ void heap_page(){
             }
 
 
-            core_heap.isAnimate = false;
 
+            // Vẽ và update isAnimate
+            
+
+            core_heap.isAnimate = false;
             for (auto& c: core_heap.edgelist) {
                 c.draw(window);
             }

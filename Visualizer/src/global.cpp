@@ -1,7 +1,7 @@
 #include "../headers/global.h"
 #include <filesystem>
 
-const unsigned int WINDOW_WIDTH = 1200;
+const unsigned int WINDOW_WIDTH = 1600;
 const unsigned int WINDOW_HEIGHT = 800;
 
 sf::RenderWindow window;

@@ -44,6 +44,8 @@ private:
     RoundedRectangleShape shape;
     sf::Text text;
 public:
+    bool isPress{0};
+    bool onPress{0};
     // tọa độ, kịch thước, màu, chữ, cỡ chữ
     button(float x, float y, float width, float height, sf::Color color, const std::string labelText, unsigned int charSize);
 
@@ -70,6 +72,9 @@ public:
 
     // kiểm tra xem button có được click bằng chuột trái hay không
     bool isClicked(sf::Vector2i mousePos);
+
+    // kiểm tra xem có thực hiện Button này hay không
+    bool updateMouse();
 };
 
 class node {
