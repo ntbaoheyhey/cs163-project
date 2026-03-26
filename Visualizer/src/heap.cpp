@@ -79,15 +79,9 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT};
         void push(int x){
 
             v.push_back(x);
-            sf::Vector2f position = getHeapNodePosition(v.size(), WINDOW_WIDTH, 50, 75);
-            node mem(position.x, position.y, 20, sf::Color::Cyan, sf::Color::Yellow, 5);
-            mem.setLabel(std::to_string(x), 15);
-            nodelist.push_back(mem);
             
-            int i = v.size() - 1;
-            edge canh(position.x, position.y, nodelist[(i-1)/2].currentPos.x, nodelist[(i-1)/2].currentPos.y, 
-            sf::Color::White, 5);
-            edgelist.push_back(canh);
+            int i = v.size()-1;
+            animation_queue.push_back({INSERT, i, x});
 
             while(i) {
                 int par = (i-1)/2;
@@ -129,25 +123,41 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT};
 
         void UIHIGHLIGHT(int i, int j){
             if (i>=0) {
-                nodelist[i].setOutlineColor(sf::Color::Red);
+                startNodeColor(nodelist[i], sf::Color::Red, 0.5);
             }
-            if (j>=0) {
-                nodelist[j].setOutlineColor(sf::Color::Red);
+            if (j>=0 && j!=i) {
+                startNodeColor(nodelist[j], sf::Color::Red, 0.5);
             }
         }
 
         void UIUNHIGHLIGHT(int i, int j){
             if (i>=0) {
-                nodelist[i].setOutlineColor(sf::Color::Yellow);
+                startNodeColor(nodelist[i], sf::Color::Yellow, 0.5);
             }
-            if (j>=0) {
-                nodelist[j].setOutlineColor(sf::Color::Yellow);
+            if (j>=0 && j!=i) {
+                startNodeColor(nodelist[j], sf::Color::Yellow, 0.5);
             }
         }
 
         void UIPOP(){
             nodelist.pop_back();
             edgelist.pop_back();
+        }
+
+        void UIINSERT(int i, int x){
+            // i = v.size() - 1 
+
+            sf::Vector2f position = getHeapNodePosition(i+1, WINDOW_WIDTH, 50, 75);
+
+            // INSERTNODE
+            node mem(position.x, position.y, 20, sf::Color::Cyan, sf::Color::Yellow, 5);
+            mem.setLabel(std::to_string(x), 15);
+            nodelist.push_back(mem);
+            
+            // INSERTEDGE
+            edge canh(position.x, position.y, nodelist[(i-1)/2].currentPos.x, nodelist[(i-1)/2].currentPos.y, 
+            sf::Color::White, 5);
+            edgelist.push_back(canh);
         }
     };
 
@@ -247,7 +257,7 @@ void heap_page(){
 
         }
 
-
+            // ANIMATION
             if (!core_heap.isAnimate) {
                 if (core_heap.cur_step < core_heap.animation_queue.size()) {
                     core_heap.hasAnimation = true;
@@ -270,6 +280,9 @@ void heap_page(){
                     case ActionType::POP:
                         core_heap.UIPOP();
                         break;
+                    case ActionType::INSERT:
+                        core_heap.UIINSERT(animation.index1, animation.index2);
+                        break;
                     default:
                         break;
                     } 
@@ -288,7 +301,8 @@ void heap_page(){
             }
             for (auto& x: core_heap.nodelist) {
                 x.updatePosition(dt);
-                if (x.isMoving) core_heap.isAnimate = true;
+                x.updateColor(dt);
+                if (x.isMoving || x.isColoring) core_heap.isAnimate = true;
                 x.draw(window);
             }
 

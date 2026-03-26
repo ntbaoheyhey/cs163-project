@@ -86,9 +86,13 @@ public:
     sf::Vector2f currentPos; // Vị trí đang vẽ ra màn hình
     sf::Vector2f startPos;   // Vị trí lúc bắt đầu animation
     sf::Vector2f targetPos;  // Vị trí đích cần đến
+    sf::Color currentColor;
+    sf::Color startColor;
+    sf::Color targetColor;
 
     // Quản lý thời gian animation
     bool isMoving = false;
+    bool isColoring = false;
     float elapsedTime = 0.0f; // Thời gian đã trôi qua kể từ lúc bắt đầu swap
     float duration = 1.0f;    // Tổng thời gian animation (VD: 0.5 giây)
 
@@ -127,6 +131,9 @@ public:
 
     // cập nhật tình hình di chuyển của node này
     void updatePosition(float deltaTime);
+
+    // cập nhật tình hình chuyển màu của node này
+    void updateColor(float deltaTime);
 
     void printInfo();
 };
@@ -275,3 +282,6 @@ public:
 
 // dùng để bắt đầu cho node di chuyển
 void startNodeMovement(node& Node, sf::Vector2f newDestination, float speedSeconds);
+
+// dùng để bắt đầu đổi màu cho node
+void startNodeColor(node& Node, sf::Color newColor, float speedSeconds);

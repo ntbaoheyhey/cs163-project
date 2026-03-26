@@ -89,6 +89,7 @@ bool button::isClicked(sf::Vector2i mousePos) {
 node::node(float x, float y, float radius, sf::Color fillColor, sf::Color outlineColor = sf::Color::Black, float outlineThickness = 2.0f) : text(font_impact, "", 14) {
     shape.setPosition({x, y});
     currentPos = {x,y};
+    currentColor = outlineColor;
     shape.setRadius(radius);
     shape.setFillColor(fillColor);
     shape.setOutlineColor(outlineColor);
@@ -163,6 +164,36 @@ void node::updatePosition(float deltaTime){
     // 4. Kiểm tra xem đã đến đích chưa
     if (t >= 1.0f) {
         isMoving = false; // Tắt cờ di chuyển
+        // Lúc này currentPos == targetPos hoàn toàn
+    }
+}
+
+void node::updateColor(float deltaTime){
+    if (!isColoring) return; // Nếu không moving thì không làm gì cả
+
+    // 1. Cập nhật đồng hồ thời gian của riêng Node
+    elapsedTime += deltaTime;
+
+    // 2. Tính toán hệ số hoàn thành 't' [0.0 -> 1.0]
+    float t = elapsedTime / duration;
+
+    // Giới hạn t không vượt quá 1.0
+    if (t > 1.0f) {
+        t = 1.0f;
+    }
+
+    // 3. Áp dụng công thức LERP cho cả X và Y
+    // current = start + (target - start) * t;
+    currentColor.a = startColor.a + (targetColor.a - startColor.a) * t;
+    currentColor.r = startColor.r + (targetColor.r - startColor.r) * t;
+    currentColor.g = startColor.g + (targetColor.g - startColor.g) * t;
+    currentColor.b = startColor.b + (targetColor.b - startColor.b) * t;
+    
+    shape.setOutlineColor(currentColor);
+
+    // 4. Kiểm tra xem đã đến đích chưa
+    if (t >= 1.0f) {
+        isColoring = false; // Tắt cờ di chuyển
         // Lúc này currentPos == targetPos hoàn toàn
     }
 }
@@ -558,3 +589,10 @@ void startNodeMovement(node& Node, sf::Vector2f newDestination, float speedSecon
     Node.isMoving = true;             // Bật cờ di chuyển
 }
 
+void startNodeColor(node& Node, sf::Color newColor, float speedSeconds) {
+    Node.startColor = Node.currentColor; // Lưu lại màu đầu
+    Node.targetColor = newColor;   // Đặt màu target
+    Node.duration = speedSeconds;      // Đặt tốc độ chuyển
+    Node.elapsedTime = 0.0f;           // Reset đồng hồ
+    Node.isColoring = true;             // Bật cờ di chuyển
+}
