@@ -186,6 +186,14 @@ void heap_page(){
     button pop_button(10, WINDOW_HEIGHT - 225, 100, 50, sf::Color::Cyan, "pop", 24);
     button next_button(250, WINDOW_HEIGHT - 225, 100, 50, sf::Color::Cyan, "next", 24);
     button previous_button(400, WINDOW_HEIGHT - 225, 100, 50, sf::Color::Cyan, "previous", 24);
+    sf::RectangleShape slider({300, 30});
+    slider.setPosition({600.f, float(WINDOW_HEIGHT) - 225.f});
+    sf::RectangleShape slider_bg({300, 30});
+    slider_bg.setPosition({600.f, float(WINDOW_HEIGHT) - 225.f});
+    slider_bg.setOutlineThickness(5);
+    slider_bg.setOutlineColor(sf::Color::Black);
+    slider_bg.setFillColor(sf::Color::Magenta);
+    slider.setFillColor(sf::Color::Blue);
     box valIn_box(135, WINDOW_HEIGHT - 300, 75, 50, sf::Color::Magenta, "0", 24);
     sf::RectangleShape bgmain({1500.f, 600.f});    
     bgmain.setOrigin(bgmain.getGeometricCenter());
@@ -264,6 +272,8 @@ void heap_page(){
             valIn_box.draw(window);
             next_button.draw(window);
             previous_button.draw(window);
+            window.draw(slider_bg);
+            window.draw(slider);
 
             insert_button.isPress = insert_button.isClicked(sf::Mouse::getPosition(window));
             pop_button.isPress = pop_button.isClicked(sf::Mouse::getPosition(window));
@@ -271,7 +281,7 @@ void heap_page(){
             previous_button.isPress = previous_button.isClicked(sf::Mouse::getPosition(window));
 
             // BUTTONS
-            if (!core_heap.hasAnimation){
+            if (!core_heap.hasAnimation && !core_heap.isAnimate){
 
             if (insert_button.isPress && !insert_button.onPress && core_heap.v.size()<31) {
                 core_heap.RESET();
@@ -289,39 +299,92 @@ void heap_page(){
             }
             pop_button.onPress = pop_button.isPress;
 
-            if (previous_button.isPress && !previous_button.onPress && core_heap.cur_step){
+            if (previous_button.isPress && !previous_button.onPress && core_heap.cur_step > 0) {
                 core_heap.hasAnimation = false;
-                core_heap.cur_step--;
+                core_heap.cur_step--; // Lùi lại 1 step để lấy hành động vừa xảy ra
                 auto animation = core_heap.animation_queue[core_heap.cur_step];
-                if (animation.type == ActionType::SWAPUI ||
-                     animation.type == ActionType::SNAPSHOT && core_heap.cur_step > 0) {
-                    core_heap.cur_step--;
-                    animation = core_heap.animation_queue[core_heap.cur_step];
-                }
+
+                // Đã xóa bỏ đoạn if () gây lỗi nhảy cóc ở đây
+
                 switch (animation.type)
                 {
                 case ActionType::INSERT:
-                    core_heap.UIPOP();
+                    core_heap.UIPOP(); // Undo của Insert là Pop UI
                     break;
                 case ActionType::POP:
-                    core_heap.UIINSERT(animation.index1, animation.index2);
+                    core_heap.UIINSERT(animation.index1, animation.index2); // Undo của Pop là Insert lại
                     break;
                 case ActionType::SWAPNODE:
+                    // 1. Thực hiện undo hiệu ứng di chuyển UI
                     core_heap.UISWAPUI(core_heap.nodelist[animation.index1], core_heap.nodelist[animation.index2]);
+                    // 2. Thực hiện undo việc đổi chỗ data trong mảng
                     core_heap.UISWAPNODE(animation.index1, animation.index2);
+                    
+                    // 3. "Nuốt" step SWAPUI nằm ngay trước nó để lần bấm Previous tiếp theo không bị khựng
+                    if (core_heap.cur_step > 0 && 
+                        core_heap.animation_queue[core_heap.cur_step - 1].type == ActionType::SWAPUI) {
+                        core_heap.cur_step--; 
+                    }
+                    break;
+                case ActionType::SWAPUI:
+                case ActionType::SNAPSHOT:
+                    // Bỏ qua vì case SWAPNODE đi lùi đã xử lý gộp, hoặc đây là mốc snapshot không cần undo hình ảnh
                     break;
                 case ActionType::UNHIGHLIGHT:
-                    core_heap.UIHIGHLIGHT(animation.index1, animation.index2);
+                    core_heap.UIHIGHLIGHT(animation.index1, animation.index2); // Undo của Unhighlight là Highlight lại
                     break;
                 case ActionType::HIGHLIGHT:
-                    core_heap.UIUNHIGHLIGHT(animation.index1, animation.index2);
+                    core_heap.UIUNHIGHLIGHT(animation.index1, animation.index2); // Undo của Highlight là tắt Highlight
                     break;    
                 default:
                     break;
                 }
             }
             previous_button.onPress = previous_button.isPress;
+            
+            if (next_button.isPress && !next_button.onPress &&
+                core_heap.cur_step < core_heap.animation_queue.size()) { 
 
+                core_heap.hasAnimation = false;
+                auto animation = core_heap.animation_queue[core_heap.cur_step];
+
+                switch (animation.type)
+                {
+                case ActionType::INSERT:
+                    core_heap.UIINSERT(animation.index1, animation.index2);
+                    break;
+                case ActionType::POP:
+                    core_heap.UIPOP();
+                    break;
+                case ActionType::SWAPUI:
+                    // 1. Chạy hiệu ứng di chuyển
+                    core_heap.UISWAPUI(core_heap.nodelist[animation.index1], core_heap.nodelist[animation.index2]);
+                    // 2. Chạy logic đổi data luôn trong cùng 1 click
+                    core_heap.UISWAPNODE(animation.index1, animation.index2);
+                    
+                    // 3. "Nuốt" step SWAPNODE ngay phía sau (nếu có) để lần click Next tiếp theo bỏ qua nó
+                    if (core_heap.cur_step + 1 < core_heap.animation_queue.size() && 
+                        core_heap.animation_queue[core_heap.cur_step + 1].type == ActionType::SWAPNODE) {
+                        ++core_heap.cur_step; 
+                    }
+                    break;
+                case ActionType::SWAPNODE:
+                case ActionType::SNAPSHOT:
+                    // Các hidden steps này sẽ bị bỏ qua nếu lỡ lọt vào
+                    break;
+                case ActionType::HIGHLIGHT:
+                    core_heap.UIHIGHLIGHT(animation.index1, animation.index2);
+                    break;
+                case ActionType::UNHIGHLIGHT:
+                    core_heap.UIUNHIGHLIGHT(animation.index1, animation.index2);
+                    break;
+                default:
+                    break;
+                }
+                
+                ++core_heap.cur_step; 
+            }
+            next_button.onPress = next_button.isPress;
         }
 
             // ANIMATION
@@ -366,6 +429,8 @@ void heap_page(){
 
             // Vẽ và update isAnimate
             
+            // update slider
+            slider.setSize({slider_bg.getSize().x * core_heap.cur_step / core_heap.animation_queue.size(), slider_bg.getSize().y});
 
             core_heap.isAnimate = false;
             for (auto& c: core_heap.edgelist) {
