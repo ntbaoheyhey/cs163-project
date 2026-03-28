@@ -73,8 +73,7 @@ public:
     // kiểm tra xem button có được click bằng chuột trái hay không
     bool isClicked(sf::Vector2i mousePos);
 
-    // kiểm tra xem có thực hiện Button này hay không
-    bool updateMouse();
+    void setRadius(float t);
 };
 
 class node {
@@ -152,7 +151,7 @@ public:
         setPoints(x1, y1, x2, y2, false);
         shape.setFillColor(color);
         shape.setOutlineColor(sf::Color::Black);
-        shape.setOutlineThickness(3.0f);
+        shape.setOutlineThickness(1.0f);
     }
 
     // đặt lại tọa độ 2 đầu

@@ -2,7 +2,7 @@
 #include <filesystem>
 
 const unsigned int WINDOW_WIDTH = 1600;
-const unsigned int WINDOW_HEIGHT = 800;
+const unsigned int WINDOW_HEIGHT = 900;
 
 sf::RenderWindow window;
 

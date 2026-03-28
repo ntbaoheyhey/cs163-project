@@ -62,12 +62,19 @@ void button::setLabel(const std::string& newLabel) {
     text.setString(label);
     text.setFillColor(sf::Color::Black);
 
-    // căn giữa lại
+    // 1. Cập nhật lại Origin của text (cộng thêm offset của bounding box)
     sf::FloatRect textBounds = text.getLocalBounds();
-    text.setOrigin({textBounds.size.x / 2.f, textBounds.size.y / 2.f});
+    text.setOrigin({
+        textBounds.position.x + textBounds.size.x / 2.f, 
+        textBounds.position.y + textBounds.size.y / 2.f
+    });
 
+    // 2. Đặt vị trí text vào chính giữa tâm của Shape
     sf::FloatRect shapeBounds = shape.getGlobalBounds();
-    text.setPosition({shapeBounds.position.x + shapeBounds.size.x / 2.f, shapeBounds.position.y + shapeBounds.size.y / 2.f});
+    text.setPosition({
+        shapeBounds.position.x + shapeBounds.size.x / 2.f, 
+        shapeBounds.position.y + shapeBounds.size.y / 2.f
+    });
 }
 
 bool button::isClicked(sf::Vector2i mousePos) {
@@ -81,6 +88,10 @@ bool button::isClicked(sf::Vector2i mousePos) {
         return true;
     }
     return false;
+}
+
+void button::setRadius(float t){
+    shape.setRadius(t);
 }
 // End of class Button
 

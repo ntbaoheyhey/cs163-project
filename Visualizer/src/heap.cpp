@@ -13,18 +13,22 @@ sf::Vector2f getHeapNodePosition(int heapIndex, float windowWidth, float startY,
     float y = startY + level * verticalSpacing;
 
     // 3. Tính tọa độ X
-    // Số lượng node tối đa có thể chứa ở level hiện tại
     int maxNodesInLevel = 1 << level; 
-
-    // Vị trí thứ tự của node trong level đó (bắt đầu từ 0)
-    // VD: Node 2 và 3 ở level 1 sẽ có posInLevel lần lượt là 0 và 1
     int posInLevel = heapIndex - maxNodesInLevel;
 
-    // Chiều rộng của mỗi không gian chia đều cho các node ở level này
-    float segmentWidth = windowWidth / maxNodesInLevel;
+    // --- PHẦN CHỈNH SỬA ĐỂ CANH GIỮA ---
+    
+    // Đặt tỷ lệ chiều rộng cây muốn hiển thị (VD: 80% chiều rộng màn hình)
+    float treeWidth = windowWidth * 0.92f; 
+    
+    // Tính khoảng trống bên trái để đẩy cây ra giữa
+    float offsetX = (windowWidth - treeWidth) / 2.0f;
 
-    // Đặt X ở chính giữa (0.5) của segment tương ứng
-    float x = (posInLevel + 0.5f) * segmentWidth;
+    // Chiều rộng của mỗi segment bây giờ dựa trên treeWidth
+    float segmentWidth = treeWidth / maxNodesInLevel;
+
+    // Cộng thêm offsetX vào tọa độ X cuối cùng
+    float x = offsetX + (posInLevel + 0.5f) * segmentWidth;
 
     return sf::Vector2f(x, y);
 }
@@ -36,7 +40,7 @@ int convert_str(std::string &s){
     }
     return res;
 }
-enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
+enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
 
     struct AnimationStep {
         ActionType type;
@@ -77,7 +81,6 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT
             std::swap(v[next], v[i]);
             animation_queue.push_back({HIGHLIGHT, i, next});
             animation_queue.push_back({SWAPUI, i, next});
-            animation_queue.push_back({SWAPNODE, i, next});
             animation_queue.push_back({UNHIGHLIGHT, i, next});
             heapify(next);
         }
@@ -95,7 +98,6 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT
                     std::swap(v[i], v[par]);
                     animation_queue.push_back({HIGHLIGHT, i, par});
                     animation_queue.push_back({SWAPUI, i, par});
-                    animation_queue.push_back({SWAPNODE, i, par});
                     animation_queue.push_back({UNHIGHLIGHT, i, par});
                     i = par;
                 } else break;
@@ -108,41 +110,34 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT
             std::swap(v.back(), v[0]);
             animation_queue.push_back({ActionType::HIGHLIGHT, int(0), int(v.size()-1)});
             animation_queue.push_back({SWAPUI, int(0), int(v.size()-1)});
-            animation_queue.push_back({SWAPNODE, int(0), int(v.size()-1)});
             animation_queue.push_back({UNHIGHLIGHT, int(0), int(v.size()-1)});
             animation_queue.push_back({POP, int(v.size()-1), v.back()});
             v.pop_back();
             heapify(0);
         }
 
-        void buildHeap(std::vector<int> &a) {
-            for (int c: a) push(c);
-        }
         
-        void UISWAPUI(node &a, node& b){
-            startNodeMovement(a, b.currentPos, 2);
-            startNodeMovement(b, a.currentPos, 2);
-        }
-
-        void UISWAPNODE(int i, int j){
+        void UISWAPUI(int i, int j){
+            startNodeMovement(nodelist[i], nodelist[j].currentPos, 2);
+            startNodeMovement(nodelist[j], nodelist[i].currentPos, 2);
             std::swap(nodelist[i], nodelist[j]);
         }
 
         void UIHIGHLIGHT(int i, int j){
             if (i>=0) {
-                startNodeColor(nodelist[i], sf::Color::Red, 0.5);
+                startNodeColor(nodelist[i], sf::Color(62, 188, 167), 0.5);
             }
             if (j>=0 && j!=i) {
-                startNodeColor(nodelist[j], sf::Color::Red, 0.5);
+                startNodeColor(nodelist[j], sf::Color(62, 188, 167), 0.5);
             }
         }
 
         void UIUNHIGHLIGHT(int i, int j){
             if (i>=0) {
-                startNodeColor(nodelist[i], sf::Color::Yellow, 0.5);
+                startNodeColor(nodelist[i], sf::Color(202, 148, 95), 0.5);
             }
             if (j>=0 && j!=i) {
-                startNodeColor(nodelist[j], sf::Color::Yellow, 0.5);
+                startNodeColor(nodelist[j], sf::Color(202, 148, 95), 0.5);
             }
         }
 
@@ -157,13 +152,13 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT
             sf::Vector2f position = getHeapNodePosition(i+1, WINDOW_WIDTH, 50, 75);
 
             // INSERTNODE
-            node mem(position.x, position.y, 20, sf::Color::Cyan, sf::Color::Yellow, 5);
+            node mem(position.x, position.y, 20, sf::Color(218, 168, 74), sf::Color(202, 148, 95), 4);
             mem.setLabel(std::to_string(x), 15);
             nodelist.push_back(mem);
             
             // INSERTEDGE
             edge canh(position.x, position.y, nodelist[(i-1)/2].currentPos.x, nodelist[(i-1)/2].currentPos.y, 
-            sf::Color::White, 5);
+            sf::Color(203, 203, 201), 3);
             edgelist.push_back(canh);
         }
 
@@ -181,25 +176,52 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT
     };
 
 void heap_page(){
+    // 2. Khai báo Texture và tải ảnh từ thư mục
+    sf::Texture backgroundTexture;
+    // Lưu ý: Đảm bảo file "background.png" nằm cùng thư mục với file thực thi (executable) 
+    // hoặc bạn phải truyền đường dẫn tuyệt đối/tương đối chính xác.
+    if (!backgroundTexture.loadFromFile("Visualizer/assets/bg_toty.png")) {
+        std::cerr << "cannot load background" << std::endl;
+    }
 
-    button insert_button(10, WINDOW_HEIGHT - 300, 100, 50, sf::Color::Cyan, "insert", 24);
-    button pop_button(10, WINDOW_HEIGHT - 225, 100, 50, sf::Color::Cyan, "pop", 24);
-    button next_button(250, WINDOW_HEIGHT - 225, 100, 50, sf::Color::Cyan, "next", 24);
-    button previous_button(400, WINDOW_HEIGHT - 225, 100, 50, sf::Color::Cyan, "previous", 24);
-    sf::RectangleShape slider({300, 30});
-    slider.setPosition({600.f, float(WINDOW_HEIGHT) - 225.f});
-    sf::RectangleShape slider_bg({300, 30});
-    slider_bg.setPosition({600.f, float(WINDOW_HEIGHT) - 225.f});
-    slider_bg.setOutlineThickness(5);
-    slider_bg.setOutlineColor(sf::Color::Black);
-    slider_bg.setFillColor(sf::Color::Magenta);
-    slider.setFillColor(sf::Color::Blue);
-    box valIn_box(135, WINDOW_HEIGHT - 300, 75, 50, sf::Color::Magenta, "0", 24);
-    sf::RectangleShape bgmain({1500.f, 600.f});    
+    // 3. Khai báo Sprite và gán Texture cho nó
+    sf::Sprite backgroundSprite(backgroundTexture);
+
+    button insert_button(50, WINDOW_HEIGHT - 150, 150, 50, sf::Color(232, 183, 81), "PUSH", 24);
+    button pop_button(50, WINDOW_HEIGHT - 75, 150, 50, sf::Color(232, 183, 81), "POP", 24);
+    button next_button(250, WINDOW_HEIGHT - 75, 100, 50, sf::Color(232, 183, 81), "NEXT", 24);
+    button previous_button(400, WINDOW_HEIGHT - 75, 100, 50, sf::Color(232, 183, 81), "BACK", 24);
+    RoundedRectangleShape slider({500, 30});
+    slider.setPosition({550.f, float(WINDOW_HEIGHT) - 140.f});
+    slider.setRadius(13);
+    RoundedRectangleShape slider_bg({500, 30});
+    slider_bg.setRadius(13);
+    slider_bg.setPosition({550.f, float(WINDOW_HEIGHT) - 140.f});
+    slider_bg.setOutlineThickness(3);
+    slider_bg.setOutlineColor(sf::Color(233, 186, 85));
+    slider_bg.setFillColor(sf::Color(140, 155, 191));
+    slider.setFillColor(sf::Color(28, 41, 114));
+    box valIn_box(250, WINDOW_HEIGHT - 150, 100, 50, sf::Color(138,155,192), "0", 24);
+    valIn_box.setOutline(sf::Color(179, 229, 228), 3);
+    RoundedRectangleShape bgmain({1500.f, 600.f});    
     bgmain.setOrigin(bgmain.getGeometricCenter());
-    bgmain.setPosition({800 , 300});
-    bgmain.setFillColor(sf::Color(85, 145, 56));
-    
+    bgmain.setPosition({800 , 250});
+    bgmain.setFillColor(sf::Color(243, 243, 251, 100));
+    bgmain.setRadius(17);
+    bgmain.setOutlineThickness(5);
+    bgmain.setOutlineColor(sf::Color(217, 211, 209));
+    RoundedRectangleShape codebox({500, 250});
+    codebox.setOrigin({500, 250});
+    codebox.setPosition({float(WINDOW_WIDTH) + 20, float(WINDOW_HEIGHT - 25)});
+    codebox.setFillColor(sf::Color(215, 161, 72, 200));
+    codebox.setOutlineThickness(3);
+    codebox.setRadius(20);
+    insert_button.setRadius(25);
+    pop_button.setRadius(25);
+    next_button.setRadius(25);
+    previous_button.setRadius(25);
+
+
     sf::Clock clock;
     
     min_heap core_heap;
@@ -265,7 +287,8 @@ void heap_page(){
             valIn_box.setLabel(core_heap.val);
 
             window.clear(sf::Color(212, 188, 112, 0.71));
-            
+            window.draw(backgroundSprite);
+
             window.draw(bgmain);
             insert_button.draw(window);
             pop_button.draw(window);
@@ -274,6 +297,7 @@ void heap_page(){
             previous_button.draw(window);
             window.draw(slider_bg);
             window.draw(slider);
+            window.draw(codebox);
 
             insert_button.isPress = insert_button.isClicked(sf::Mouse::getPosition(window));
             pop_button.isPress = pop_button.isClicked(sf::Mouse::getPosition(window));
@@ -283,7 +307,7 @@ void heap_page(){
             // BUTTONS
             if (!core_heap.hasAnimation && !core_heap.isAnimate){
 
-            if (insert_button.isPress && !insert_button.onPress && core_heap.v.size()<31) {
+            if (insert_button.isPress && !insert_button.onPress && core_heap.v.size()<63) {
                 core_heap.RESET();
                 core_heap.push(convert_str(core_heap.val));
                 core_heap.hasAnimation = true;
@@ -314,19 +338,9 @@ void heap_page(){
                 case ActionType::POP:
                     core_heap.UIINSERT(animation.index1, animation.index2); // Undo của Pop là Insert lại
                     break;
-                case ActionType::SWAPNODE:
-                    // 1. Thực hiện undo hiệu ứng di chuyển UI
-                    core_heap.UISWAPUI(core_heap.nodelist[animation.index1], core_heap.nodelist[animation.index2]);
-                    // 2. Thực hiện undo việc đổi chỗ data trong mảng
-                    core_heap.UISWAPNODE(animation.index1, animation.index2);
-                    
-                    // 3. "Nuốt" step SWAPUI nằm ngay trước nó để lần bấm Previous tiếp theo không bị khựng
-                    if (core_heap.cur_step > 0 && 
-                        core_heap.animation_queue[core_heap.cur_step - 1].type == ActionType::SWAPUI) {
-                        core_heap.cur_step--; 
-                    }
-                    break;
                 case ActionType::SWAPUI:
+                    core_heap.UISWAPUI(animation.index1, animation.index2);
+                    break;
                 case ActionType::SNAPSHOT:
                     // Bỏ qua vì case SWAPNODE đi lùi đã xử lý gộp, hoặc đây là mốc snapshot không cần undo hình ảnh
                     break;
@@ -357,18 +371,8 @@ void heap_page(){
                     core_heap.UIPOP();
                     break;
                 case ActionType::SWAPUI:
-                    // 1. Chạy hiệu ứng di chuyển
-                    core_heap.UISWAPUI(core_heap.nodelist[animation.index1], core_heap.nodelist[animation.index2]);
-                    // 2. Chạy logic đổi data luôn trong cùng 1 click
-                    core_heap.UISWAPNODE(animation.index1, animation.index2);
-                    
-                    // 3. "Nuốt" step SWAPNODE ngay phía sau (nếu có) để lần click Next tiếp theo bỏ qua nó
-                    if (core_heap.cur_step + 1 < core_heap.animation_queue.size() && 
-                        core_heap.animation_queue[core_heap.cur_step + 1].type == ActionType::SWAPNODE) {
-                        ++core_heap.cur_step; 
-                    }
+                    core_heap.UISWAPUI(animation.index1, animation.index2);
                     break;
-                case ActionType::SWAPNODE:
                 case ActionType::SNAPSHOT:
                     // Các hidden steps này sẽ bị bỏ qua nếu lỡ lọt vào
                     break;
@@ -395,11 +399,8 @@ void heap_page(){
                     std::cout << animation.type << '\n';
                     switch (animation.type)
                     {
-                    case ActionType::SWAPNODE:
-                        core_heap.UISWAPNODE(animation.index1, animation.index2);
-                        break;
                     case ActionType::SWAPUI:
-                        core_heap.UISWAPUI(core_heap.nodelist[animation.index1], core_heap.nodelist[animation.index2]);
+                        core_heap.UISWAPUI(animation.index1, animation.index2);
                         break;
                     case ActionType::HIGHLIGHT:
                         core_heap.UIHIGHLIGHT(animation.index1, animation.index2);
