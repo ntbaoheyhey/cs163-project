@@ -197,6 +197,15 @@ void node::updateColor(float deltaTime){
         // Lúc này currentPos == targetPos hoàn toàn
     }
 }
+
+int node::getLabel() {
+    std::string s = text.getString();
+    int res = 0;
+    for (int i=s.size()-1; i>=0; --i) {
+        res = res*10 + (s[i]-'0');
+    }
+    return res;
+}
 // End of class Node
 
 // Class Edge

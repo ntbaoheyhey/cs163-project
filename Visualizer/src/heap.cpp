@@ -36,7 +36,7 @@ int convert_str(std::string &s){
     }
     return res;
 }
-enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT};
+enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
 
     struct AnimationStep {
         ActionType type;
@@ -49,12 +49,17 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT};
         std::vector<int> v;
         std::vector<node> nodelist;
         std::vector<edge> edgelist;
+        std::vector<node> ss_nodelist;
+        std::vector<edge> ss_edgelist;
         std::vector<AnimationStep> animation_queue;
         bool hasAnimation{0};
         bool isAnimate{0};
         int cur_step{0};
         void heapify(int i) {
-            if (v.size() == 0) return;
+            if (v.size() == 0) {
+                animation_queue.push_back({SNAPSHOT, -1, -1});
+                return;
+            }
             int l = 2*i + 1;
             int r = 2*i +2;
             int next = i;
@@ -66,13 +71,14 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT};
             }
             if (next == i) {
                 animation_queue.push_back({UNHIGHLIGHT, i, i});
+                animation_queue.push_back({SNAPSHOT, -1, -1});
                 return;
             }
             std::swap(v[next], v[i]);
             animation_queue.push_back({HIGHLIGHT, i, next});
             animation_queue.push_back({SWAPUI, i, next});
-            animation_queue.push_back({UNHIGHLIGHT, i, next});
             animation_queue.push_back({SWAPNODE, i, next});
+            animation_queue.push_back({UNHIGHLIGHT, i, next});
             heapify(next);
         }
 
@@ -89,11 +95,12 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT};
                     std::swap(v[i], v[par]);
                     animation_queue.push_back({HIGHLIGHT, i, par});
                     animation_queue.push_back({SWAPUI, i, par});
-                    animation_queue.push_back({UNHIGHLIGHT, i, par});
                     animation_queue.push_back({SWAPNODE, i, par});
+                    animation_queue.push_back({UNHIGHLIGHT, i, par});
                     i = par;
                 } else break;
             }
+            animation_queue.push_back({SNAPSHOT, -1, -1});
         }
 
         void pop(){
@@ -103,8 +110,8 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT};
             animation_queue.push_back({SWAPUI, int(0), int(v.size()-1)});
             animation_queue.push_back({SWAPNODE, int(0), int(v.size()-1)});
             animation_queue.push_back({UNHIGHLIGHT, int(0), int(v.size()-1)});
+            animation_queue.push_back({POP, int(v.size()-1), v.back()});
             v.pop_back();
-            animation_queue.push_back({POP, -1, -1});
             heapify(0);
         }
 
@@ -159,12 +166,26 @@ enum ActionType {INSERT, POP, SWAPUI, SWAPNODE, HIGHLIGHT, UNHIGHLIGHT};
             sf::Color::White, 5);
             edgelist.push_back(canh);
         }
+
+        void UISNAPSHOT(){
+            ss_edgelist = edgelist;
+            ss_nodelist = nodelist;
+        }
+
+        void RESET() {
+            edgelist = ss_edgelist;
+            nodelist = ss_nodelist;
+            animation_queue.clear();
+            cur_step = 0;
+        }
     };
 
 void heap_page(){
 
     button insert_button(10, WINDOW_HEIGHT - 300, 100, 50, sf::Color::Cyan, "insert", 24);
     button pop_button(10, WINDOW_HEIGHT - 225, 100, 50, sf::Color::Cyan, "pop", 24);
+    button next_button(250, WINDOW_HEIGHT - 225, 100, 50, sf::Color::Cyan, "next", 24);
+    button previous_button(400, WINDOW_HEIGHT - 225, 100, 50, sf::Color::Cyan, "previous", 24);
     box valIn_box(135, WINDOW_HEIGHT - 300, 75, 50, sf::Color::Magenta, "0", 24);
     sf::RectangleShape bgmain({1500.f, 600.f});    
     bgmain.setOrigin(bgmain.getGeometricCenter());
@@ -179,6 +200,11 @@ void heap_page(){
     bool onInsertPress = false;
     bool isPopPress = false;
     bool onPopPress = false;
+    bool isNextPress = false;
+    bool onNextPress = false;
+    bool isPreviousPress = false;
+    bool onPreviousPress = false;
+    
     int test = 100;
     while(window.isOpen()){
 
@@ -236,29 +262,70 @@ void heap_page(){
             insert_button.draw(window);
             pop_button.draw(window);
             valIn_box.draw(window);
+            next_button.draw(window);
+            previous_button.draw(window);
 
             insert_button.isPress = insert_button.isClicked(sf::Mouse::getPosition(window));
             pop_button.isPress = pop_button.isClicked(sf::Mouse::getPosition(window));
+            next_button.isPress = next_button.isClicked(sf::Mouse::getPosition(window));
+            previous_button.isPress = previous_button.isClicked(sf::Mouse::getPosition(window));
 
             // BUTTONS
             if (!core_heap.hasAnimation){
 
             if (insert_button.isPress && !insert_button.onPress && core_heap.v.size()<31) {
+                core_heap.RESET();
                 core_heap.push(convert_str(core_heap.val));
+                core_heap.hasAnimation = true;
                 isBoxPress = false;
             }     
             insert_button.onPress = insert_button.isPress;
             
             if (pop_button.isPress && !pop_button.onPress){
+                core_heap.RESET();
                 core_heap.pop();
+                core_heap.hasAnimation = true;
                 isBoxPress = false;
             }
             pop_button.onPress = pop_button.isPress;
 
+            if (previous_button.isPress && !previous_button.onPress && core_heap.cur_step){
+                core_heap.hasAnimation = false;
+                core_heap.cur_step--;
+                auto animation = core_heap.animation_queue[core_heap.cur_step];
+                if (animation.type == ActionType::SWAPUI ||
+                     animation.type == ActionType::SNAPSHOT && core_heap.cur_step > 0) {
+                    core_heap.cur_step--;
+                    animation = core_heap.animation_queue[core_heap.cur_step];
+                }
+                switch (animation.type)
+                {
+                case ActionType::INSERT:
+                    core_heap.UIPOP();
+                    break;
+                case ActionType::POP:
+                    core_heap.UIINSERT(animation.index1, animation.index2);
+                    break;
+                case ActionType::SWAPNODE:
+                    core_heap.UISWAPUI(core_heap.nodelist[animation.index1], core_heap.nodelist[animation.index2]);
+                    core_heap.UISWAPNODE(animation.index1, animation.index2);
+                    break;
+                case ActionType::UNHIGHLIGHT:
+                    core_heap.UIHIGHLIGHT(animation.index1, animation.index2);
+                    break;
+                case ActionType::HIGHLIGHT:
+                    core_heap.UIUNHIGHLIGHT(animation.index1, animation.index2);
+                    break;    
+                default:
+                    break;
+                }
+            }
+            previous_button.onPress = previous_button.isPress;
+
         }
 
             // ANIMATION
-            if (!core_heap.isAnimate) {
+            if (!core_heap.isAnimate && core_heap.hasAnimation) {
                 if (core_heap.cur_step < core_heap.animation_queue.size()) {
                     core_heap.hasAnimation = true;
                     auto animation = core_heap.animation_queue[core_heap.cur_step];
@@ -283,12 +350,17 @@ void heap_page(){
                     case ActionType::INSERT:
                         core_heap.UIINSERT(animation.index1, animation.index2);
                         break;
+                    case ActionType::SNAPSHOT:
+                        core_heap.UISNAPSHOT();
+                        break;
                     default:
                         break;
                     } 
                     ++core_heap.cur_step;
-                } else core_heap.hasAnimation = false;
+                } 
             }
+            if (core_heap.cur_step == core_heap.animation_queue.size()) 
+            core_heap.hasAnimation = false;
 
 
 

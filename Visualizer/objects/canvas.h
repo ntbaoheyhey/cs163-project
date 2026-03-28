@@ -136,6 +136,8 @@ public:
     void updateColor(float deltaTime);
 
     void printInfo();
+
+    int getLabel();
 };
 
 class edge {
