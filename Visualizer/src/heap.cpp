@@ -40,6 +40,22 @@ int convert_str(std::string &s){
     }
     return res;
 }
+
+void hover_button(button &a, bool isOver){
+    if (isOver) {
+        a.setColor(sf::Color(172, 123, 42));
+    } else {
+        a.setColor(sf::Color(232, 183, 81));
+    }
+}
+
+void hover_box(box &a, bool isOver, bool isClick) {
+    if (isOver || isClick) {
+        a.setColor(sf::Color(214, 217, 224));
+    } else {
+        a.setColor(sf::Color(138,155,192));
+    }
+}
 enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
 
     struct AnimationStep {
@@ -66,22 +82,27 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
             }
             int l = 2*i + 1;
             int r = 2*i +2;
+            animation_queue.push_back({HIGHLIGHT, i, -1});
             int next = i;
             if (l<v.size()) {
                 if (v[l] < v[next]) next = l;
+                animation_queue.push_back({HIGHLIGHT, l, -1});
+                animation_queue.push_back({UNHIGHLIGHT, l, -1});
             }
             if (r<v.size()) {
                 if (v[r] < v[next]) next = r;
+                animation_queue.push_back({HIGHLIGHT, r, -1});
+                animation_queue.push_back({UNHIGHLIGHT, r, -1});
             }
             if (next == i) {
-                animation_queue.push_back({UNHIGHLIGHT, i, i});
+                animation_queue.push_back({UNHIGHLIGHT, i, -1});
                 animation_queue.push_back({SNAPSHOT, -1, -1});
                 return;
             }
             std::swap(v[next], v[i]);
-            animation_queue.push_back({HIGHLIGHT, i, next});
+            animation_queue.push_back({HIGHLIGHT, next, -1});
             animation_queue.push_back({SWAPUI, i, next});
-            animation_queue.push_back({UNHIGHLIGHT, i, next});
+            animation_queue.push_back({UNHIGHLIGHT, i, -1});
             heapify(next);
         }
 
@@ -94,14 +115,18 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
 
             while(i) {
                 int par = (i-1)/2;
+                animation_queue.push_back({HIGHLIGHT, i, par});
                 if (v[i] < v[par]) {
                     std::swap(v[i], v[par]);
-                    animation_queue.push_back({HIGHLIGHT, i, par});
                     animation_queue.push_back({SWAPUI, i, par});
-                    animation_queue.push_back({UNHIGHLIGHT, i, par});
+                    animation_queue.push_back({UNHIGHLIGHT, i, -1});
                     i = par;
-                } else break;
+                } else {
+                    animation_queue.push_back({UNHIGHLIGHT, par, i});
+                    break;
+                }
             }
+            if (!i) animation_queue.push_back({UNHIGHLIGHT, i, -1});
             animation_queue.push_back({SNAPSHOT, -1, -1});
         }
 
@@ -125,19 +150,19 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
 
         void UIHIGHLIGHT(int i, int j){
             if (i>=0) {
-                startNodeColor(nodelist[i], sf::Color(62, 188, 167), 0.5);
+                startNodeColor(nodelist[i], sf::Color(188, 11, 11), 1);
             }
             if (j>=0 && j!=i) {
-                startNodeColor(nodelist[j], sf::Color(62, 188, 167), 0.5);
+                startNodeColor(nodelist[j], sf::Color(188, 11, 11), 1);
             }
         }
 
         void UIUNHIGHLIGHT(int i, int j){
             if (i>=0) {
-                startNodeColor(nodelist[i], sf::Color(202, 148, 95), 0.5);
+                startNodeColor(nodelist[i], sf::Color(202, 148, 95), 1);
             }
             if (j>=0 && j!=i) {
-                startNodeColor(nodelist[j], sf::Color(202, 148, 95), 0.5);
+                startNodeColor(nodelist[j], sf::Color(202, 148, 95), 1);
             }
         }
 
@@ -153,7 +178,7 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
 
             // INSERTNODE
             node mem(position.x, position.y, 20, sf::Color(218, 168, 74), sf::Color(202, 148, 95), 4);
-            mem.setLabel(std::to_string(x), 15);
+            mem.setLabel(std::to_string(x), 20);
             nodelist.push_back(mem);
             
             // INSERTEDGE
@@ -191,6 +216,7 @@ void heap_page(){
     button pop_button(50, WINDOW_HEIGHT - 75, 150, 50, sf::Color(232, 183, 81), "POP", 24);
     button next_button(250, WINDOW_HEIGHT - 75, 100, 50, sf::Color(232, 183, 81), "NEXT", 24);
     button previous_button(400, WINDOW_HEIGHT - 75, 100, 50, sf::Color(232, 183, 81), "BACK", 24);
+    button getout_button(15, 15, 100, 50, sf::Color(232, 183, 81), "RETURN", 24);
     RoundedRectangleShape slider({500, 30});
     slider.setPosition({550.f, float(WINDOW_HEIGHT) - 140.f});
     slider.setRadius(13);
@@ -210,12 +236,6 @@ void heap_page(){
     bgmain.setRadius(17);
     bgmain.setOutlineThickness(5);
     bgmain.setOutlineColor(sf::Color(217, 211, 209));
-    RoundedRectangleShape codebox({500, 250});
-    codebox.setOrigin({500, 250});
-    codebox.setPosition({float(WINDOW_WIDTH) + 20, float(WINDOW_HEIGHT - 25)});
-    codebox.setFillColor(sf::Color(215, 161, 72, 200));
-    codebox.setOutlineThickness(3);
-    codebox.setRadius(20);
     insert_button.setRadius(25);
     pop_button.setRadius(25);
     next_button.setRadius(25);
@@ -234,8 +254,36 @@ void heap_page(){
     bool onNextPress = false;
     bool isPreviousPress = false;
     bool onPreviousPress = false;
+    bool isOutPress = false;
+    bool onOutPress = false;
+    bool isBoxOver = false;
+    bool isInsertOver = false;
+    bool isPopOver = false;
+    bool isNextOver = false;
+    bool isPreviousOver = false;
+    bool isOutOver = false;
+
     
-    int test = 100;
+
+    // Create the CodeBox (width: 350, height: 400)
+    CodeBox codeBox({500.f, 300.f}, font_impact, 23);
+
+    // The code we want to visualize
+    std::string pushCode = 
+        "v.push_back(x)  \n"
+        "i = v.size() - 1\n"
+        "\n"
+        "while (i)\n"
+        "if v[(i-1) / 2 ] > v[i]\n"
+        "swap(v[par], v[i]) , i = par\n"
+        "else break\n"
+        "\n"
+        "Done";
+    //std::string heapifyCode = 
+
+    codeBox.setCode(pushCode);
+    codeBox.setOrigin({500, 300});
+    codeBox.setPosition({float(WINDOW_WIDTH) + 20, float(WINDOW_HEIGHT - 25)});
     while(window.isOpen()){
 
         float dt = clock.getElapsedTime().asSeconds();
@@ -290,6 +338,7 @@ void heap_page(){
             window.draw(backgroundSprite);
 
             window.draw(bgmain);
+            getout_button.draw(window);
             insert_button.draw(window);
             pop_button.draw(window);
             valIn_box.draw(window);
@@ -297,14 +346,33 @@ void heap_page(){
             previous_button.draw(window);
             window.draw(slider_bg);
             window.draw(slider);
-            window.draw(codebox);
+            window.draw(codeBox);
 
             insert_button.isPress = insert_button.isClicked(sf::Mouse::getPosition(window));
             pop_button.isPress = pop_button.isClicked(sf::Mouse::getPosition(window));
             next_button.isPress = next_button.isClicked(sf::Mouse::getPosition(window));
             previous_button.isPress = previous_button.isClicked(sf::Mouse::getPosition(window));
+            isInsertOver = insert_button.contains(sf::Mouse::getPosition(window));
+            isPopOver = pop_button.contains(sf::Mouse::getPosition(window));
+            isNextOver = next_button.contains(sf::Mouse::getPosition(window));
+            isPreviousOver = previous_button.contains(sf::Mouse::getPosition(window));
+            isBoxOver = valIn_box.contains(sf::Mouse::getPosition(window));
+            isOutPress = getout_button.isClicked(sf::Mouse::getPosition(window));
+            isOutOver = getout_button.contains(sf::Mouse::getPosition(window));
 
+            hover_button(insert_button, isInsertOver);
+            hover_button(pop_button, isPopOver);
+            hover_button(next_button, isNextOver);
+            hover_button(previous_button, isPreviousOver);
+            hover_box(valIn_box, isBoxOver, isBoxPress);
+            hover_button(getout_button, isOutOver); 
             // BUTTONS
+
+            if (isOutPress && !onOutPress) {
+                return;
+            }
+            onOutPress = isOutPress;
+
             if (!core_heap.hasAnimation && !core_heap.isAnimate){
 
             if (insert_button.isPress && !insert_button.onPress && core_heap.v.size()<63) {

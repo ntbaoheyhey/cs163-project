@@ -286,3 +286,67 @@ void startNodeMovement(node& Node, sf::Vector2f newDestination, float speedSecon
 
 // dùng để bắt đầu đổi màu cho node
 void startNodeColor(node& Node, sf::Color newColor, float speedSeconds);
+
+class CodeBox : public sf::Drawable, public sf::Transformable {
+private:
+    sf::RectangleShape m_background;
+    sf::Text m_text;
+    sf::RectangleShape m_highlight;
+    
+    float m_padding;
+    float m_lineSpacing;
+    int m_activeLine;
+
+    // SFML 3.0 standard draw override
+    virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const override {
+        // Apply any transformations (position, rotation, scale) set on the CodeBox
+        states.transform *= getTransform();
+
+        // Draw components in order (bottom to top)
+        target.draw(m_background, states);
+
+        // Only draw the highlight if a valid line is selected
+        if (m_activeLine >= 0) {
+            target.draw(m_highlight, states);
+        }
+
+        target.draw(m_text, states);
+    }
+
+public:
+    CodeBox(sf::Vector2f size, const sf::Font& font, unsigned int charSize = 20)
+    : m_text(font), m_padding(10.f), m_activeLine(-1) {
+        
+        // Cache the line spacing for the highlight bar calculation
+        m_lineSpacing = font.getLineSpacing(charSize);
+
+        // 1. Setup Background 
+        m_background.setSize(size);
+        m_background.setFillColor(sf::Color(215, 161, 72, 200));     
+        //m_background.setOutlineColor(sf::Color(171, 178, 191));
+        m_background.setOutlineThickness(1.f);
+
+        // 2. Setup Text
+        m_text.setCharacterSize(charSize);
+        m_text.setFillColor(sf::Color::Black);
+        m_text.setPosition({m_padding, m_padding}); // Offset by padding
+
+        // 3. Setup Highlight Bar
+        m_highlight.setFillColor(sf::Color(76, 86, 106, 120)); // Semi-transparent
+        m_highlight.setSize({size.x, m_lineSpacing});
+    }
+
+    // Load the raw code string into the box
+    void setCode(const std::string& code) {
+        m_text.setString(code);
+    }
+
+    // Highlight a specific line (0-indexed). Pass -1 to hide the highlight.
+    void setStep(int line) {
+        m_activeLine = line;
+        if (line >= 0) {
+            // Calculate the Y position based on line number and spacing
+            m_highlight.setPosition({0.f, m_padding + (line * m_lineSpacing)});
+        }
+    }
+};
