@@ -1,19 +1,82 @@
-CMakeLists.txt.user
-CMakeCache.txt
-CMakeFiles
-CMakeScripts
-Testing
-Makefile
-cmake_install.cmake
-install_manifest.txt
-compile_commands.json
-CTestTestfile.cmake
-_deps
-CMakeUserPresets.json
+# =========================
+# Build folders
+# =========================
+build/
+Visualizer/build/
+out/
+bin/
 
-# CLion
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#cmake-build-*
+# =========================
+# CMake files
+# =========================
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# =========================
+# Object files
+# =========================
+*.o
+*.obj
+*.lo
+*.slo
+
+# =========================
+# Executables
+# =========================
+*.exe
+*.out
+*.app
+
+# =========================
+# Libraries
+# =========================
+*.a
+*.lib
+*.so
+*.dylib
+
+# =========================
+# Debug / Logs
+# =========================
+*.log
+*.dbg
+
+# =========================
+# VSCode
+# =========================
+.vscode/*
+!.vscode/settings.json
+!.vscode/c_cpp_properties.json
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Temporary files
+# =========================
+*.tmp
+*.temp
+*.swp
+
+# =========================
+# Visualizer specific
+# =========================
+Visualizer/objects/*.o
+
+# =========================
+# Docs (optional)
+# =========================
+# Nếu không muốn push file Word:
+# *.docx
+
+# =========================
+# Assets (optional)
+# =========================
+# Nếu assets nặng hoặc generated:
+# Visualizer/assets/generated/
