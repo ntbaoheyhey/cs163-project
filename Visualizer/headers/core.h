@@ -7,7 +7,9 @@
 #include <string>
 
 #include "global.h"
+// include cả canva
 #include "../objects/canvas.h"
+#include "trie.h"
 #include "shortest_path.h"
 
 void openWindow();

@@ -7,7 +7,4 @@
 #include "global.h"
 #include "../objects/canvas.h"
 
-void heap_page();
-
-// Để làm gì đây?
-sf::Vector2f getHeapNodePosition(int heapIndex, float windowWidth, float startY, float verticalSpacing);
+void trie_page();
