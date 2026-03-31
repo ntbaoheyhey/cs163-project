@@ -44,6 +44,10 @@ sf::Vector2f button::getPosition() {
     return shape.getGlobalBounds().position;
 }
 
+sf::FloatRect button::getShape() {
+    return shape.getGlobalBounds();
+}
+
 void button::setColor(sf::Color color) {
     shape.setFillColor(color);
 }

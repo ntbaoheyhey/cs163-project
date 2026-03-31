@@ -129,12 +129,12 @@ void dijsktra::_visual(Visual_graph &graph, RoundedRectangleShape &visual_code_r
         text_for_code.setOrigin({0 , text_for_code.getLocalBounds().size.y / 2.0f});
 
 
-        text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x, visual_code_region.getGlobalBounds().position.y + 15 * (i+1) + text_for_code.getLocalBounds().size.y * i + 25});
+        text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x+10, visual_code_region.getGlobalBounds().position.y + 15 * (i+1) + text_for_code.getLocalBounds().size.y * i + 25});
 
         if(id == i) {
             // red
             highlight.setFillColor(sf::Color(246,88,88,100));
-            highlight.setPosition({text_for_code.getGlobalBounds().position.x+5, text_for_code.getGlobalBounds().position.y - text_for_code.getLocalBounds().size.y / 2 + 10});
+            highlight.setPosition({text_for_code.getGlobalBounds().position.x, text_for_code.getGlobalBounds().position.y - text_for_code.getLocalBounds().size.y / 2 + 10});
 
             highlight.setSize({max_right - highlight.getGlobalBounds().position.x - 20, text_for_code.getLocalBounds().size.y + 20});
 
@@ -273,17 +273,22 @@ void shortest_path_page() {
 
     std::string source_vertrix = "0";
 
-    box input_source_box(220, WINDOW_HEIGHT - (button_height + 20), button_width - 30, button_height, sf::Color(255,255,255,50), "0", 24);
+    sf::FloatRect po = buttons[0].getShape();
+    box input_source_box(po.position.x + po.size.x + 10, po.position.y, button_width - 30, button_height, sf::Color(255,255,255,50), "0", 24);
     input_source_box.setOutline(sf::Color::Transparent, 0.0f);
 
-    button pre_step_button(450, WINDOW_HEIGHT - (button_height + 20), button_width, button_height, sf::Color(255,255,255,50), "Prev!", 24);
+    button pre_step_button(po.position.x + po.size.x + button_width + 20, po.position.y, button_width, button_height, sf::Color(255,255,255,50), "Prev", 24);
     pre_step_button.setOutline(sf::Color::Transparent, 0.0f);
 
-    button start_button(620, WINDOW_HEIGHT - (button_height + 20), button_width, button_height, sf::Color(255,255,255,50), "start", 24);
+    button start_button(po.position.x + po.size.x + (button_width + 10) * 2 + 10, po.position.y, button_width, button_height, sf::Color(255,255,255,50), "Start", 24);
     start_button.setOutline(sf::Color::Transparent, 0.0f);
 
-    button nxt_step_button(790, WINDOW_HEIGHT - (button_height + 20), button_width, button_height, sf::Color(255,255,255,50), "next", 24);
+    button nxt_step_button(po.position.x + po.size.x + (button_width+10) * 3 + 10, po.position.y, button_width, button_height, sf::Color(255,255,255,50), "Next", 24);
     nxt_step_button.setOutline(sf::Color::Transparent, 0.0f);
+
+    button back_button(po.position.x + po.size.x + (button_width+10) + 10, buttons[1].getShape().position.y, button_width, button_height, sf::Color(255,255,255,50), "Back", 24);
+    back_button.setOutline(sf::Color::Transparent, 0.0f);
+
 
 
     bool mouse_left_pressed = 0;
@@ -429,6 +434,10 @@ void shortest_path_page() {
         }
         // 
 
+        if(mouse_left_pressed and !mouse_left_pressed_last and back_button.isClicked(sf::Mouse::getPosition(window))) {
+            return;
+        }
+
         while (const std::optional event = window.pollEvent())
         {
             if (event->is<sf::Event::Closed>())
@@ -474,6 +483,14 @@ void shortest_path_page() {
         } else {
             input_source_box.setOutline(sf::Color::Transparent, 0.0f);
         }
+
+        if(back_button.contains(mousePos)){
+            back_button.setOutline(sf::Color::Black, 2.0f);
+        } else {
+            back_button.setOutline(sf::Color::Transparent, 0.0f);
+        }
+        back_button.draw(window);
+
 
         if(state_buttons[2]) {
             input_weight_box.setLabel(current_input_weight);

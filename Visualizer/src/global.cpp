@@ -1,8 +1,8 @@
 #include "../headers/global.h"
 #include <filesystem>
 
-const unsigned int WINDOW_WIDTH = 1300;
-const unsigned int WINDOW_HEIGHT = 700;
+const unsigned int WINDOW_WIDTH = 1600;
+const unsigned int WINDOW_HEIGHT = 900;
 
 sf::RenderWindow window;
 
@@ -11,10 +11,10 @@ sf::Font font_impact;
 bool loadFonts() {
     // Thử từng đường dẫn có thể
     std::vector<std::string> paths = {
+        "Visualizer/assets/JetBrainsMono-Medium.ttf",
         "../assets/impact.ttf",
         "../../assets/impact.ttf",
         "Visualizer/assets/impact.ttf",
-        "assets/impact.ttf",
         "C:/Windows/Fonts/arial.ttf"  // Fallback system font
     };
     
