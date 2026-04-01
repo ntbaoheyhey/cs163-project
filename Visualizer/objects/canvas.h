@@ -52,6 +52,7 @@ public:
     // lấy tọa độ của button
     sf::Vector2f getPosition();   
 
+    sf::FloatRect getShape();
     // đổi màu button (fill)
     void setColor(sf::Color color);
 

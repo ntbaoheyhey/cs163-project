@@ -40,3 +40,61 @@ void trie_page(){
 
     }
 }
+
+Trie::Trie()
+{
+    root = new NodeTrie();
+}
+
+void Trie::add(std::string s)
+{
+    NodeTrie* pnow = root;
+    for(int i = 0; i < s.size(); ++i){
+        int id = s[i] - 'a';
+        if(pnow->pnext[id] == nullptr){
+            pnow->pnext[id] = new NodeTrie();
+        }
+        pnow = pnow->pnext[id];
+    }
+    pnow->num_word++;
+    return;
+}
+
+bool Trie::find(std::string s)
+{
+    NodeTrie* pnow = root;
+    for(int i = 0; i < s.size(); ++i){
+        int id = s[i] - 'a';
+        if(pnow->pnext[id] == nullptr){
+            return false;
+        }
+        pnow = pnow->pnext[id];
+    }
+    return true;
+}
+
+void Trie::remove(std::string s)
+{
+    // Already check
+    if(!find(s)) return;
+    NodeTrie* pnow = root;
+    for(int i = 0; i < s.size(); ++i){
+        int id = s[i] - 'a';
+        pnow = pnow->pnext[id];
+    }
+    pnow->num_word--;
+    return;
+}
+
+void Trie::draw(sf::RenderWindow &window)
+{
+        
+}
+
+NodeTrie::NodeTrie()
+{
+    for(int i = 0; i < LOWERCASE_CHAR; ++i){
+        pnext[i] = nullptr;
+    }
+    num_word = 0;
+}
