@@ -57,7 +57,7 @@ void hover_box(box &a, bool isOver, bool isClick) {
     }
 }
 enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
-
+// enum CodeType {}
     struct AnimationStep {
         ActionType type;
         int index1{-1};
@@ -72,37 +72,49 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
         std::vector<node> ss_nodelist;
         std::vector<edge> ss_edgelist;
         std::vector<AnimationStep> animation_queue;
+        std::vector<int> codebox_queue;
         bool hasAnimation{0};
         bool isAnimate{0};
         int cur_step{0};
         void heapify(int i) {
             if (v.size() == 0) {
                 animation_queue.push_back({SNAPSHOT, -1, -1});
+                codebox_queue.push_back(8);
                 return;
             }
             int l = 2*i + 1;
             int r = 2*i +2;
             animation_queue.push_back({HIGHLIGHT, i, -1});
+            codebox_queue.push_back(3);
             int next = i;
             if (l<v.size()) {
                 if (v[l] < v[next]) next = l;
                 animation_queue.push_back({HIGHLIGHT, l, -1});
+                codebox_queue.push_back(4);
                 animation_queue.push_back({UNHIGHLIGHT, l, -1});
+                codebox_queue.push_back(4);
             }
             if (r<v.size()) {
                 if (v[r] < v[next]) next = r;
                 animation_queue.push_back({HIGHLIGHT, r, -1});
+                codebox_queue.push_back(4);
                 animation_queue.push_back({UNHIGHLIGHT, r, -1});
+                codebox_queue.push_back(4);
             }
             if (next == i) {
                 animation_queue.push_back({UNHIGHLIGHT, i, -1});
+                codebox_queue.push_back(6);
                 animation_queue.push_back({SNAPSHOT, -1, -1});
+                codebox_queue.push_back(8);
                 return;
             }
             std::swap(v[next], v[i]);
             animation_queue.push_back({HIGHLIGHT, next, -1});
+            codebox_queue.push_back(5);
             animation_queue.push_back({SWAPUI, i, next});
+            codebox_queue.push_back(5);
             animation_queue.push_back({UNHIGHLIGHT, i, -1});
+            codebox_queue.push_back(5);
             heapify(next);
         }
 
@@ -112,31 +124,46 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
             
             int i = v.size()-1;
             animation_queue.push_back({INSERT, i, x});
+            codebox_queue.push_back(0);
 
+            animation_queue.push_back({HIGHLIGHT, i, -1});
+            codebox_queue.push_back(3);
             while(i) {
                 int par = (i-1)/2;
-                animation_queue.push_back({HIGHLIGHT, i, par});
+                animation_queue.push_back({HIGHLIGHT, par, -1});
+                codebox_queue.push_back(4);
                 if (v[i] < v[par]) {
                     std::swap(v[i], v[par]);
                     animation_queue.push_back({SWAPUI, i, par});
+                    codebox_queue.push_back(5);
                     animation_queue.push_back({UNHIGHLIGHT, i, -1});
+                    codebox_queue.push_back(5);
                     i = par;
                 } else {
                     animation_queue.push_back({UNHIGHLIGHT, par, i});
+                    codebox_queue.push_back(6);
                     break;
                 }
             }
-            if (!i) animation_queue.push_back({UNHIGHLIGHT, i, -1});
+            if (!i) {
+                animation_queue.push_back({UNHIGHLIGHT, i, -1});
+                codebox_queue.push_back(3);
+            }
             animation_queue.push_back({SNAPSHOT, -1, -1});
+            codebox_queue.push_back(8);
         }
 
         void pop(){
             if (!v.size()) return;
             std::swap(v.back(), v[0]);
             animation_queue.push_back({ActionType::HIGHLIGHT, int(0), int(v.size()-1)});
+            codebox_queue.push_back(0);
             animation_queue.push_back({SWAPUI, int(0), int(v.size()-1)});
+            codebox_queue.push_back(0);
             animation_queue.push_back({UNHIGHLIGHT, int(0), int(v.size()-1)});
+            codebox_queue.push_back(0);
             animation_queue.push_back({POP, int(v.size()-1), v.back()});
+            codebox_queue.push_back(1);
             v.pop_back();
             heapify(0);
         }
@@ -196,6 +223,7 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
             edgelist = ss_edgelist;
             nodelist = ss_nodelist;
             animation_queue.clear();
+            codebox_queue.clear();
             cur_step = 0;
         }
     };
@@ -266,8 +294,8 @@ void heap_page(){
     
 
     // Create the CodeBox (width: 350, height: 400)
-    CodeBox codeBox({500.f, 300.f}, font_impact, 23);
-
+    CodeBox codeBox({550.f, 300.f}, font_impact, 23);
+    
     // The code we want to visualize
     std::string pushCode = 
         "v.push_back(x)  \n"
@@ -279,10 +307,18 @@ void heap_page(){
         "else break\n"
         "\n"
         "Done";
-    //std::string heapifyCode = 
+    std::string heapifyCode =  
+        "swap(v[0], v.back())\n"
+        "v.pop_back(), i = 0\n"
+        "\n"
+        "while (i<n)\n"
+        "compare with its children\n"
+        "if (...) swap(v[i], v[L]), swap(i,L)\n"
+        "else break\n"
+        "\n"
+        "Done";
 
-    codeBox.setCode(pushCode);
-    codeBox.setOrigin({500, 300});
+    codeBox.setOrigin({550, 300});
     codeBox.setPosition({float(WINDOW_WIDTH) + 20, float(WINDOW_HEIGHT - 25)});
     while(window.isOpen()){
 
@@ -293,7 +329,7 @@ void heap_page(){
             {
                 if (event->is<sf::Event::Closed>())
                     window.close();
-
+                
                 // 1. Chỉ xử lý khi có sự kiện CLICK CHUỘT (MouseButtonPressed)
                 if (const auto* mouseEvent = event->getIf<sf::Event::MouseButtonPressed>()) {
                     if (mouseEvent->button == sf::Mouse::Button::Left) {
@@ -346,6 +382,8 @@ void heap_page(){
             previous_button.draw(window);
             window.draw(slider_bg);
             window.draw(slider);
+
+            //codeBox.setStep(-1);
             window.draw(codeBox);
 
             insert_button.isPress = insert_button.isClicked(sf::Mouse::getPosition(window));
@@ -376,6 +414,7 @@ void heap_page(){
             if (!core_heap.hasAnimation && !core_heap.isAnimate){
 
             if (insert_button.isPress && !insert_button.onPress && core_heap.v.size()<63) {
+                codeBox.setCode(pushCode);
                 core_heap.RESET();
                 core_heap.push(convert_str(core_heap.val));
                 core_heap.hasAnimation = true;
@@ -384,6 +423,7 @@ void heap_page(){
             insert_button.onPress = insert_button.isPress;
             
             if (pop_button.isPress && !pop_button.onPress){
+                codeBox.setCode(heapifyCode);
                 core_heap.RESET();
                 core_heap.pop();
                 core_heap.hasAnimation = true;
@@ -392,8 +432,11 @@ void heap_page(){
             pop_button.onPress = pop_button.isPress;
 
             if (previous_button.isPress && !previous_button.onPress && core_heap.cur_step > 0) {
+                
                 core_heap.hasAnimation = false;
                 core_heap.cur_step--; // Lùi lại 1 step để lấy hành động vừa xảy ra
+
+                codeBox.setStep(core_heap.codebox_queue[core_heap.cur_step]);   
                 auto animation = core_heap.animation_queue[core_heap.cur_step];
 
                 // Đã xóa bỏ đoạn if () gây lỗi nhảy cóc ở đây
@@ -428,6 +471,7 @@ void heap_page(){
                 core_heap.cur_step < core_heap.animation_queue.size()) { 
 
                 core_heap.hasAnimation = false;
+                codeBox.setStep(core_heap.codebox_queue[core_heap.cur_step]);
                 auto animation = core_heap.animation_queue[core_heap.cur_step];
 
                 switch (animation.type)
@@ -462,6 +506,7 @@ void heap_page(){
             // ANIMATION
             if (!core_heap.isAnimate && core_heap.hasAnimation) {
                 if (core_heap.cur_step < core_heap.animation_queue.size()) {
+                    codeBox.setStep(core_heap.codebox_queue[core_heap.cur_step]);
                     core_heap.hasAnimation = true;
                     auto animation = core_heap.animation_queue[core_heap.cur_step];
                     std::cout << animation.type << '\n';
@@ -499,7 +544,11 @@ void heap_page(){
             // Vẽ và update isAnimate
             
             // update slider
-            slider.setSize({slider_bg.getSize().x * core_heap.cur_step / core_heap.animation_queue.size(), slider_bg.getSize().y});
+            if (core_heap.animation_queue.size() > 0) {
+                slider.setSize({slider_bg.getSize().x * core_heap.cur_step / core_heap.animation_queue.size(), slider_bg.getSize().y});
+            } else {
+                slider.setSize({0, slider_bg.getSize().y});
+            }
 
             core_heap.isAnimate = false;
             for (auto& c: core_heap.edgelist) {
@@ -512,8 +561,7 @@ void heap_page(){
                 x.draw(window);
             }
 
-            
-
+    
             window.display();
         }
         
