@@ -25,7 +25,7 @@ struct Trie{
     bool find(std::string s);
     void remove(std::string s);
 
-    void draw();
+    void draw(sf::RenderWindow& window);
 };
 
 void trie_page();

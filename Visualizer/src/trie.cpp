@@ -1,5 +1,4 @@
 #include "../headers/trie.h"
-#include "trie.h"
 
 void trie_page(){
     button add_button(WINDOW_WIDTH - 300, 50, 200, 50, sf::Color::Green, "Add", 24);
@@ -85,6 +84,11 @@ void Trie::remove(std::string s)
     }
     pnow->num_word--;
     return;
+}
+
+void Trie::draw(sf::RenderWindow &window)
+{
+        
 }
 
 NodeTrie::NodeTrie()
