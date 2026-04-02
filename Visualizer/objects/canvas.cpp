@@ -97,6 +97,22 @@ bool button::isClicked(sf::Vector2i mousePos) {
 void button::setRadius(float t){
     shape.setRadius(t);
 }
+
+bool button::update(sf::Vector2i mousePos) {
+    if (contains(mousePos)) {
+        setColor(sf::Color(172, 123, 42));
+    } else {
+        setColor(sf::Color(232, 183, 81));
+    }
+    isPress = isClicked(mousePos);
+    bool flag = false;
+    if (isPress && !onPress) {
+        flag = true;
+    }
+    onPress = isPress;
+    return flag;
+}
+
 // End of class Button
 
 // Class Node
@@ -347,6 +363,14 @@ bool box::isClicked(sf::Vector2i mousePos) {
         return true;
     }
     return false;
+}
+
+void box::update(bool isClick, sf::Vector2i mousePos) {
+    if (contains(mousePos) || isClick) {
+        setColor(sf::Color(214, 217, 224));
+    } else {
+        setColor(sf::Color(138,155,192));
+    }
 }
 
 // RoundedRectangleShape definitions

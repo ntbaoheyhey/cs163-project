@@ -41,23 +41,23 @@ int convert_str(std::string &s){
     return res;
 }
 
-void hover_button(button &a, bool isOver){
-    if (isOver) {
-        a.setColor(sf::Color(172, 123, 42));
-    } else {
-        a.setColor(sf::Color(232, 183, 81));
+std::vector<int> str_to_vec(std::string s){
+    std::vector<int> ans;
+    int last = 0;
+    if (s.back() != ',') s.push_back(',');
+    for (auto &c: s) {
+        if (c == ',') {
+            ans.push_back(last);
+            last = 0;
+        } else {
+            last = last * 10 + (c-'0');
+        }
     }
+    return ans;
 }
 
-void hover_box(box &a, bool isOver, bool isClick) {
-    if (isOver || isClick) {
-        a.setColor(sf::Color(214, 217, 224));
-    } else {
-        a.setColor(sf::Color(138,155,192));
-    }
-}
 enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
-// enum CodeType {}
+
     struct AnimationStep {
         ActionType type;
         int index1{-1};
@@ -66,6 +66,7 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
 
     struct min_heap {
         std::string val{"0"};
+        std::string build{"0"};
         std::vector<int> v;
         std::vector<node> nodelist;
         std::vector<edge> edgelist;
@@ -73,9 +74,12 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
         std::vector<edge> ss_edgelist;
         std::vector<AnimationStep> animation_queue;
         std::vector<int> codebox_queue;
+        
         bool hasAnimation{0};
         bool isAnimate{0};
         int cur_step{0};
+        double animation_speed{1};
+
         void heapify(int i) {
             if (v.size() == 0) {
                 animation_queue.push_back({SNAPSHOT, -1, -1});
@@ -226,6 +230,27 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
             codebox_queue.clear();
             cur_step = 0;
         }
+
+        void REBUILD(std::vector<int> &query) {
+            v.clear();
+            nodelist.clear();
+            edgelist.clear();
+            ss_nodelist.clear();
+            ss_edgelist.clear();
+            animation_queue.clear();
+            codebox_queue.clear();
+            hasAnimation = 0;
+            isAnimate = 0;
+            cur_step = 0;
+            v = query;
+            int n = query.size();
+            for (int i=0; i<n; ++i) {
+                UIINSERT(i, query[i]);
+            }
+            for (int i = (n / 2) - 1; i >= 0; --i) {
+                heapify(i);
+            }
+        }
     };
 
 void heap_page(){
@@ -245,6 +270,9 @@ void heap_page(){
     button next_button(250, WINDOW_HEIGHT - 75, 100, 50, sf::Color(232, 183, 81), "NEXT", 24);
     button previous_button(400, WINDOW_HEIGHT - 75, 100, 50, sf::Color(232, 183, 81), "BACK", 24);
     button getout_button(15, 15, 100, 50, sf::Color(232, 183, 81), "RETURN", 24);
+    button speed_inc(70, WINDOW_HEIGHT - 300, 50, 50, sf::Color(232, 183, 81), "+", 24);
+    button speed_dec(130, WINDOW_HEIGHT - 300, 50, 50, sf::Color(232, 183, 81), "-", 24);
+    button build_button(50, WINDOW_HEIGHT - 225, 150, 50, sf::Color(232, 183, 81), "BUILD", 24);
     RoundedRectangleShape slider({500, 30});
     slider.setPosition({550.f, float(WINDOW_HEIGHT) - 140.f});
     slider.setRadius(13);
@@ -256,7 +284,11 @@ void heap_page(){
     slider_bg.setFillColor(sf::Color(140, 155, 191));
     slider.setFillColor(sf::Color(28, 41, 114));
     box valIn_box(250, WINDOW_HEIGHT - 150, 100, 50, sf::Color(138,155,192), "0", 24);
+    box build_box(250, WINDOW_HEIGHT - 225, 275, 50, sf::Color(138,155,192), "0", 24);
+    box speed_box(250, WINDOW_HEIGHT - 300, 50, 50, sf::Color(138,155,192), "0", 24);
     valIn_box.setOutline(sf::Color(179, 229, 228), 3);
+    build_box.setOutline(sf::Color(179, 229, 228), 3);
+    speed_box.setOutline(sf::Color(179, 229, 228), 3);
     RoundedRectangleShape bgmain({1500.f, 600.f});    
     bgmain.setOrigin(bgmain.getGeometricCenter());
     bgmain.setPosition({800 , 250});
@@ -268,59 +300,57 @@ void heap_page(){
     pop_button.setRadius(25);
     next_button.setRadius(25);
     previous_button.setRadius(25);
+    build_button.setRadius(25);
+    speed_inc.setRadius(10);
+    speed_dec.setRadius(10);
+    
+    
 
 
     sf::Clock clock;
-    
     min_heap core_heap;
-    bool isBoxPress = false;
-    bool isInsertPress = false;
-    bool onInsertPress = false;
-    bool isPopPress = false;
-    bool onPopPress = false;
-    bool isNextPress = false;
-    bool onNextPress = false;
-    bool isPreviousPress = false;
-    bool onPreviousPress = false;
-    bool isOutPress = false;
-    bool onOutPress = false;
-    bool isBoxOver = false;
-    bool isInsertOver = false;
-    bool isPopOver = false;
-    bool isNextOver = false;
-    bool isPreviousOver = false;
-    bool isOutOver = false;
-
-    
 
     // Create the CodeBox (width: 350, height: 400)
     CodeBox codeBox({550.f, 300.f}, font_impact, 23);
-    
-    // The code we want to visualize
-    std::string pushCode = 
-        "v.push_back(x)  \n"
-        "i = v.size() - 1\n"
-        "\n"
-        "while (i)\n"
-        "if v[(i-1) / 2 ] > v[i]\n"
-        "swap(v[par], v[i]) , i = par\n"
-        "else break\n"
-        "\n"
-        "Done";
-    std::string heapifyCode =  
-        "swap(v[0], v.back())\n"
-        "v.pop_back(), i = 0\n"
-        "\n"
-        "while (i<n)\n"
-        "compare with its children\n"
-        "if (...) swap(v[i], v[L]), swap(i,L)\n"
-        "else break\n"
-        "\n"
-        "Done";
-
     codeBox.setOrigin({550, 300});
     codeBox.setPosition({float(WINDOW_WIDTH) + 20, float(WINDOW_HEIGHT - 25)});
+    
+    // The code we want to visualize
+   std::string pushCode = 
+        "v.push_back(x)\n"                 // Dòng 0: Insert vào cuối mảng
+        "i = v.size() - 1\n"               // Dòng 1: (Chỉ định biến)
+        "while (i > 0):\n"                 // Dòng 2: (Bắt đầu vòng lặp)
+        "  par = (i - 1) / 2\n"            // Dòng 3: Tính index node cha
+        "  if (v[i] < v[par]):\n"          // Dòng 4: So sánh tính chất Min-Heap
+        "      swap(v[i], v[par]), i = par\n" // Dòng 5: Hoán vị nếu node con nhỏ hơn cha
+        "  else: break\n"                  // Dòng 6: Dừng nếu đã thoả mãn Min-Heap
+        "\n"                               // Dòng 7: (Dòng trống đệm)
+        "Done";                            // Dòng 8: Kết thúc
+    std::string heapifyCode = 
+        "swap(v[0], v.back())\n"           // Dòng 0: Hoán vị root với phần tử cuối
+        "v.pop_back()\n"                   // Dòng 1: Xóa phần tử cuối
+        "heapify(i):\n"                    // Dòng 2: Bắt đầu khôi phục cây
+        "  l = 2i + 1, r = 2i + 2\n"       // Dòng 3: Lấy index 2 node con
+        "  next = min_index(i, l, r)\n"    // Dòng 4: Tìm node có giá trị nhỏ nhất
+        "  if (next != i): swap, heapify(next)\n" // Dòng 5: Đổi chỗ và đệ quy
+        "  else: return\n"                 // Dòng 6: Dừng nếu root đã là nhỏ nhất
+        "\n"                               // Dòng 7: (Dòng trống đệm)
+        "Done";                            // Dòng 8: Kết thúc
+    std::string buildCode = 
+        "nothing\n"                        // Dòng 0: Hoán vị root với phần tử cuối
+        "\n"                               // Dòng 1: Xóa phần tử cuối
+        "heapify(i):\n"                    // Dòng 2: Bắt đầu khôi phục cây
+        "  l = 2i + 1, r = 2i + 2\n"       // Dòng 3: Lấy index 2 node con
+        "  next = min_index(i, l, r)\n"    // Dòng 4: Tìm node có giá trị nhỏ nhất
+        "  if (next != i): swap, heapify(next)\n" // Dòng 5: Đổi chỗ và đệ quy
+        "  else: return\n"                 // Dòng 6: Dừng nếu root đã là nhỏ nhất
+        "\n"                               // Dòng 7: (Dòng trống đệm)
+        "Done";                            // Dòng 8: Kết thúc
+
+    bool isBoxPress = false;
+    bool isBuildPress = false;
     while(window.isOpen()){
+        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
 
         float dt = clock.getElapsedTime().asSeconds();
         if (dt>=1.f/60.f){
@@ -334,10 +364,15 @@ void heap_page(){
                 if (const auto* mouseEvent = event->getIf<sf::Event::MouseButtonPressed>()) {
                     if (mouseEvent->button == sf::Mouse::Button::Left) {
                         // Truyền window vào để lấy tọa độ chuột tương đối so với cửa sổ
-                        if (valIn_box.isClicked(sf::Mouse::getPosition(window))) {
+                        if (valIn_box.isClicked(mousePos)) {
                             isBoxPress = true;  // Click vào box -> Bật nhập liệu
                         } else {
                             isBoxPress = false; // Click ra ngoài -> Tắt nhập liệu
+                        }
+                        if (build_box.isClicked(mousePos)) {
+                            isBuildPress = true;  // Click vào box -> Bật nhập liệu
+                        } else {
+                            isBuildPress = false; // Click ra ngoài -> Tắt nhập liệu
                         }
                     }
                 }
@@ -358,8 +393,37 @@ void heap_page(){
                                 core_heap.val = "";
                             }
                             // Giới hạn độ dài số nhập vào (ví dụ: tối đa 3 chữ số để số không tràn node)
-                            if (core_heap.val.size() < 3) {
+                            if (core_heap.val.size() < 2) {
                                 core_heap.val.push_back(static_cast<char>(unicode));
+                            }
+                        }
+                    }
+                }
+                if (isBuildPress) {
+                    if (const auto* textEvent = event->getIf<sf::Event::TextEntered>()) {
+                        char32_t unicode = textEvent->unicode;
+                        
+                        // Xử lý Backspace (mã ASCII = 8)
+                        if (unicode == '\b' || unicode == 8) {
+                            if (core_heap.build.size() > 0) core_heap.build.pop_back();
+                        }
+                        // Xử lý nhập số (từ '0' đến '9')
+                        else if (unicode >= '0' && unicode <= '9') {
+                            // Bỏ số '0' ở đầu nếu có
+                            if (unicode!=',' && core_heap.build.size() == 1 && core_heap.build[0] == '0') {
+                                core_heap.build = "";
+                            }
+                            if (core_heap.build.size() >= 2) {
+                                int z = core_heap.build.size();
+                                if (core_heap.build[z-1]!=',' && core_heap.build[z-2]!=',') continue;
+                            }
+                            // Giới hạn độ dài số nhập vào (ví dụ: tối đa 3 chữ số để số không tràn node)
+                            if (core_heap.build.size() < 17) {
+                                core_heap.build.push_back(static_cast<char>(unicode));
+                            }
+                        } else if (unicode == ',') {
+                            if (!core_heap.build.empty() && core_heap.build.back()!=',' && core_heap.build.size() < 17) {
+                                core_heap.build.push_back(static_cast<char>(unicode));
                             }
                         }
                     }
@@ -367,8 +431,14 @@ void heap_page(){
             }
 
             // Cập nhật nhãn cho Box
+            std::string sp = std::to_string(core_heap.animation_speed);
+            sp = sp.substr(0, 3);
+            speed_box.setLabel(sp);
             if (core_heap.val.size() == 0) core_heap.val = "0";
-            valIn_box.setLabel(core_heap.val);
+            valIn_box.setLabel(core_heap.val+'|');
+            if (core_heap.build.size() == 0) core_heap.build = "0";
+            build_box.setLabel(core_heap.build+'|');
+
 
             window.clear(sf::Color(212, 188, 112, 0.71));
             window.draw(backgroundSprite);
@@ -377,61 +447,72 @@ void heap_page(){
             getout_button.draw(window);
             insert_button.draw(window);
             pop_button.draw(window);
-            valIn_box.draw(window);
             next_button.draw(window);
             previous_button.draw(window);
+            build_button.draw(window);
             window.draw(slider_bg);
             window.draw(slider);
-
+            speed_dec.draw(window);
+            speed_inc.draw(window);
+            build_box.draw(window);
+            valIn_box.draw(window);
+            speed_box.draw(window);
             //codeBox.setStep(-1);
             window.draw(codeBox);
 
-            insert_button.isPress = insert_button.isClicked(sf::Mouse::getPosition(window));
-            pop_button.isPress = pop_button.isClicked(sf::Mouse::getPosition(window));
-            next_button.isPress = next_button.isClicked(sf::Mouse::getPosition(window));
-            previous_button.isPress = previous_button.isClicked(sf::Mouse::getPosition(window));
-            isInsertOver = insert_button.contains(sf::Mouse::getPosition(window));
-            isPopOver = pop_button.contains(sf::Mouse::getPosition(window));
-            isNextOver = next_button.contains(sf::Mouse::getPosition(window));
-            isPreviousOver = previous_button.contains(sf::Mouse::getPosition(window));
-            isBoxOver = valIn_box.contains(sf::Mouse::getPosition(window));
-            isOutPress = getout_button.isClicked(sf::Mouse::getPosition(window));
-            isOutOver = getout_button.contains(sf::Mouse::getPosition(window));
+            // Update states of buttons
+            bool insert_active = insert_button.update(mousePos);
+            bool pop_active    = pop_button.update(mousePos);
+            bool next_active   = next_button.update(mousePos);
+            bool back_active   = previous_button.update(mousePos);
+            bool out_active    = getout_button.update(mousePos);
+            bool inc_active    = speed_inc.update(mousePos);
+            bool dec_active    = speed_dec.update(mousePos);
+            bool build_active  = build_button.update(mousePos);
+            valIn_box.update(isBoxPress, mousePos);
+            build_box.update(isBuildPress, mousePos);
 
-            hover_button(insert_button, isInsertOver);
-            hover_button(pop_button, isPopOver);
-            hover_button(next_button, isNextOver);
-            hover_button(previous_button, isPreviousOver);
-            hover_box(valIn_box, isBoxOver, isBoxPress);
-            hover_button(getout_button, isOutOver); 
             // BUTTONS
 
-            if (isOutPress && !onOutPress) {
+            if (out_active) {
                 return;
             }
-            onOutPress = isOutPress;
+
+            if (inc_active) {
+                core_heap.animation_speed = std::min(2.0, core_heap.animation_speed + 0.1);
+                std::cout << core_heap.animation_speed << '\n';
+            }
+            if (dec_active) {
+                core_heap.animation_speed = std::max(0.5, core_heap.animation_speed - 0.1);
+                std::cout << core_heap.animation_speed << '\n';
+            }
 
             if (!core_heap.hasAnimation && !core_heap.isAnimate){
 
-            if (insert_button.isPress && !insert_button.onPress && core_heap.v.size()<63) {
+            if (build_active) {
+                std::vector<int> query = str_to_vec(core_heap.build);
+                codeBox.setCode(buildCode);
+                core_heap.REBUILD(query);
+                core_heap.hasAnimation = true;
+            }
+            
+            if (insert_active && core_heap.v.size()<63) {
                 codeBox.setCode(pushCode);
                 core_heap.RESET();
                 core_heap.push(convert_str(core_heap.val));
                 core_heap.hasAnimation = true;
                 isBoxPress = false;
             }     
-            insert_button.onPress = insert_button.isPress;
             
-            if (pop_button.isPress && !pop_button.onPress){
+            if (pop_active){
                 codeBox.setCode(heapifyCode);
                 core_heap.RESET();
                 core_heap.pop();
                 core_heap.hasAnimation = true;
                 isBoxPress = false;
             }
-            pop_button.onPress = pop_button.isPress;
 
-            if (previous_button.isPress && !previous_button.onPress && core_heap.cur_step > 0) {
+            if (back_active && core_heap.cur_step > 0) {
                 
                 core_heap.hasAnimation = false;
                 core_heap.cur_step--; // Lùi lại 1 step để lấy hành động vừa xảy ra
@@ -465,10 +546,8 @@ void heap_page(){
                     break;
                 }
             }
-            previous_button.onPress = previous_button.isPress;
             
-            if (next_button.isPress && !next_button.onPress &&
-                core_heap.cur_step < core_heap.animation_queue.size()) { 
+            if (next_active && core_heap.cur_step < core_heap.animation_queue.size()) { 
 
                 core_heap.hasAnimation = false;
                 codeBox.setStep(core_heap.codebox_queue[core_heap.cur_step]);
@@ -500,7 +579,6 @@ void heap_page(){
                 
                 ++core_heap.cur_step; 
             }
-            next_button.onPress = next_button.isPress;
         }
 
             // ANIMATION
@@ -509,7 +587,6 @@ void heap_page(){
                     codeBox.setStep(core_heap.codebox_queue[core_heap.cur_step]);
                     core_heap.hasAnimation = true;
                     auto animation = core_heap.animation_queue[core_heap.cur_step];
-                    std::cout << animation.type << '\n';
                     switch (animation.type)
                     {
                     case ActionType::SWAPUI:
@@ -539,8 +616,6 @@ void heap_page(){
             if (core_heap.cur_step == core_heap.animation_queue.size()) 
             core_heap.hasAnimation = false;
 
-
-
             // Vẽ và update isAnimate
             
             // update slider
@@ -555,8 +630,8 @@ void heap_page(){
                 c.draw(window);
             }
             for (auto& x: core_heap.nodelist) {
-                x.updatePosition(dt);
-                x.updateColor(dt);
+                x.updatePosition(core_heap.animation_speed * dt);
+                x.updateColor(core_heap.animation_speed * dt);
                 if (x.isMoving || x.isColoring) core_heap.isAnimate = true;
                 x.draw(window);
             }
