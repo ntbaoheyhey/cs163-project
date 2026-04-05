@@ -1,8 +1,11 @@
 #include "../headers/global.h"
 #include <filesystem>
 
-const unsigned int WINDOW_WIDTH = 1600;
-const unsigned int WINDOW_HEIGHT = 900;
+// const unsigned int WINDOW_WIDTH = 1600;
+// const unsigned int WINDOW_HEIGHT = 900;
+const unsigned int WINDOW_WIDTH = 1366;
+const unsigned int WINDOW_HEIGHT = 700;
+// Nhân: Máy tui 1366x768 nên tui dùng tạm để code nha anh em, nào có meet ae bàn cái này giúp tui nha
 
 sf::RenderWindow window;
 
