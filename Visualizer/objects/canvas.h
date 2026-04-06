@@ -224,6 +224,7 @@ private:
     std::vector<node> nodes;
     std::vector<std::pair<int, int>> edges;
     std::vector<int> edge_weights;
+    std::vector<std::string> node_labels;
 
     std::vector<std::pair<int,Step>> step_history;
     bool directed = false; // 0: undirected, 1: directed
@@ -257,6 +258,8 @@ public:
         return edge_weights;
     }
 
+    const std::vector<std::string>& getNodeLabels() const;
+
     // thêm node vào đồ thị
     void add_node(float x, float y);
 
@@ -277,7 +280,10 @@ public:
 
     void setEdgeState(int i, int st);
 
-    // tìm xem có node nào chứa (x, y) khộng
+    void clearAll();
+
+    void setNodeLabel(size_t index, const std::string& label);
+
     int find_node_stored(float x, float y);
 
     // vẽ đồ thị lên cửa sổ

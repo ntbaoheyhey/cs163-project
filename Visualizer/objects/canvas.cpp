@@ -492,22 +492,20 @@ void Visual_graph::add_node(float x, float y) {
 
     nodes.emplace_back(x, y, node_radius, color_of_node_state[0], sf::Color::Black, outline_thickness);
     nodes_state.push_back(0);
-    nodes.back().setLabel(std::to_string(nodes.size() - 1), 24);
+    node_labels.push_back(std::to_string(nodes.size() - 1));
 }
 
 void Visual_graph::add_edge(int u, int v, int w, bool directed_flag) {
     if (u < nodes.size() && v < nodes.size()) {
         bool effective_directed = directed_flag ? true : directed;
 
-        if (!effective_directed) {
-            if(u > v) std::swap(u, v);
-        }
-
-        // If edge already exists, update weight and keep state
-        for(int i=0;i<edges.size();i++) {
-            if(edges[i].first == u && edges[i].second == v) {
-                edge_weights[i] = w;
-                return;
+        // Check and remove existing edge(s)
+        for(int i = edges.size() - 1; i >= 0; --i) {
+            if((edges[i].first == u && edges[i].second == v) || 
+               (!effective_directed && edges[i].first == v && edges[i].second == u)) {
+                edges.erase(edges.begin() + i);
+                edge_weights.erase(edge_weights.begin() + i);
+                edges_state.erase(edges_state.begin() + i);
             }
         }
 
@@ -545,6 +543,23 @@ void Visual_graph::setEdgeState(int i, int st) {
     if(edges_state.size() > i) {
         edges_state[i] = st;
     }
+}
+
+const std::vector<std::string>& Visual_graph::getNodeLabels() const {
+    return node_labels;
+}
+
+void Visual_graph::clearAll() {
+    nodes.clear();
+    edges.clear();
+    edge_weights.clear();
+    node_labels.clear();
+    nodes_state.clear();
+    edges_state.clear();
+}
+
+void Visual_graph::setNodeLabel(size_t index, const std::string& label) {
+    if (index < node_labels.size()) node_labels[index] = label;
 }
 
 int Visual_graph::find_node_stored(float x, float y) {
@@ -622,7 +637,7 @@ void Visual_graph::draw(sf::RenderWindow& window, bool draw_weights) {
 
     for(size_t i = 0; i < nodes.size(); i++) {
         nodes[i].setColor(color_of_node_state[nodes_state[i]]);
-
+        nodes[i].setLabel(node_labels[i], 24);
         nodes[i].draw(window);
     }
 }
