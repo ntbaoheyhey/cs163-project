@@ -19,9 +19,9 @@ const sf::Color EDGE_COLOR = sf::Color::White;
 
 void trie_page(){
     
-    button add_button(WINDOW_WIDTH - 300, 50, 200, 50, sf::Color::Green, "Add", 24);
-    button delete_button(WINDOW_WIDTH - 300, 150, 200, 50, sf::Color::Red, "Delete", 24);
-    button find_button(WINDOW_WIDTH - 300, 250, 200, 50, sf::Color::Yellow, "Find", 24);
+    button add_button(WINDOW_WIDTH - 300, 50, 200, 50, sf::Color(232, 183, 81), "Add", 24);
+    button delete_button(WINDOW_WIDTH - 300, 150, 200, 50, sf::Color(232, 183, 81), "Delete", 24);
+    button find_button(WINDOW_WIDTH - 300, 250, 200, 50, sf::Color(232, 183, 81), "Find", 24);
 
     bgmain.setSize({800.f, 600.f});    
     bgmain.setPosition({80 , 50});
@@ -60,15 +60,29 @@ void trie_page(){
 
     data.create_visual();
 
-    std::cerr << "Hey : " << data.root->pnext[2]->block_need << "\n";
-    
+    int frame_count = 0;
+
     while(window.isOpen()){
         while(const std::optional event = window.pollEvent()){
             if(event->is<sf::Event::Closed>())
-            window.close();
+                window.close();
+        }
+
+        ++frame_count;
+        std::cerr << "Frame :" << frame_count << "\n";
+        
+        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+        if (add_button.update(mousePos)) {
+            std::cout << "Received Add Query\n";
+        }
+        if (delete_button.update(mousePos)) {
+            std::cout << "Received Delete Query\n";
+        }
+        if (find_button.update(mousePos)) {
+            std::cout << "Received Find Query\n";
         }
         
-        window.clear();
+        window.clear(sf::Color(212, 188, 112, 0.71));
         data.draw(window);
         add_button.draw(window);
         delete_button.draw(window);
@@ -76,7 +90,7 @@ void trie_page(){
         window.draw(bgmain);
         window.draw(bgcode);
         input_box.draw(window);
-
+        
         window.display();
     }
 }
@@ -204,7 +218,7 @@ void Trie::cre_edge(NodeTrie *pnode)
         float x_nxt = pnode->pnext[i]->visual_node->getPosition().x;
         float y_nxt = pnode->pnext[i]->visual_node->getPosition().y;
         pnode->visual_edge[i] = new edge(x_cur, y_cur, x_nxt, y_nxt, EDGE_COLOR);
-        pnode->visual_edge[i]->setPoints(x_cur, y_cur, x_nxt, y_nxt, true, node_radius);
+        pnode->visual_edge[i]->setPoints(x_cur, y_cur, x_nxt, y_nxt, false, node_radius);
         // Traverse
         cre_edge(pnode->pnext[i]);
     }
