@@ -56,7 +56,7 @@ struct Trie{
 
     // Recursive support function
     bool cal_block(NodeTrie *pnode);
-    void cre_node(NodeTrie *pnode, int block_x, int block_y);
+    void cre_node(NodeTrie *pnode, int block_x, int block_y, int char_branch = -1);
     void cre_edge(NodeTrie *pnode);
     void drawing(NodeTrie *pnode, sf::RenderWindow& window);
 

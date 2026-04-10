@@ -50,8 +50,8 @@ void trie_page(){
     // Trie data
     Trie data;
     data.init();
-    // data.add("apple");
-    // data.add("bar");
+    // data.add("say");
+    // data.add("sayy");
     // data.add("crash");
     // data.add("car");
     // data.add("e");
@@ -192,8 +192,10 @@ void Trie::add(std::string s)
         if(pnow->pnext[id] == nullptr){
             pnow->pnext[id] = new NodeTrie();
         }
+        pnow->isleaf = false;
         pnow = pnow->pnext[id];
     }
+    std::cerr << "Yes\n";
     pnow->num_word++;
     // check current node is leaf or not
     bool ok = true;
@@ -240,9 +242,12 @@ bool Trie::cal_block(NodeTrie *pnode)
     for(int i = 0; i < LOWERCASE_CHAR; ++i) if(pnode->pnext[i] != nullptr){
         isleaf = false;
         bool current_leaf = cal_block(pnode->pnext[i]);
+
+        std::cerr << char(i + 'a') << " " << pnode->pnext[i]->block_need << "\n";
+
         pnode->block_need += pnode->pnext[i]->block_need;
         if(previous)
-            pnode->block_need += (block_horizontal + 1);
+            pnode->block_need += (block_horizontal);
         previous = true;
     }
 
@@ -253,11 +258,17 @@ bool Trie::cal_block(NodeTrie *pnode)
     return isleaf;
 }
 
-void Trie::cre_node(NodeTrie *pnode, int block_x, int block_y)
+void Trie::cre_node(NodeTrie *pnode, int block_x, int block_y, int char_branch)
 {
     // Create node
     pnode->visual_node = create_node(block_x, block_y);
-    std::cerr << block_x << " " << block_y << "\n";
+    if(char_branch == -1)
+        pnode->visual_node->setLabel("R", 20);
+    else{
+        std::string tmp = "";
+        tmp.push_back(char_branch + 'a');
+        pnode->visual_node->setLabel(tmp, 20);
+    }
 
     // Calculation
     int run_block = block_x - pnode->block_need / 2;
@@ -265,10 +276,10 @@ void Trie::cre_node(NodeTrie *pnode, int block_x, int block_y)
     for(int i = 0; i < LOWERCASE_CHAR; ++i) if(pnode->pnext[i] != nullptr){
         bool current_leaf = pnode->pnext[i]->isleaf;
         if(previous)
-            run_block = run_block + (block_horizontal + 1);
+            run_block = run_block + (block_horizontal);
         int l = run_block;
         int r = run_block + pnode->pnext[i]->block_need - 1;
-        cre_node(pnode->pnext[i], (l + r) / 2, block_y + block_vertical);
+        cre_node(pnode->pnext[i], (l + r) / 2, block_y + block_vertical, i);
         run_block = run_block + pnode->pnext[i]->block_need;
         previous = true;
     }
@@ -279,7 +290,6 @@ void Trie::cre_edge(NodeTrie *pnode)
     if(pnode->isleaf) return;
     for(int i = 0; i < LOWERCASE_CHAR; ++i) if(pnode->pnext[i] != nullptr){
         // Create edge
-        std::cerr << i << "\n";
         float x_cur = pnode->visual_node->getPosition().x;
         float y_cur = pnode->visual_node->getPosition().y;
         float x_nxt = pnode->pnext[i]->visual_node->getPosition().x;
@@ -296,6 +306,39 @@ void Trie::drawing(NodeTrie *pnode, sf::RenderWindow& window)
     // Draw edge
     for(int i = 0; i < LOWERCASE_CHAR; ++i) if(pnode->pnext[i] != nullptr){
         pnode->visual_edge[i]->draw(window);
+        
+        // Draw edge label (character)
+        // char edge_char = 'a' + i;
+        // sf::Text edge_text(font_impact, std::string(1, edge_char), 24);
+        // edge_text.setFillColor(sf::Color::Black);
+        
+        // sf::FloatRect textBounds = edge_text.getLocalBounds();
+        // edge_text.setOrigin({textBounds.position.x + textBounds.size.x / 2.f, 
+        //                      textBounds.position.y + textBounds.size.y / 2.f});
+        
+        // sf::Vector2f pos_u = pnode->visual_node->getPosition();
+        // sf::Vector2f pos_v = pnode->pnext[i]->visual_node->getPosition();
+        
+        // float dx = pos_v.x - pos_u.x;
+        // float dy = pos_v.y - pos_u.y;
+        // float edge_length = std::sqrt(dx * dx + dy * dy);
+        
+        // if(edge_length > 0) {
+        //     float perp_x = -dy / edge_length;
+        //     float perp_y = dx / edge_length;
+            
+        //     if(perp_y > 0) {
+        //         perp_x = -perp_x;
+        //         perp_y = -perp_y;
+        //     }
+            
+        //     float offset_dist = 15.0f;
+        //     float weight_x = (pos_u.x + pos_v.x) / 2.f + perp_x * offset_dist;
+        //     float weight_y = (pos_u.y + pos_v.y) / 2.f + perp_y * offset_dist;
+            
+        //     edge_text.setPosition({weight_x, weight_y});
+        //     window.draw(edge_text);
+        // }
     }
     // Draw node
     pnode->visual_node->draw(window);
