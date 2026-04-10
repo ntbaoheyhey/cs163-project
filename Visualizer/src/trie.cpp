@@ -22,7 +22,7 @@ void trie_page(){
     button add_button(WINDOW_WIDTH - 300, 50, 200, 50, sf::Color(232, 183, 81), "Add", 24);
     button delete_button(WINDOW_WIDTH - 300, 150, 200, 50, sf::Color(232, 183, 81), "Delete", 24);
     button find_button(WINDOW_WIDTH - 300, 250, 200, 50, sf::Color(232, 183, 81), "Find", 24);
-
+    
     bgmain.setSize({800.f, 600.f});    
     bgmain.setPosition({80 , 50});
     bgmain.setFillColor(sf::Color(243, 243, 251, 100));
@@ -36,7 +36,7 @@ void trie_page(){
     
     node* bennode = nullptr;
     bennode = create_node(block_width / 2, 0);
-
+    
     RoundedRectangleShape bgcode({350.f, 200.f});
     bgcode.setPosition({float(WINDOW_WIDTH - 300), float(WINDOW_HEIGHT - 250)});
     bgcode.setFillColor(sf::Color(243, 243, 251, 100));
@@ -45,43 +45,110 @@ void trie_page(){
     bgcode.setOutlineColor(sf::Color(217, 211, 209));
     
     // string input box
-    box input_box(WINDOW_WIDTH - 300, 350, 200, 50, sf::Color::Cyan, "Type here", 24);
+    box input_box(WINDOW_WIDTH - 300, 350, 200, 50, sf::Color(232, 183, 81), "   Type here", 24);
     
     // Trie data
     Trie data;
     data.init();
-    data.add("apple");
-    data.add("bar");
-    data.add("crash");
-    data.add("car");
-    data.add("e");
-    data.add("f");
-    data.add("cringe");
-
-    data.create_visual();
+    // data.add("apple");
+    // data.add("bar");
+    // data.add("crash");
+    // data.add("car");
+    // data.add("e");
+    // data.add("f");
+    // data.add("cringe");
+    data.create_visual(); // Must have
 
     int frame_count = 0;
+    
+    bool left_mouse = false;
+    bool left_mouse_last = false;
+
+    std::string current_input = "";
+    bool input_box_active = false;
 
     while(window.isOpen()){
+        // 1. Mouse information
+        left_mouse = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+        
+        // 2. Mouse inside button / box region
+        if(!input_box_active)
+            input_box.update(input_box_active, mousePos);
+        add_button.update(mousePos);
+        delete_button.update(mousePos);
+        find_button.update(mousePos);
+
+        // 3. Left-Mouse click handle
+        if (left_mouse && !left_mouse_last) { 
+            // Button
+            bool button_pressed = false;
+            if (add_button.contains(mousePos)) {
+                std::cout << "Received Add Query: " << current_input << "\n";
+                if (!current_input.empty()) {data.add(current_input); data.create_visual();}
+                button_pressed = true;
+            }
+            if (delete_button.contains(mousePos)) {
+                std::cout << "Received Delete Query: " << current_input << "\n";
+                if (!current_input.empty()) {data.remove(current_input); data.create_visual();}
+                button_pressed = true;
+            }
+            if (find_button.contains(mousePos)) {
+                std::cout << "Received Find Query: " << current_input << "\n";
+                button_pressed = true;
+            }
+
+            if(input_box.contains(mousePos)){
+                std::cout << "Received Input Box Activation: On" << "\n";
+                input_box_active = true;
+                input_box.update(input_box_active, mousePos);
+                if(current_input.empty()){
+                    input_box.setLabel("|");
+                }
+            } else
+            if(!button_pressed && input_box_active){
+                std::cout << "Received Input Box Activation: Off" << "\n";
+                input_box_active = false;
+                if(current_input.empty()){
+                    input_box.setLabel("   Type here");
+                }
+            }
+
+        }
+        // Lưu lại cờ click cho frame sau
+        left_mouse_last = left_mouse;
+
+        // Receive event of present frame
         while(const std::optional event = window.pollEvent()){
             if(event->is<sf::Event::Closed>())
                 window.close();
+            if (input_box_active) {
+                if (const auto* textEvent = event->getIf<sf::Event::TextEntered>()) {
+                    bool change = false;
+                    if (textEvent->unicode == '\b' || textEvent->unicode == 8) {
+                        if (!current_input.empty()) {
+                            current_input.pop_back();
+                            change = true;
+                        }
+                    }
+                    else if (textEvent->unicode >= 97 && textEvent->unicode <= 122) {
+                        current_input += static_cast<char>(textEvent->unicode);
+                        change = true;
+                    }
+                    input_box.setLabel(current_input + "|"); 
+                    if(change){
+                        std::cout << "Received new input string: " << current_input << "\n";
+                    }
+                }
+            }
         }
 
+        // Frame count
         ++frame_count;
-        std::cerr << "Frame :" << frame_count << "\n";
+        if(frame_count % 20 == 0)
+            std::cerr << "Frame :" << frame_count << "\n";
         
-        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-        if (add_button.update(mousePos)) {
-            std::cout << "Received Add Query\n";
-        }
-        if (delete_button.update(mousePos)) {
-            std::cout << "Received Delete Query\n";
-        }
-        if (find_button.update(mousePos)) {
-            std::cout << "Received Find Query\n";
-        }
-        
+        // Draw new frame
         window.clear(sf::Color(212, 188, 112, 0.71));
         data.draw(window);
         add_button.draw(window);
