@@ -15,7 +15,7 @@ class RoundedRectangleShape;
 const int LOWERCASE_CHAR = 26;
 struct NodeTrie{
     NodeTrie *pnext[LOWERCASE_CHAR];
-    int num_word;
+    bool isend;
     int block_need;
     bool isleaf;
     node* visual_node;

@@ -50,7 +50,7 @@ void trie_page(){
     // Trie data
     Trie data;
     data.init();
-    // data.add("say");
+    // data.add("aaa");
     // data.add("sayy");
     // data.add("crash");
     // data.add("car");
@@ -195,8 +195,7 @@ void Trie::add(std::string s)
         pnow->isleaf = false;
         pnow = pnow->pnext[id];
     }
-    std::cerr << "Yes\n";
-    pnow->num_word++;
+    pnow->isend = true;
     // check current node is leaf or not
     bool ok = true;
     for(int i = 0; i < LOWERCASE_CHAR; ++i) if(pnow->pnext[i] != nullptr){
@@ -217,19 +216,41 @@ bool Trie::find(std::string s)
         }
         pnow = pnow->pnext[id];
     }
-    return true;
+    return pnow->isend;
 }
 
 void Trie::remove(std::string s)
 {
     // Already check
     if(!find(s)) return;
+    std::vector<NodeTrie*> thepath;
+    thepath.push_back(root);
     NodeTrie* pnow = root;
     for(int i = 0; i < s.size(); ++i){
         int id = s[i] - 'a';
         pnow = pnow->pnext[id];
+        thepath.push_back(pnow);
     }
-    pnow->num_word--;
+    pnow->isend = false;
+    for(int i = thepath.size() - 1; i >= 1; --i){
+        pnow = thepath[i];
+        if(pnow->isend) break;
+        // Check
+        bool exist = false;
+        for(int c = 0; c < LOWERCASE_CHAR; ++c) if(pnow->pnext[c] != nullptr){
+            exist = true;
+        }
+        if(!exist){
+            if(pnow->visual_node != nullptr)
+                delete pnow->visual_node;
+            for(int c = 0; c < LOWERCASE_CHAR; ++c) if(pnow->visual_edge[c] != nullptr){
+                delete pnow->visual_edge[c];
+            }
+            delete pnow;
+            int id = s[i - 1] - int('a');
+            thepath[i - 1]->pnext[id] = nullptr;
+        }
+    }
     return;
 }
 
@@ -379,8 +400,11 @@ NodeTrie::NodeTrie()
 {
     for(int i = 0; i < LOWERCASE_CHAR; ++i){
         pnext[i] = nullptr;
+        visual_edge[i] = nullptr;
     }
-    num_word = 0;
+    isend = false;
     block_need = 0;
     isleaf = false;
+    visual_node = nullptr;
+
 }
