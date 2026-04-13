@@ -44,7 +44,7 @@ private:
     RoundedRectangleShape shape;
     sf::Text text;
 public:
-    bool isPress{0};
+    bool isClickedInside{0};
     bool onPress{0};
 
     // tọa độ, kịch thước, màu, chữ, cỡ chữ

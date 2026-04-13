@@ -26,7 +26,6 @@ sf::Vector2f getHeapNodePosition(int heapIndex, float windowWidth, float startY,
     // Chiều rộng của mỗi segment bây giờ dựa trên treeWidth
     float segmentWidth = treeWidth / maxNodesInLevel;
 
-    std::cout << startX << '\n';
     // Cộng thêm offsetX vào tọa độ X cuối cùng
     float x = startX + offsetX + (posInLevel + 0.5f) * segmentWidth;
 
@@ -116,7 +115,9 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
         int index2{-1};
     };
 
-    struct min_heap {
+    struct Heap {
+        bool isMinHeap{1};
+        bool isSkip{0};
         std::string val{"0"};
         std::string build{"0"};
         std::vector<int> v;
@@ -132,6 +133,16 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
         int cur_step{0};
         double animation_speed{1};
 
+        // Hàm so sánh dùng chung cho cả Heapify và Push
+        // Trả về true nếu child "ưu tiên" hơn parent (cần đưa child lên trên)
+        bool compare(int child_val, int parent_val) {
+            if (isMinHeap) {
+                return child_val < parent_val; // Min Heap: số nhỏ hơn sẽ nổi lên
+            } else {
+                return child_val > parent_val; // Max Heap: số lớn hơn sẽ nổi lên
+            }
+        }
+
         void heapify(int i) {
             if (v.size() == 0) {
                 animation_queue.push_back({SNAPSHOT, -1, -1});
@@ -144,14 +155,14 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
             codebox_queue.push_back(3);
             int next = i;
             if (l<v.size()) {
-                if (v[l] < v[next]) next = l;
+                if (compare(v[l], v[next])) next = l;
                 animation_queue.push_back({HIGHLIGHT, l, -1});
                 codebox_queue.push_back(4);
                 animation_queue.push_back({UNHIGHLIGHT, l, -1});
                 codebox_queue.push_back(4);
             }
             if (r<v.size()) {
-                if (v[r] < v[next]) next = r;
+                if (compare(v[r], v[next])) next = r;
                 animation_queue.push_back({HIGHLIGHT, r, -1});
                 codebox_queue.push_back(4);
                 animation_queue.push_back({UNHIGHLIGHT, r, -1});
@@ -188,7 +199,7 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
                 int par = (i-1)/2;
                 animation_queue.push_back({HIGHLIGHT, par, -1});
                 codebox_queue.push_back(4);
-                if (v[i] < v[par]) {
+                if (compare(v[i], v[par])) {
                     std::swap(v[i], v[par]);
                     animation_queue.push_back({SWAPUI, i, par});
                     codebox_queue.push_back(5);
@@ -302,6 +313,8 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
             for (int i = (n / 2) - 1; i >= 0; --i) {
                 heapify(i);
             }
+            animation_queue.push_back({SNAPSHOT, -1, -1});
+            codebox_queue.push_back(8);
         }
     };
 
@@ -366,7 +379,7 @@ void heap_page(){
     
 
     sf::Clock clock;
-    min_heap core_heap;
+    Heap core_heap;
 
     // Create the CodeBox (width: 350, height: 400)
     CodeBox codeBox({450, 250}, font_impact, 20);
@@ -484,6 +497,12 @@ void heap_page(){
             bool build_active  = build_button.update(mousePos);
             bool update_active = update_button.update(mousePos);
             bool skip_active   = skip_button.update(mousePos);
+            bool min_active    = min_button.update(mousePos);
+            bool max_active    = max_button.update(mousePos);
+            bool random_active = random_button.update(mousePos);
+            bool file_active   = txtfile_button.update(mousePos);
+            bool peek_active   = peek_button.update(mousePos);
+            bool clear_active  = clear_button.update(mousePos);
 
             for (auto* b : all_boxes) {
                 b->update(0, mousePos); // Mặc định tắt hết
@@ -501,12 +520,17 @@ void heap_page(){
             if (out_active) {
                 return;
             }
+            
+            else if (skip_active) {
+                core_heap.isSkip = true;
+            }
 
-            if (inc_active) {
+            else if (inc_active) {
                 core_heap.animation_speed = std::min(2.0, core_heap.animation_speed + 0.1);
                 std::cout << core_heap.animation_speed << '\n';
             }
-            if (dec_active) {
+            
+            else if (dec_active) {
                 core_heap.animation_speed = std::max(0.5, core_heap.animation_speed - 0.1);
                 std::cout << core_heap.animation_speed << '\n';
             }
@@ -520,21 +544,21 @@ void heap_page(){
                 core_heap.hasAnimation = true;
             }
             
-            if (insert_active && core_heap.v.size()<63) {
+            else if (insert_active && core_heap.v.size()<63) {
                 codeBox.setCode(pushCode);
                 core_heap.RESET();
                 core_heap.push(convert_str(core_heap.val));
                 core_heap.hasAnimation = true;
             }     
             
-            if (pop_active){
+            else if (pop_active){
                 codeBox.setCode(heapifyCode);
                 core_heap.RESET();
                 core_heap.pop();
                 core_heap.hasAnimation = true;
             }
 
-            if (back_active && core_heap.cur_step > 0) {
+            else if (back_active && core_heap.cur_step > 0) {
                 
                 core_heap.hasAnimation = false;
                 core_heap.cur_step--; // Lùi lại 1 step để lấy hành động vừa xảy ra
@@ -569,7 +593,7 @@ void heap_page(){
                 }
             }
             
-            if (next_active && core_heap.cur_step < core_heap.animation_queue.size()) { 
+            else if (next_active && core_heap.cur_step < core_heap.animation_queue.size()) { 
 
                 core_heap.hasAnimation = false;
                 codeBox.setStep(core_heap.codebox_queue[core_heap.cur_step]);
@@ -635,8 +659,10 @@ void heap_page(){
                     ++core_heap.cur_step;
                 } 
             }
-            if (core_heap.cur_step == core_heap.animation_queue.size()) 
-            core_heap.hasAnimation = false;
+            if (core_heap.cur_step == core_heap.animation_queue.size()) {
+                core_heap.isSkip = false;
+                core_heap.hasAnimation = false;
+            }
 
             // Vẽ và update isAnimate
             
@@ -652,6 +678,7 @@ void heap_page(){
                 c.draw(window);
             }
             for (auto& x: core_heap.nodelist) {
+                if (core_heap.isSkip) dt = 100000;
                 x.updatePosition(core_heap.animation_speed * dt);
                 x.updateColor(core_heap.animation_speed * dt);
                 if (x.isMoving || x.isColoring) core_heap.isAnimate = true;

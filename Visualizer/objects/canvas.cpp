@@ -99,17 +99,46 @@ void button::setRadius(float t){
 }
 
 bool button::update(sf::Vector2i mousePos) {
-    if (contains(mousePos)) {
-        setColor(sf::Color(172, 123, 42));
+    bool isHover = contains(mousePos);
+    bool isGlobalMouseDown = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+    bool flag = false;
+
+    // 1. BẮT KHOẢNH KHẮC VỪA NHẤN CHUỘT XUỐNG
+    if (isGlobalMouseDown && !onPress) {
+        if (isHover) {
+            isClickedInside = true;  // Ghi nhận: Cú click bắt đầu từ TẠI nút này
+        } else {
+            isClickedInside = false; // Ghi nhận: Cú click bắt đầu từ chỗ khác
+        }
+    }
+
+    // 2. BẮT KHOẢNH KHẮC VỪA NHẢ CHUỘT RA
+    if (!isGlobalMouseDown && onPress) {
+        // Chỉ kích hoạt nếu: Nhả chuột TRONG nút VÀ cú click cũng BẮT ĐẦU từ trong nút
+        if (isHover && isClickedInside) {
+            flag = true;
+        }
+        // Khi nhả chuột ra rồi thì phải reset lại cờ
+        isClickedInside = false; 
+    }
+
+    // --- 3. CẬP NHẬT MÀU SẮC (UX NÂNG CAO) ---
+    if (isHover) {
+        // Chỉ làm lún nút nếu chuột đang nhấn giữ VÀ cú nhấn đó bắt nguồn từ nút này
+        if (isGlobalMouseDown && isClickedInside) {
+            setColor(sf::Color(140, 95, 30)); 
+        } else {
+            // Lướt qua bình thường (hoặc đang giữ chuột từ ngoài kéo vào)
+            setColor(sf::Color(172, 123, 42));
+        }
     } else {
+        // Chuột ở ngoài nút
         setColor(sf::Color(232, 183, 81));
     }
-    isPress = isClicked(mousePos);
-    bool flag = false;
-    if (isPress && !onPress) {
-        flag = true;
-    }
-    onPress = isPress;
+
+    // CẬP NHẬT TRẠNG THÁI CHO FRAME SAU
+    onPress = isGlobalMouseDown; 
+    
     return flag;
 }
 
