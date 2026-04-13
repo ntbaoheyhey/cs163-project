@@ -25,11 +25,11 @@ button::button(float x, float y, float width, float height, sf::Color color, con
     label = labelText;
     shape.setPosition({x, y});
     shape.setSize({width, height});
-    shape.setRadius(8.0f);  // less rounded corners
+    shape.setRadius(10);  // less rounded corners
     shape.setCornerPointCount(20);
     shape.setFillColor(color);
     shape.setOutlineColor(sf::Color(200, 200, 200));
-    shape.setOutlineThickness(2.0f);
+    shape.setOutlineThickness(3.0f);
 
     text = sf::Text(font_impact, label, charSize);
     text.setFillColor(sf::Color::Black);
@@ -299,7 +299,7 @@ box::box(float x, float y, float width, float height, sf::Color color, const std
     shape.setCornerPointCount(20);
     shape.setFillColor(color);
     shape.setOutlineColor(sf::Color(180, 180, 180));
-    shape.setOutlineThickness(2.0f);
+    shape.setOutlineThickness(3.0f);
 
     text = sf::Text(font_impact, label, charSize);
     text.setFillColor(sf::Color::Black);

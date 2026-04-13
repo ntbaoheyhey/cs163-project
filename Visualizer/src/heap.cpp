@@ -4,8 +4,7 @@
 
 // Hàm tính tọa độ cho node. Lưu ý: 'heapIndex' phải bắt đầu từ 1 (1-based index)
 // Nếu mảng của bạn bắt đầu từ 0, hãy truyền vào (index + 1)
-sf::Vector2f getHeapNodePosition(int heapIndex, float windowWidth, float startY, float verticalSpacing) {
-    
+sf::Vector2f getHeapNodePosition(int heapIndex, float windowWidth, float startY, float startX, float verticalSpacing) {
     // 1. Tính độ sâu của node (level 0 là root)
     int level = std::log2(heapIndex);
 
@@ -27,10 +26,55 @@ sf::Vector2f getHeapNodePosition(int heapIndex, float windowWidth, float startY,
     // Chiều rộng của mỗi segment bây giờ dựa trên treeWidth
     float segmentWidth = treeWidth / maxNodesInLevel;
 
+    std::cout << startX << '\n';
     // Cộng thêm offsetX vào tọa độ X cuối cùng
-    float x = offsetX + (posInLevel + 0.5f) * segmentWidth;
+    float x = startX + offsetX + (posInLevel + 0.5f) * segmentWidth;
 
     return sf::Vector2f(x, y);
+}
+
+// Hàm xử lý nhập số cơ bản (cho Insert, Search, Update)
+void handleNumericInput(std::string& targetStr, char32_t unicode, size_t maxLength = 2) {
+    // Xử lý Backspace
+    if (unicode == '\b' || unicode == 8) {
+        if (!targetStr.empty()) targetStr.pop_back();
+    }
+    // Xử lý nhập số
+    else if (unicode >= '0' && unicode <= '9') {
+        // Bỏ số '0' vô nghĩa ở đầu
+        if (targetStr == "0") targetStr.clear();
+        
+        if (targetStr.size() < maxLength) {
+            targetStr.push_back(static_cast<char>(unicode));
+        }
+    }
+}
+
+// Hàm xử lý nhập mảng (cho Build)
+void handleArrayInput(std::string& targetStr, char32_t unicode, size_t maxLength = 17) {
+    if (unicode == '\b' || unicode == 8) {
+        if (!targetStr.empty()) targetStr.pop_back();
+    } 
+    else if (unicode >= '0' && unicode <= '9') {
+        // Bỏ số '0' ở đầu nếu nó đứng ngay đầu chuỗi
+        if (unicode != ',' && targetStr.size() == 1 && targetStr[0] == '0') {
+            targetStr.clear();
+        }
+        // Giới hạn 2 chữ số cho mỗi phần tử cách nhau bởi dấu phẩy
+        if (targetStr.size() >= 2) {
+            int z = targetStr.size();
+            if (targetStr[z-1] != ',' && targetStr[z-2] != ',') return; // Bỏ qua không thêm
+        }
+        if (targetStr.size() < maxLength) {
+            targetStr.push_back(static_cast<char>(unicode));
+        }
+    } 
+    else if (unicode == ',') {
+        // Tránh dấu phẩy ở đầu hoặc 2 dấu phẩy liên tiếp
+        if (!targetStr.empty() && targetStr.back() != ',' && targetStr.size() < maxLength) {
+            targetStr.push_back(static_cast<char>(unicode));
+        }
+    }
 }
 
 int convert_str(std::string &s){
@@ -43,6 +87,7 @@ int convert_str(std::string &s){
 
 std::vector<int> str_to_vec(std::string s){
     std::vector<int> ans;
+    if (s.empty()) return ans;
     int last = 0;
     if (s.back() != ',') s.push_back(',');
     for (auto &c: s) {
@@ -55,6 +100,13 @@ std::vector<int> str_to_vec(std::string s){
     }
     return ans;
 }
+enum FocusedBox {
+    NONE,
+    INSERT_VAL,
+    BUILD,
+    UPDATE_VAL,
+    UPDATE_KEY,
+};
 
 enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
 
@@ -205,7 +257,7 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
         void UIINSERT(int i, int x){
             // i = v.size() - 1 
 
-            sf::Vector2f position = getHeapNodePosition(i+1, WINDOW_WIDTH, 50, 75);
+            sf::Vector2f position = getHeapNodePosition(i+1, 975, 50, 380 , 75);
 
             // INSERTNODE
             node mem(position.x, position.y, 20, sf::Color(218, 168, 74), sf::Color(202, 148, 95), 4);
@@ -258,62 +310,68 @@ void heap_page(){
     sf::Texture backgroundTexture;
     // Lưu ý: Đảm bảo file "background.png" nằm cùng thư mục với file thực thi (executable) 
     // hoặc bạn phải truyền đường dẫn tuyệt đối/tương đối chính xác.
-    if (!backgroundTexture.loadFromFile("Visualizer/assets/bg_toty.png")) {
+    if (!backgroundTexture.loadFromFile("Visualizer/assets/bg.png")) {
         std::cerr << "cannot load background" << std::endl;
     }
 
     // 3. Khai báo Sprite và gán Texture cho nó
     sf::Sprite backgroundSprite(backgroundTexture);
-
-    button insert_button(50, WINDOW_HEIGHT - 150, 150, 50, sf::Color(232, 183, 81), "PUSH", 24);
-    button pop_button(50, WINDOW_HEIGHT - 75, 150, 50, sf::Color(232, 183, 81), "POP", 24);
-    button next_button(250, WINDOW_HEIGHT - 75, 100, 50, sf::Color(232, 183, 81), "NEXT", 24);
-    button previous_button(400, WINDOW_HEIGHT - 75, 100, 50, sf::Color(232, 183, 81), "BACK", 24);
+    button min_button(10, WINDOW_HEIGHT - 500, 100, 50, sf::Color(232, 183, 81), "MIN", 24);
+    button max_button(135, WINDOW_HEIGHT - 500, 100, 50, sf::Color(232, 183, 81), "MAX", 24);
+    button insert_button(10, WINDOW_HEIGHT - 225, 100, 50, sf::Color(232, 183, 81), "PUSH", 24);
+    button pop_button(10, WINDOW_HEIGHT - 150, 100, 50, sf::Color(232, 183, 81), "POP", 24);
+    button peek_button(135, WINDOW_HEIGHT - 150, 100, 50, sf::Color(232, 183, 81), "PEEK", 24);
+    button clear_button(250, WINDOW_HEIGHT - 150, 100, 50, sf::Color(232, 183, 81), "CLEAR", 24);
+    button next_button(400, WINDOW_HEIGHT - 75, 75, 50, sf::Color(232, 183, 81), "NEXT", 24);
+    button previous_button(500, WINDOW_HEIGHT - 75, 75, 50, sf::Color(232, 183, 81), "BACK", 24);
     button getout_button(15, 15, 100, 50, sf::Color(232, 183, 81), "RETURN", 24);
-    button speed_inc(70, WINDOW_HEIGHT - 300, 50, 50, sf::Color(232, 183, 81), "+", 24);
-    button speed_dec(130, WINDOW_HEIGHT - 300, 50, 50, sf::Color(232, 183, 81), "-", 24);
-    button build_button(50, WINDOW_HEIGHT - 225, 150, 50, sf::Color(232, 183, 81), "BUILD", 24);
+    button speed_inc(700, WINDOW_HEIGHT - 75, 50, 50, sf::Color(232, 183, 81), "+", 24);
+    button speed_dec(760, WINDOW_HEIGHT - 75, 50, 50, sf::Color(232, 183, 81), "-", 24);
+    button skip_button(600, WINDOW_HEIGHT - 75, 75, 50, sf::Color(232, 183, 81), "SKIP", 24);
+    button build_button(240, WINDOW_HEIGHT - 375, 100, 50, sf::Color(232, 183, 81), "BUILD", 24);
+    button update_button(10, WINDOW_HEIGHT - 75, 100, 50, sf::Color(232, 183, 81), "UPDATE", 24);
+    button random_button(10, WINDOW_HEIGHT - 375, 100, 50, sf::Color(232, 183, 81), "RANDOM", 24);
+    button txtfile_button(125, WINDOW_HEIGHT - 375, 100, 50, sf::Color(232, 183, 81), "FILE", 24);
     RoundedRectangleShape slider({500, 30});
-    slider.setPosition({550.f, float(WINDOW_HEIGHT) - 140.f});
-    slider.setRadius(13);
+    slider.setPosition({400.f, float(WINDOW_HEIGHT) - 120.f});
     RoundedRectangleShape slider_bg({500, 30});
-    slider_bg.setRadius(13);
-    slider_bg.setPosition({550.f, float(WINDOW_HEIGHT) - 140.f});
+    slider_bg.setPosition({400.f, float(WINDOW_HEIGHT) - 120.f});
     slider_bg.setOutlineThickness(3);
     slider_bg.setOutlineColor(sf::Color(233, 186, 85));
     slider_bg.setFillColor(sf::Color(140, 155, 191));
     slider.setFillColor(sf::Color(28, 41, 114));
-    box valIn_box(250, WINDOW_HEIGHT - 150, 100, 50, sf::Color(138,155,192), "0", 24);
-    box build_box(250, WINDOW_HEIGHT - 225, 275, 50, sf::Color(138,155,192), "0", 24);
-    box speed_box(250, WINDOW_HEIGHT - 300, 50, 50, sf::Color(138,155,192), "0", 24);
-    valIn_box.setOutline(sf::Color(179, 229, 228), 3);
-    build_box.setOutline(sf::Color(179, 229, 228), 3);
-    speed_box.setOutline(sf::Color(179, 229, 228), 3);
-    RoundedRectangleShape bgmain({1500.f, 600.f});    
-    bgmain.setOrigin(bgmain.getGeometricCenter());
-    bgmain.setPosition({800 , 250});
-    bgmain.setFillColor(sf::Color(243, 243, 251, 100));
+    box valIn_box(135, WINDOW_HEIGHT - 225, 100, 50, sf::Color(138,155,192), "0", 24);
+    box upIdx_box(135, WINDOW_HEIGHT - 75, 100, 50, sf::Color(138,155,192), "0", 24);
+    box upVal_box(250, WINDOW_HEIGHT - 75, 100, 50, sf::Color(138,155,192), "0", 24);
+    box build_box(10, WINDOW_HEIGHT - 300, 275, 50, sf::Color(138,155,192), "0", 24);
+    box speed_box(820, WINDOW_HEIGHT - 75, 50, 50, sf::Color(138,155,192), "0", 24);
+
+    RoundedRectangleShape bgmain({975.f, 525.f});    
+    bgmain.setFillColor(sf::Color(251, 251, 253, 200));
+    bgmain.setPosition({380, 20});
     bgmain.setRadius(17);
     bgmain.setOutlineThickness(5);
     bgmain.setOutlineColor(sf::Color(217, 211, 209));
-    insert_button.setRadius(25);
-    pop_button.setRadius(25);
-    next_button.setRadius(25);
-    previous_button.setRadius(25);
-    build_button.setRadius(25);
-    speed_inc.setRadius(10);
-    speed_dec.setRadius(10);
     
-    
+    std::vector<button*> all_buttons = {
+    &insert_button, &pop_button, &next_button, &previous_button, 
+    &getout_button, &speed_inc, &speed_dec, &build_button, &update_button,
+    &skip_button, &random_button, &txtfile_button, &peek_button, &clear_button,
+    &min_button, &max_button
+    };
 
+    std::vector<box*> all_boxes = {
+    &valIn_box, &build_box, &speed_box, &upIdx_box, &upVal_box
+    };
+    
 
     sf::Clock clock;
     min_heap core_heap;
 
     // Create the CodeBox (width: 350, height: 400)
-    CodeBox codeBox({550.f, 300.f}, font_impact, 23);
-    codeBox.setOrigin({550, 300});
-    codeBox.setPosition({float(WINDOW_WIDTH) + 20, float(WINDOW_HEIGHT - 25)});
+    CodeBox codeBox({450, 250}, font_impact, 20);
+    codeBox.setOrigin({450, 250});
+    codeBox.setPosition({float(WINDOW_WIDTH), float(WINDOW_HEIGHT-10)});
     
     // The code we want to visualize
    std::string pushCode = 
@@ -347,8 +405,8 @@ void heap_page(){
         "\n"                               // Dòng 7: (Dòng trống đệm)
         "Done";                            // Dòng 8: Kết thúc
 
-    bool isBoxPress = false;
-    bool isBuildPress = false;
+    FocusedBox currentFocus = FocusedBox::NONE;
+
     while(window.isOpen()){
         sf::Vector2i mousePos = sf::Mouse::getPosition(window);
 
@@ -356,75 +414,40 @@ void heap_page(){
         if (dt>=1.f/60.f){
             clock.restart();
             while (const std::optional event = window.pollEvent())
-            {
+                {
                 if (event->is<sf::Event::Closed>())
                     window.close();
                 
-                // 1. Chỉ xử lý khi có sự kiện CLICK CHUỘT (MouseButtonPressed)
+                // 1. Xử lý CLICK CHUỘT -> Chuyển đổi trạng thái Focus
                 if (const auto* mouseEvent = event->getIf<sf::Event::MouseButtonPressed>()) {
                     if (mouseEvent->button == sf::Mouse::Button::Left) {
-                        // Truyền window vào để lấy tọa độ chuột tương đối so với cửa sổ
+                        // Mặc định click ra ngoài là mất focus
+                        currentFocus = FocusedBox::NONE; 
+                        
+                        // Dùng else-if vì 1 điểm click chỉ thuộc về 1 box
                         if (valIn_box.isClicked(mousePos)) {
-                            isBoxPress = true;  // Click vào box -> Bật nhập liệu
-                        } else {
-                            isBoxPress = false; // Click ra ngoài -> Tắt nhập liệu
-                        }
-                        if (build_box.isClicked(mousePos)) {
-                            isBuildPress = true;  // Click vào box -> Bật nhập liệu
-                        } else {
-                            isBuildPress = false; // Click ra ngoài -> Tắt nhập liệu
-                        }
+                            currentFocus = FocusedBox::INSERT_VAL;
+                        } else if (build_box.isClicked(mousePos)) {
+                            currentFocus = FocusedBox::BUILD;
+                        } 
                     }
                 }
 
-                // 2. Chỉ xử lý khi có sự kiện GÕ PHÍM (TextEntered) và Box đang được chọn
-                if (isBoxPress) {
+                // 2. Xử lý GÕ PHÍM dựa trên trạng thái Focus hiện tại
+                if (currentFocus != FocusedBox::NONE) {
                     if (const auto* textEvent = event->getIf<sf::Event::TextEntered>()) {
                         char32_t unicode = textEvent->unicode;
                         
-                        // Xử lý Backspace (mã ASCII = 8)
-                        if (unicode == '\b' || unicode == 8) {
-                            if (core_heap.val.size() > 0) core_heap.val.pop_back();
-                        }
-                        // Xử lý nhập số (từ '0' đến '9')
-                        else if (unicode >= '0' && unicode <= '9') {
-                            // Bỏ số '0' ở đầu nếu có
-                            if (core_heap.val.size() == 1 && core_heap.val[0] == '0') {
-                                core_heap.val = "";
-                            }
-                            // Giới hạn độ dài số nhập vào (ví dụ: tối đa 3 chữ số để số không tràn node)
-                            if (core_heap.val.size() < 2) {
-                                core_heap.val.push_back(static_cast<char>(unicode));
-                            }
-                        }
-                    }
-                }
-                if (isBuildPress) {
-                    if (const auto* textEvent = event->getIf<sf::Event::TextEntered>()) {
-                        char32_t unicode = textEvent->unicode;
-                        
-                        // Xử lý Backspace (mã ASCII = 8)
-                        if (unicode == '\b' || unicode == 8) {
-                            if (core_heap.build.size() > 0) core_heap.build.pop_back();
-                        }
-                        // Xử lý nhập số (từ '0' đến '9')
-                        else if (unicode >= '0' && unicode <= '9') {
-                            // Bỏ số '0' ở đầu nếu có
-                            if (unicode!=',' && core_heap.build.size() == 1 && core_heap.build[0] == '0') {
-                                core_heap.build = "";
-                            }
-                            if (core_heap.build.size() >= 2) {
-                                int z = core_heap.build.size();
-                                if (core_heap.build[z-1]!=',' && core_heap.build[z-2]!=',') continue;
-                            }
-                            // Giới hạn độ dài số nhập vào (ví dụ: tối đa 3 chữ số để số không tràn node)
-                            if (core_heap.build.size() < 17) {
-                                core_heap.build.push_back(static_cast<char>(unicode));
-                            }
-                        } else if (unicode == ',') {
-                            if (!core_heap.build.empty() && core_heap.build.back()!=',' && core_heap.build.size() < 17) {
-                                core_heap.build.push_back(static_cast<char>(unicode));
-                            }
+                        // Điều hướng input vào đúng string của struct core_heap
+                        switch (currentFocus) {
+                            case FocusedBox::INSERT_VAL:
+                                handleNumericInput(core_heap.val, unicode, 2);
+                                break;
+                            case FocusedBox::BUILD:
+                                handleArrayInput(core_heap.build, unicode, 17);
+                                break;
+                            default:
+                                break;
                         }
                     }
                 }
@@ -444,22 +467,12 @@ void heap_page(){
             window.draw(backgroundSprite);
 
             window.draw(bgmain);
-            getout_button.draw(window);
-            insert_button.draw(window);
-            pop_button.draw(window);
-            next_button.draw(window);
-            previous_button.draw(window);
-            build_button.draw(window);
+            window.draw(codeBox);
             window.draw(slider_bg);
             window.draw(slider);
-            speed_dec.draw(window);
-            speed_inc.draw(window);
-            build_box.draw(window);
-            valIn_box.draw(window);
-            speed_box.draw(window);
-            //codeBox.setStep(-1);
-            window.draw(codeBox);
-
+            for (auto* btn : all_buttons) btn->draw(window);
+            for (auto* b : all_boxes) b->draw(window);
+            
             // Update states of buttons
             bool insert_active = insert_button.update(mousePos);
             bool pop_active    = pop_button.update(mousePos);
@@ -469,9 +482,20 @@ void heap_page(){
             bool inc_active    = speed_inc.update(mousePos);
             bool dec_active    = speed_dec.update(mousePos);
             bool build_active  = build_button.update(mousePos);
-            valIn_box.update(isBoxPress, mousePos);
-            build_box.update(isBuildPress, mousePos);
+            bool update_active = update_button.update(mousePos);
+            bool skip_active   = skip_button.update(mousePos);
 
+            for (auto* b : all_boxes) {
+                b->update(0, mousePos); // Mặc định tắt hết
+            }
+
+            // Bật lại box đang được focus
+            switch (currentFocus) {
+                case FocusedBox::BUILD: build_box.update(1, mousePos); break;
+                case FocusedBox::INSERT_VAL: valIn_box.update(1, mousePos); break;
+                default: break;
+            }
+            
             // BUTTONS
 
             if (out_active) {
@@ -501,7 +525,6 @@ void heap_page(){
                 core_heap.RESET();
                 core_heap.push(convert_str(core_heap.val));
                 core_heap.hasAnimation = true;
-                isBoxPress = false;
             }     
             
             if (pop_active){
@@ -509,7 +532,6 @@ void heap_page(){
                 core_heap.RESET();
                 core_heap.pop();
                 core_heap.hasAnimation = true;
-                isBoxPress = false;
             }
 
             if (back_active && core_heap.cur_step > 0) {
