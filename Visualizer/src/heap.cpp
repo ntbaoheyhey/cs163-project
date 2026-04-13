@@ -1,7 +1,33 @@
 #include "../headers/heap.h"
 #include <vector>
 #include <string>
+#include <fstream>
+#include <random>
+#include <windows.h>
+#include <pseudocode.h>
+#define WIN32_LEAN_AND_MEAN
+// Hàm mở file
+    std::string openFileDialog() {
+    OPENFILENAMEA ofn;
+    CHAR szFile[260] = {0};
+    ZeroMemory(&ofn, sizeof(OPENFILENAME));
+    ofn.lStructSize = sizeof(OPENFILENAME);
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = sizeof(szFile);
+    ofn.lpstrFilter = "Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0"; // Chỉ hiện file txt
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFileTitle = NULL;
+    ofn.nMaxFileTitle = 0;
+    ofn.lpstrInitialDir = NULL;
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
+    // Hiển thị hộp thoại, nếu người dùng chọn "Open" thì trả về TRUE
+    if (GetOpenFileNameA(&ofn) == TRUE) {
+        return std::string(ofn.lpstrFile);
+    }
+    return ""; // Trả về rỗng nếu người dùng bấm "Cancel"
+}
 // Hàm tính tọa độ cho node. Lưu ý: 'heapIndex' phải bắt đầu từ 1 (1-based index)
 // Nếu mảng của bạn bắt đầu từ 0, hãy truyền vào (index + 1)
 sf::Vector2f getHeapNodePosition(int heapIndex, float windowWidth, float startY, float startX, float verticalSpacing) {
@@ -120,11 +146,15 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
         bool isSkip{0};
         std::string val{"0"};
         std::string build{"0"};
+        std::string changeval{"0"};
+        std::string changekey{"0"};
         std::vector<int> v;
         std::vector<node> nodelist;
         std::vector<edge> edgelist;
+        std::vector<sf::Text> indexlist;
         std::vector<node> ss_nodelist;
         std::vector<edge> ss_edgelist;
+        std::vector<sf::Text> ss_indexlist;
         std::vector<AnimationStep> animation_queue;
         std::vector<int> codebox_queue;
         
@@ -143,7 +173,33 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
             }
         }
 
-        void heapify(int i) {
+        void upheap(int i) {
+            animation_queue.push_back({HIGHLIGHT, i, -1});
+            codebox_queue.push_back(3);
+            while(i) {
+                int par = (i-1)/2;
+                animation_queue.push_back({HIGHLIGHT, par, -1});
+                codebox_queue.push_back(4);
+                if (compare(v[i], v[par])) {
+                    std::swap(v[i], v[par]);
+                    animation_queue.push_back({SWAPUI, i, par});
+                    codebox_queue.push_back(5);
+                    animation_queue.push_back({UNHIGHLIGHT, i, -1});
+                    codebox_queue.push_back(5);
+                    i = par;
+                } else {
+                    animation_queue.push_back({UNHIGHLIGHT, par, i});
+                    codebox_queue.push_back(6);
+                    break;
+                }
+            }
+            if (!i) {
+                animation_queue.push_back({UNHIGHLIGHT, i, -1});
+                codebox_queue.push_back(3);
+            }
+        }
+
+        void downheap(int i) {
             if (v.size() == 0) {
                 animation_queue.push_back({SNAPSHOT, -1, -1});
                 codebox_queue.push_back(8);
@@ -182,7 +238,7 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
             codebox_queue.push_back(5);
             animation_queue.push_back({UNHIGHLIGHT, i, -1});
             codebox_queue.push_back(5);
-            heapify(next);
+            downheap(next);
         }
 
         void push(int x){
@@ -193,29 +249,7 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
             animation_queue.push_back({INSERT, i, x});
             codebox_queue.push_back(0);
 
-            animation_queue.push_back({HIGHLIGHT, i, -1});
-            codebox_queue.push_back(3);
-            while(i) {
-                int par = (i-1)/2;
-                animation_queue.push_back({HIGHLIGHT, par, -1});
-                codebox_queue.push_back(4);
-                if (compare(v[i], v[par])) {
-                    std::swap(v[i], v[par]);
-                    animation_queue.push_back({SWAPUI, i, par});
-                    codebox_queue.push_back(5);
-                    animation_queue.push_back({UNHIGHLIGHT, i, -1});
-                    codebox_queue.push_back(5);
-                    i = par;
-                } else {
-                    animation_queue.push_back({UNHIGHLIGHT, par, i});
-                    codebox_queue.push_back(6);
-                    break;
-                }
-            }
-            if (!i) {
-                animation_queue.push_back({UNHIGHLIGHT, i, -1});
-                codebox_queue.push_back(3);
-            }
+            upheap(i);
             animation_queue.push_back({SNAPSHOT, -1, -1});
             codebox_queue.push_back(8);
         }
@@ -232,7 +266,34 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
             animation_queue.push_back({POP, int(v.size()-1), v.back()});
             codebox_queue.push_back(1);
             v.pop_back();
-            heapify(0);
+            downheap(0);
+        }
+
+        int update(int key, int val) {
+            int ans;
+            int old = v[key];
+            v[key] = val;
+            nodelist[key].setLabel(std::to_string(val), 20);
+            if (isMinHeap) {
+                if (val >= old) {
+                    downheap(key);
+                    ans = 4;
+                } else {
+                    upheap(key);
+                    ans = 3;
+                }
+            } else {
+                if (val >= old) {
+                    upheap(key);
+                    ans = 3;
+                } else {
+                    downheap(key);
+                    ans = 4;
+                }
+            }
+            animation_queue.push_back({SNAPSHOT, -1, -1});
+            codebox_queue.push_back(8);
+            return ans;
         }
 
         
@@ -263,12 +324,18 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
         void UIPOP(){
             nodelist.pop_back();
             edgelist.pop_back();
+            indexlist.pop_back();
         }
 
         void UIINSERT(int i, int x){
             // i = v.size() - 1 
 
             sf::Vector2f position = getHeapNodePosition(i+1, 975, 50, 380 , 75);
+            // INSERT INDEX
+            sf::Text newidx(font_impact, std::to_string(i), 18);
+            newidx.setPosition({position.x, position.y + 20});
+            newidx.setFillColor(sf::Color(54, 173, 36));
+            indexlist.push_back(newidx);
 
             // INSERTNODE
             node mem(position.x, position.y, 20, sf::Color(218, 168, 74), sf::Color(202, 148, 95), 4);
@@ -284,11 +351,13 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
         void UISNAPSHOT(){
             ss_edgelist = edgelist;
             ss_nodelist = nodelist;
+            ss_indexlist = indexlist;
         }
 
         void RESET() {
             edgelist = ss_edgelist;
             nodelist = ss_nodelist;
+            indexlist = ss_indexlist;
             animation_queue.clear();
             codebox_queue.clear();
             cur_step = 0;
@@ -298,6 +367,7 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
             v.clear();
             nodelist.clear();
             edgelist.clear();
+            indexlist.clear();
             ss_nodelist.clear();
             ss_edgelist.clear();
             animation_queue.clear();
@@ -311,10 +381,24 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
                 UIINSERT(i, query[i]);
             }
             for (int i = (n / 2) - 1; i >= 0; --i) {
-                heapify(i);
+                downheap(i);
             }
             animation_queue.push_back({SNAPSHOT, -1, -1});
             codebox_queue.push_back(8);
+        }
+        void CLEAR() {
+            v.clear();
+            nodelist.clear();
+            edgelist.clear();
+            indexlist.clear();
+            ss_nodelist.clear();
+            ss_edgelist.clear();
+            animation_queue.clear();
+            codebox_queue.clear();
+            
+            hasAnimation = 0;
+            isAnimate = 0;
+            cur_step = 0;
         }
     };
 
@@ -333,8 +417,7 @@ void heap_page(){
     button max_button(135, WINDOW_HEIGHT - 500, 100, 50, sf::Color(232, 183, 81), "MAX", 24);
     button insert_button(10, WINDOW_HEIGHT - 225, 100, 50, sf::Color(232, 183, 81), "PUSH", 24);
     button pop_button(10, WINDOW_HEIGHT - 150, 100, 50, sf::Color(232, 183, 81), "POP", 24);
-    button peek_button(135, WINDOW_HEIGHT - 150, 100, 50, sf::Color(232, 183, 81), "PEEK", 24);
-    button clear_button(250, WINDOW_HEIGHT - 150, 100, 50, sf::Color(232, 183, 81), "CLEAR", 24);
+    button clear_button(135, WINDOW_HEIGHT - 150, 100, 50, sf::Color(232, 183, 81), "CLEAR", 24);
     button next_button(400, WINDOW_HEIGHT - 75, 75, 50, sf::Color(232, 183, 81), "NEXT", 24);
     button previous_button(500, WINDOW_HEIGHT - 75, 75, 50, sf::Color(232, 183, 81), "BACK", 24);
     button getout_button(15, 15, 100, 50, sf::Color(232, 183, 81), "RETURN", 24);
@@ -356,7 +439,7 @@ void heap_page(){
     box valIn_box(135, WINDOW_HEIGHT - 225, 100, 50, sf::Color(138,155,192), "0", 24);
     box upIdx_box(135, WINDOW_HEIGHT - 75, 100, 50, sf::Color(138,155,192), "0", 24);
     box upVal_box(250, WINDOW_HEIGHT - 75, 100, 50, sf::Color(138,155,192), "0", 24);
-    box build_box(10, WINDOW_HEIGHT - 300, 275, 50, sf::Color(138,155,192), "0", 24);
+    box build_box(10, WINDOW_HEIGHT - 300, 325, 50, sf::Color(138,155,192), "0", 24);
     box speed_box(820, WINDOW_HEIGHT - 75, 50, 50, sf::Color(138,155,192), "0", 24);
 
     RoundedRectangleShape bgmain({975.f, 525.f});    
@@ -369,7 +452,7 @@ void heap_page(){
     std::vector<button*> all_buttons = {
     &insert_button, &pop_button, &next_button, &previous_button, 
     &getout_button, &speed_inc, &speed_dec, &build_button, &update_button,
-    &skip_button, &random_button, &txtfile_button, &peek_button, &clear_button,
+    &skip_button, &random_button, &txtfile_button, &clear_button,
     &min_button, &max_button
     };
 
@@ -385,38 +468,6 @@ void heap_page(){
     CodeBox codeBox({450, 250}, font_impact, 20);
     codeBox.setOrigin({450, 250});
     codeBox.setPosition({float(WINDOW_WIDTH), float(WINDOW_HEIGHT-10)});
-    
-    // The code we want to visualize
-   std::string pushCode = 
-        "v.push_back(x)\n"                 // Dòng 0: Insert vào cuối mảng
-        "i = v.size() - 1\n"               // Dòng 1: (Chỉ định biến)
-        "while (i > 0):\n"                 // Dòng 2: (Bắt đầu vòng lặp)
-        "  par = (i - 1) / 2\n"            // Dòng 3: Tính index node cha
-        "  if (v[i] < v[par]):\n"          // Dòng 4: So sánh tính chất Min-Heap
-        "      swap(v[i], v[par]), i = par\n" // Dòng 5: Hoán vị nếu node con nhỏ hơn cha
-        "  else: break\n"                  // Dòng 6: Dừng nếu đã thoả mãn Min-Heap
-        "\n"                               // Dòng 7: (Dòng trống đệm)
-        "Done";                            // Dòng 8: Kết thúc
-    std::string heapifyCode = 
-        "swap(v[0], v.back())\n"           // Dòng 0: Hoán vị root với phần tử cuối
-        "v.pop_back()\n"                   // Dòng 1: Xóa phần tử cuối
-        "heapify(i):\n"                    // Dòng 2: Bắt đầu khôi phục cây
-        "  l = 2i + 1, r = 2i + 2\n"       // Dòng 3: Lấy index 2 node con
-        "  next = min_index(i, l, r)\n"    // Dòng 4: Tìm node có giá trị nhỏ nhất
-        "  if (next != i): swap, heapify(next)\n" // Dòng 5: Đổi chỗ và đệ quy
-        "  else: return\n"                 // Dòng 6: Dừng nếu root đã là nhỏ nhất
-        "\n"                               // Dòng 7: (Dòng trống đệm)
-        "Done";                            // Dòng 8: Kết thúc
-    std::string buildCode = 
-        "nothing\n"                        // Dòng 0: Hoán vị root với phần tử cuối
-        "\n"                               // Dòng 1: Xóa phần tử cuối
-        "heapify(i):\n"                    // Dòng 2: Bắt đầu khôi phục cây
-        "  l = 2i + 1, r = 2i + 2\n"       // Dòng 3: Lấy index 2 node con
-        "  next = min_index(i, l, r)\n"    // Dòng 4: Tìm node có giá trị nhỏ nhất
-        "  if (next != i): swap, heapify(next)\n" // Dòng 5: Đổi chỗ và đệ quy
-        "  else: return\n"                 // Dòng 6: Dừng nếu root đã là nhỏ nhất
-        "\n"                               // Dòng 7: (Dòng trống đệm)
-        "Done";                            // Dòng 8: Kết thúc
 
     FocusedBox currentFocus = FocusedBox::NONE;
 
@@ -442,7 +493,12 @@ void heap_page(){
                             currentFocus = FocusedBox::INSERT_VAL;
                         } else if (build_box.isClicked(mousePos)) {
                             currentFocus = FocusedBox::BUILD;
-                        } 
+                        } else if (upIdx_box.isClicked(mousePos)) {
+                            currentFocus = FocusedBox::UPDATE_KEY;
+                        } else if (upVal_box.isClicked(mousePos)) {
+                            currentFocus = FocusedBox::UPDATE_VAL;
+                        }
+
                     }
                 }
 
@@ -457,13 +513,27 @@ void heap_page(){
                                 handleNumericInput(core_heap.val, unicode, 2);
                                 break;
                             case FocusedBox::BUILD:
-                                handleArrayInput(core_heap.build, unicode, 17);
+                                handleArrayInput(core_heap.build, unicode, 64);
+                                break;
+                            case FocusedBox::UPDATE_KEY:
+                                handleArrayInput(core_heap.changekey, unicode, 2);
+                                break;
+                            case FocusedBox::UPDATE_VAL:
+                                handleArrayInput(core_heap.changeval, unicode, 2);
                                 break;
                             default:
                                 break;
                         }
                     }
                 }
+            }
+            // Trạng thái min-heap / max-heap
+            if (core_heap.isMinHeap) {
+                min_button.setColor(sf::Color(140, 95, 30));
+                max_button.setColor(sf::Color(232, 183, 81));
+            } else {
+                max_button.setColor(sf::Color(140, 95, 30));
+                min_button.setColor(sf::Color(232, 183, 81));
             }
 
             // Cập nhật nhãn cho Box
@@ -472,8 +542,17 @@ void heap_page(){
             speed_box.setLabel(sp);
             if (core_heap.val.size() == 0) core_heap.val = "0";
             valIn_box.setLabel(core_heap.val+'|');
-            if (core_heap.build.size() == 0) core_heap.build = "0";
-            build_box.setLabel(core_heap.build+'|');
+            if (core_heap.changekey.size() == 0) core_heap.changekey = "0";
+            upIdx_box.setLabel("idx:"+core_heap.changekey+'|');
+            if (core_heap.changeval.size() == 0) core_heap.changeval = "0";
+            upVal_box.setLabel("val:"+core_heap.changeval+'|');
+
+            int strsize = core_heap.build.size();
+            if (strsize == 0) core_heap.build = "0";
+            if (strsize < 21) {
+                build_box.setLabel(core_heap.build+'|');
+            }
+            else build_box.setLabel(core_heap.build.substr(strsize-21) + '|');
 
 
             window.clear(sf::Color(212, 188, 112, 0.71));
@@ -501,7 +580,6 @@ void heap_page(){
             bool max_active    = max_button.update(mousePos);
             bool random_active = random_button.update(mousePos);
             bool file_active   = txtfile_button.update(mousePos);
-            bool peek_active   = peek_button.update(mousePos);
             bool clear_active  = clear_button.update(mousePos);
 
             for (auto* b : all_boxes) {
@@ -512,6 +590,8 @@ void heap_page(){
             switch (currentFocus) {
                 case FocusedBox::BUILD: build_box.update(1, mousePos); break;
                 case FocusedBox::INSERT_VAL: valIn_box.update(1, mousePos); break;
+                case FocusedBox::UPDATE_KEY: upIdx_box.update(1, mousePos); break;
+                case FocusedBox::UPDATE_VAL: upVal_box.update(1, mousePos); break;
                 default: break;
             }
             
@@ -535,27 +615,100 @@ void heap_page(){
                 std::cout << core_heap.animation_speed << '\n';
             }
 
-            if (!core_heap.hasAnimation && !core_heap.isAnimate){
+            else if (file_active) {
+                std::string dir = openFileDialog();
+                if (!dir.empty()) {
+                    std::cout << dir << '\n';
+                    std::ifstream fin(dir);
+                    if (fin.is_open()) {
+                        std::cout << "Ghi nhan: File da mo thanh cong!\n";
+                    } else {
+                        std::cout << "Loi: Khong the mo file!\n";
+                    }
+                    int n; 
+                    if (fin >> n) {
+                        std::cout << "Gia tri n doc duoc: " << n << '\n';
+                    } else {
+                        std::cout << "Loi: Khong doc duoc so! (Vui long check lai format hoac Encoding cua file txt)\n";
+                    }
+                    if (n) {
+                        std::vector<int> inp(n);
+                        for (int i=0; i<n; ++i) {
+                            fin >> inp[i];
+                        }
+                        std::string s;
+                        for (int i=0; i<n; ++i) {
+                            s+=std::to_string(inp[i])+',';
+                        }
+                        core_heap.build = s;
+                    }
+                    fin.close();
 
+                }
+            }
+
+            else if (random_active) {
+                std::mt19937 rng(time(0));
+                int n = rng()%32+1;
+                std::string s;
+                for (int i=0; i<n; ++i) {
+                    int x = rng()%100;
+                    s+=std::to_string(x)+',';
+                }
+                core_heap.build = s;
+            }
+
+            else if (clear_active) {
+                core_heap.CLEAR();
+            }
+
+            else if (min_active) {
+                if (!core_heap.isMinHeap) {
+                    core_heap.CLEAR();
+                    core_heap.isMinHeap = 1;
+                }
+            }
+
+            else if (max_active) {
+                if (core_heap.isMinHeap) {
+                    core_heap.CLEAR();
+                    core_heap.isMinHeap = 0;
+                }
+            }
+
+
+            if (!core_heap.hasAnimation && !core_heap.isAnimate){
+    
             if (build_active) {
                 std::vector<int> query = str_to_vec(core_heap.build);
-                codeBox.setCode(buildCode);
+                codeBox.setCode(PseudoCode::heapCode[core_heap.isMinHeap][2]);
                 core_heap.REBUILD(query);
                 core_heap.hasAnimation = true;
             }
             
             else if (insert_active && core_heap.v.size()<63) {
-                codeBox.setCode(pushCode);
+                codeBox.setCode(PseudoCode::heapCode[core_heap.isMinHeap][0]);
                 core_heap.RESET();
                 core_heap.push(convert_str(core_heap.val));
                 core_heap.hasAnimation = true;
             }     
             
             else if (pop_active){
-                codeBox.setCode(heapifyCode);
+                codeBox.setCode(PseudoCode::heapCode[core_heap.isMinHeap][1]);
                 core_heap.RESET();
                 core_heap.pop();
                 core_heap.hasAnimation = true;
+            }
+
+            else if (update_active) {
+                int key = convert_str(core_heap.changekey);
+                int val = convert_str(core_heap.changeval);
+                if (key < core_heap.v.size()) {
+                    core_heap.RESET();
+                    int code = core_heap.update(key, val);
+                    codeBox.setCode(PseudoCode::heapCode[core_heap.isMinHeap][code]);
+                    core_heap.hasAnimation = true;
+                }
             }
 
             else if (back_active && core_heap.cur_step > 0) {
@@ -677,12 +830,13 @@ void heap_page(){
             for (auto& c: core_heap.edgelist) {
                 c.draw(window);
             }
-            for (auto& x: core_heap.nodelist) {
-                if (core_heap.isSkip) dt = 100000;
-                x.updatePosition(core_heap.animation_speed * dt);
-                x.updateColor(core_heap.animation_speed * dt);
-                if (x.isMoving || x.isColoring) core_heap.isAnimate = true;
-                x.draw(window);
+            for (int i=0; i<core_heap.nodelist.size(); ++i) {
+                if (core_heap.isSkip) dt = 100000000;
+                core_heap.nodelist[i].updatePosition(core_heap.animation_speed * dt);
+                core_heap.nodelist[i].updateColor(core_heap.animation_speed * dt);
+                if (core_heap.nodelist[i].isMoving || core_heap.nodelist[i].isColoring) core_heap.isAnimate = true;
+                core_heap.nodelist[i].draw(window);
+                window.draw(core_heap.indexlist[i]);
             }
 
     
