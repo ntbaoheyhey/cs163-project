@@ -527,14 +527,6 @@ void heap_page(){
                     }
                 }
             }
-            // Trạng thái min-heap / max-heap
-            if (core_heap.isMinHeap) {
-                min_button.setColor(sf::Color(140, 95, 30));
-                max_button.setColor(sf::Color(232, 183, 81));
-            } else {
-                max_button.setColor(sf::Color(140, 95, 30));
-                min_button.setColor(sf::Color(232, 183, 81));
-            }
 
             // Cập nhật nhãn cho Box
             std::string sp = std::to_string(core_heap.animation_speed);
@@ -581,6 +573,12 @@ void heap_page(){
             bool random_active = random_button.update(mousePos);
             bool file_active   = txtfile_button.update(mousePos);
             bool clear_active  = clear_button.update(mousePos);
+
+            if (core_heap.isMinHeap) {
+                min_button.setColor(sf::Color(140, 95, 30));
+            } else {
+                max_button.setColor(sf::Color(140, 95, 30));
+            }
 
             for (auto* b : all_boxes) {
                 b->update(0, mousePos); // Mặc định tắt hết
