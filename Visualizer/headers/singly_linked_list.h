@@ -8,4 +8,5 @@
 #include "global.h"
 #include "../objects/canvas.h"
 
+// Opens the singly linked list visualization page.
 void singly_linked_list_page();
