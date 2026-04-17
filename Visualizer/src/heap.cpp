@@ -679,20 +679,20 @@ void heap_page(){
     
             if (build_active) {
                 std::vector<int> query = str_to_vec(core_heap.build);
-                codeBox.setCode(PseudoCode::heapCode[core_heap.isMinHeap][2]);
+                codeBox.setCode(PseudoCode::heapCode[!core_heap.isMinHeap][2]);
                 core_heap.REBUILD(query);
                 core_heap.hasAnimation = true;
             }
             
             else if (insert_active && core_heap.v.size()<63) {
-                codeBox.setCode(PseudoCode::heapCode[core_heap.isMinHeap][0]);
+                codeBox.setCode(PseudoCode::heapCode[!core_heap.isMinHeap][0]);
                 core_heap.RESET();
                 core_heap.push(convert_str(core_heap.val));
                 core_heap.hasAnimation = true;
             }     
             
             else if (pop_active){
-                codeBox.setCode(PseudoCode::heapCode[core_heap.isMinHeap][1]);
+                codeBox.setCode(PseudoCode::heapCode[!core_heap.isMinHeap][1]);
                 core_heap.RESET();
                 core_heap.pop();
                 core_heap.hasAnimation = true;
@@ -704,7 +704,7 @@ void heap_page(){
                 if (key < core_heap.v.size()) {
                     core_heap.RESET();
                     int code = core_heap.update(key, val);
-                    codeBox.setCode(PseudoCode::heapCode[core_heap.isMinHeap][code]);
+                    codeBox.setCode(PseudoCode::heapCode[!core_heap.isMinHeap][code]);
                     core_heap.hasAnimation = true;
                 }
             }
