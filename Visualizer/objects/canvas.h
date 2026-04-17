@@ -10,9 +10,6 @@
 #include "../headers/core.h"
 #include "../headers/global.h"
 
-sf::Text setCenterText(sf::Text text);
-
-
 void setCenterText(sf::Text& text);
 
 bool in_rect(sf::Vector2i mousePos, sf::FloatRect rect);
@@ -97,8 +94,10 @@ public:
     // Quản lý thời gian animation
     bool isMoving = false;
     bool isColoring = false;
-    float elapsedTime = 0.0f; // Thời gian đã trôi qua kể từ lúc bắt đầu swap
-    float duration = 1.0f;    // Tổng thời gian animation (VD: 0.5 giây)
+    float movementElapsedTime = 0.0f;
+    float movementDuration = 1.0f;
+    float colorElapsedTime = 0.0f;
+    float colorDuration = 1.0f;
 
     // tọa độ, bán kính, màu nền, màu viền, độ dày viền
     node(float x, float y, float radius, sf::Color fillColor, sf::Color outlineColor, float outlineThickness);
@@ -125,7 +124,7 @@ public:
     void setColor(sf::Color color);
 
     // vẽ node lên cửa sổ
-    void draw(sf::RenderWindow& window);
+    void draw(sf::RenderWindow& window) const;
 
     // kiểm tra xem chuột có nằm trong node hay không
     bool inside(sf::Vector2i mousepos);
@@ -297,7 +296,7 @@ public:
 // dùng để bắt đầu cho node di chuyển
 void startNodeMovement(node& Node, sf::Vector2f newDestination, float speedSeconds);
 
-// dùng để bắt đầu đổi màu cho node
+// dùng để bắt đầu đổi màu cho 
 void startNodeColor(node& Node, sf::Color newColor, float speedSeconds);
 
 class CodeBox : public sf::Drawable, public sf::Transformable {

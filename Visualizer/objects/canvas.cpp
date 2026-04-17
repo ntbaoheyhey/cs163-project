@@ -2,13 +2,6 @@
 #include <vector> 
 
 
-sf::Text setCenterText(sf::Text text) {
-    sf::FloatRect textBounds = text.getLocalBounds();
-    text.setOrigin({textBounds.size.x / 2.f, textBounds.size.y / 2.f});
-
-    return text;
-}
-
 void setCenterText(sf::Text& text) {
     sf::FloatRect textBounds = text.getLocalBounds();
     text.setOrigin({textBounds.size.x / 2.f, textBounds.size.y / 2.f});
@@ -205,10 +198,10 @@ void node::updatePosition(float deltaTime){
     if (!isMoving) return; // Nếu không moving thì không làm gì cả
 
     // 1. Cập nhật đồng hồ thời gian của riêng Node
-    elapsedTime += deltaTime;
+    movementElapsedTime += deltaTime;
 
     // 2. Tính toán hệ số hoàn thành 't' [0.0 -> 1.0]
-    float t = elapsedTime / duration;
+    float t = movementElapsedTime / movementDuration;
 
     // Giới hạn t không vượt quá 1.0
     if (t > 1.0f) {
@@ -232,10 +225,10 @@ void node::updateColor(float deltaTime){
     if (!isColoring) return; // Nếu không moving thì không làm gì cả
 
     // 1. Cập nhật đồng hồ thời gian của riêng Node
-    elapsedTime += deltaTime;
+    colorElapsedTime += deltaTime;
 
     // 2. Tính toán hệ số hoàn thành 't' [0.0 -> 1.0]
-    float t = elapsedTime / duration;
+    float t = colorElapsedTime / colorDuration;
 
     // Giới hạn t không vượt quá 1.0
     if (t > 1.0f) {
@@ -484,7 +477,7 @@ void node::setRadius(float radius) {
     shape.setOrigin({radius, radius});
 }
 
-void node::draw(sf::RenderWindow& window) {
+void node::draw(sf::RenderWindow& window) const {
     window.draw(shape);
     window.draw(text);
 }
@@ -676,15 +669,15 @@ void Visual_graph::draw(sf::RenderWindow& window, bool draw_weights) {
 void startNodeMovement(node& Node, sf::Vector2f newDestination, float speedSeconds) {
     Node.startPos = Node.currentPos; // Lưu lại điểm xuất phát
     Node.targetPos = newDestination;   // Đặt điểm đích
-    Node.duration = speedSeconds;      // Đặt tốc độ bay
-    Node.elapsedTime = 0.0f;           // Reset đồng hồ
+    Node.movementDuration = speedSeconds;      // Đặt tốc độ bay
+    Node.movementElapsedTime = 0.0f;           // Reset đồng hồ
     Node.isMoving = true;             // Bật cờ di chuyển
 }
 
 void startNodeColor(node& Node, sf::Color newColor, float speedSeconds) {
     Node.startColor = Node.currentColor; // Lưu lại màu đầu
     Node.targetColor = newColor;   // Đặt màu target
-    Node.duration = speedSeconds;      // Đặt tốc độ chuyển
-    Node.elapsedTime = 0.0f;           // Reset đồng hồ
+    Node.colorDuration = speedSeconds;      // Đặt tốc độ chuyển
+    Node.colorElapsedTime = 0.0f;           // Reset đồng hồ
     Node.isColoring = true;             // Bật cờ di chuyển
 }

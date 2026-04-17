@@ -100,7 +100,8 @@ void setOutlineImmediate(node& visual_node, sf::Color color) {
     visual_node.currentColor = color;
     visual_node.startColor = color;
     visual_node.targetColor = color;
-    visual_node.elapsedTime = 0.0f;
+    visual_node.colorElapsedTime = 0.0f;
+    visual_node.colorDuration = 0.0f;
     visual_node.setOutlineColor(color);
 }
 
@@ -109,7 +110,8 @@ void stopMovementImmediate(node& visual_node, sf::Vector2f position) {
     visual_node.currentPos = position;
     visual_node.startPos = position;
     visual_node.targetPos = position;
-    visual_node.elapsedTime = 0.0f;
+    visual_node.movementElapsedTime = 0.0f;
+    visual_node.movementDuration = 0.0f;
     visual_node.setPosition(position.x, position.y);
 }
 
