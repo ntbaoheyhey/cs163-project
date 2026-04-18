@@ -50,6 +50,10 @@ void button::setOutline(sf::Color color, float thickness) {
     shape.setOutlineThickness(thickness);
 }
 
+void button::setOrigin(float x, float y){
+    shape.setOrigin({x, y});
+}
+
 bool button::contains(sf::Vector2i mousePos) {
     return shape.getGlobalBounds().contains(sf::Vector2f(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y)));
 }

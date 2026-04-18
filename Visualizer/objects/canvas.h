@@ -57,6 +57,9 @@ public:
     // đổi viền button
     void setOutline(sf::Color color, float thickness);
 
+    // đổi gốc của button - Origin
+    void setOrigin(float x, float y);
+
     // kiểm tra con trỏ nằm trên button
     bool contains(sf::Vector2i mousePos);
 
