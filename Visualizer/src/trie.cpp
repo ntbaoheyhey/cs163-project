@@ -141,36 +141,72 @@ void trie_page(){
     bool left_mouse_last = false;
     bool input_box_active = false;
     std::string current_input = "";
+    bool build_box_active = false;
+    std::string build_input = "";
 
     while(window.isOpen()){
         // 1. Mouse information
         left_mouse = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
         sf::Vector2i mousePos = sf::Mouse::getPosition(window);
         
-        // 2. Mouse inside button / box region
+        // 2. Mouse inside button / box region -> Color-highlight handle
         if(!input_box_active)
             input_box.update(input_box_active, mousePos);
+        if(!build_box_active)
+            build_box.update(build_box_active, mousePos);
+        return_button.update(mousePos);
         add_button.update(mousePos);
         delete_button.update(mousePos);
         find_button.update(mousePos);
+        clear_button.update(mousePos);
+        file_button.update(mousePos);
+        random_button.update(mousePos);
+        build_button.update(mousePos);
+        
 
         // 3. Left-Mouse click handle
         if (left_mouse && !left_mouse_last) { 
             // Button
-            bool button_pressed = false;
+            bool operation_button_pressed = false;
+            bool build_button_pressed = false;
+
+            if (return_button.contains(mousePos)){
+                std::cout << "Received Return Query: Exit Trie Page" << "\n";
+                data.clear();
+                return;
+            }
+
             if (add_button.contains(mousePos)) {
                 std::cout << "Received Add Query: " << current_input << "\n";
                 if (!current_input.empty()) {data.add(current_input); data.create_visual();}
-                button_pressed = true;
+                operation_button_pressed = true;
             }
             if (delete_button.contains(mousePos)) {
                 std::cout << "Received Delete Query: " << current_input << "\n";
                 if (!current_input.empty()) {data.remove(current_input); data.create_visual();}
-                button_pressed = true;
+                operation_button_pressed = true;
             }
             if (find_button.contains(mousePos)) {
                 std::cout << "Received Find Query: " << current_input << "\n";
-                button_pressed = true;
+                operation_button_pressed = true;
+            }
+            if (clear_button.contains(mousePos)) {
+                std::cout << "Received Clear Query" << "\n";
+                {data.clear(); data.create_visual(); };
+                operation_button_pressed = true;
+            }
+
+            if (file_button.contains(mousePos)) {
+                std::cout << "Received File Query" << "\n";
+                build_button_pressed = true;
+            }
+            if (random_button.contains(mousePos)) {
+                std::cout << "Received Random Query" << "\n";
+                build_button_pressed = true;
+            }
+            if (build_button.contains(mousePos)) {
+                std::cout << "Received build query : " << build_input << "\n";
+                build_button_pressed = true;
             }
 
             if(input_box.contains(mousePos)){
@@ -181,11 +217,27 @@ void trie_page(){
                     input_box.setLabel("|");
                 }
             } else
-            if(!button_pressed && input_box_active){
+            if(!operation_button_pressed && input_box_active){
                 std::cout << "Received Input Box Activation: Off" << "\n";
                 input_box_active = false;
                 if(current_input.empty()){
                     input_box.setLabel("   Type here");
+                }
+            }
+
+            if(build_box.contains(mousePos)){
+                std::cout << "Received Build Box Activation: On" << "\n";
+                build_box_active = true;
+                build_box.update(build_box_active, mousePos);
+                if(build_input.empty()){
+                    build_box.setLabel("|");
+                }
+            } else
+            if(!build_button_pressed && build_box_active){
+                std::cout << "Received Build Box Activation: Off" << "\n";
+                build_box_active = false;
+                if(build_input.empty()){
+                    build_box.setLabel("   Type here");
                 }
             }
 
@@ -213,6 +265,31 @@ void trie_page(){
                     input_box.setLabel(current_input + "|"); 
                     if(change){
                         std::cout << "Received new input string: " << current_input << "\n";
+                    }
+                }
+            }
+            if (build_box_active) {
+                if (const auto* textEvent = event->getIf<sf::Event::TextEntered>()) {
+                    bool change = false;
+                    if (textEvent->unicode == '\b' || textEvent->unicode == 8) {
+                        if (!build_input.empty()) {
+                            build_input.pop_back();
+                            change = true;
+                        }
+                    }
+                    else if (textEvent->unicode >= 97 && textEvent->unicode <= 122) {
+                        // Lowercase letters a-z
+                        build_input += static_cast<char>(textEvent->unicode);
+                        change = true;
+                    }
+                    else if (textEvent->unicode == ',') {
+                        // Comma separator
+                        build_input += ',';
+                        change = true;
+                    }
+                    build_box.setLabel(build_input + "|");
+                    if(change){
+                        std::cout << "Received new build input string: " << build_input << "\n";
                     }
                 }
             }
@@ -346,6 +423,7 @@ void Trie::remove(std::string s)
                 delete pnow->visual_node;
             for(int c = 0; c < LOWERCASE_CHAR; ++c) if(pnow->visual_edge[c] != nullptr){
                 delete pnow->visual_edge[c];
+                pnow->visual_edge[c] = nullptr;
             }
             delete pnow;
             int id = s[i - 1] - int('a');
@@ -353,6 +431,25 @@ void Trie::remove(std::string s)
         }
     }
     return;
+}
+
+void Trie::clear(){
+    clear_travese(root, true);
+}
+
+void Trie::clear_travese(NodeTrie *pnode, bool isRoot){
+    for(int c = 0; c < LOWERCASE_CHAR; ++c) if(pnode->pnext[c] != nullptr){
+        clear_travese(pnode->pnext[c]);
+        pnode->pnext[c] = nullptr;
+    }
+    for(int c = 0; c < LOWERCASE_CHAR; ++c) if(pnode->visual_edge[c] != nullptr){
+        delete pnode->visual_edge[c];
+        pnode->visual_edge[c] = nullptr;
+    }
+    if(!isRoot){
+        delete pnode->visual_node;
+        delete pnode;
+    }
 }
 
 bool Trie::cal_block(NodeTrie *pnode)

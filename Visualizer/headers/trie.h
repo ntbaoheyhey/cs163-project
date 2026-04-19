@@ -36,12 +36,14 @@ struct Trie{
     void add(std::string s);
     bool find(std::string s);
     void remove(std::string s);
+    void clear();
 
     // Recursive support function
     bool cal_block(NodeTrie *pnode);
     void cre_node(NodeTrie *pnode, int block_x, int block_y, int char_branch = -1);
     void cre_edge(NodeTrie *pnode);
     void drawing(NodeTrie *pnode, sf::RenderWindow& window);
+    void clear_travese(NodeTrie *pnode, bool isRoot = false);
 
     // Visual function
     void calculate_block();
