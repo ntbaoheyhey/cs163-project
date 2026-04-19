@@ -3,7 +3,7 @@
 #include <SFML/System.hpp>
 #include <iostream>
 #include <vector>
-
+#include "pseudocode.h"
 #include "global.h"
 #include "../objects/canvas.h"
 
