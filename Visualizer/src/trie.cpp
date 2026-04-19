@@ -1,7 +1,9 @@
 #include "../headers/trie.h"
 
 // Global variable definitions
-RoundedRectangleShape bgmain({800.f, 600.f});
+const int max_charater = 7;
+
+RoundedRectangleShape bgvisual({800.f, 600.f});
 const float block_unit = 40.f;
 const int block_vertical = 2;
 const int block_horizontal = 1;
@@ -10,42 +12,115 @@ int block_height = 0;
 
 const float node_radius = block_unit / 2;
 const float node_outline_thickness = -3.f;
-const sf::Color NODE_FILL_COLOR = sf::Color::Blue;  // sf::Color(218, 168, 74);
-const sf::Color NODE_OUTLINE_COLOR = sf::Color::White; // sf::Color(202, 148, 95);
+const sf::Color BUTTON_FILL_COLOR = sf::Color(232, 183, 81);
+const sf::Color BOX_FILL_COLOR = sf::Color(138, 155, 192);
+const sf::Color NODE_FILL_COLOR = sf::Color(218, 168, 74);
+const sf::Color NODE_OUTLINE_COLOR = sf::Color(202, 148, 95);
 const sf::Color NODE_ACTIVE_COLOR = sf::Color(62, 188, 167);
 const sf::Color NODE_FOUND_COLOR = sf::Color(156, 229, 147);
 const sf::Color NODE_DELETE_COLOR = sf::Color(246, 88, 88);
-const sf::Color EDGE_COLOR = sf::Color::White;
+const sf::Color EDGE_COLOR = sf::Color(203, 203, 201);
+
+const float scale = 7.f;
+const float button_area_up = 0;
+const float button_area_mid = float(WINDOW_HEIGHT) / scale;
+const float button_area_bot = float(WINDOW_HEIGHT) * ((scale - 1) / 2 + 1) / scale;
+const float button_area_horizon = float(WINDOW_WIDTH) / 4;
+const float section_tilte_word_height = 70.f;
+const float space_button = 25.f;
+const float button_width = (float(WINDOW_WIDTH) / 4 - space_button * 3) / 2;
+const float button_height = (float(WINDOW_HEIGHT) * ((scale - 1) / 2) / scale - section_tilte_word_height - space_button * 3) / 3;
+const float button_small_width = (button_width - space_button) / 2;
+const float slider_width = button_area_horizon - space_button * 2; 
+const float slider_height = button_height;
 
 void trie_page(){
     
-    button add_button(WINDOW_WIDTH - 300, 50, 200, 50, sf::Color(232, 183, 81), "Add", 24);
-    button delete_button(WINDOW_WIDTH - 300, 150, 200, 50, sf::Color(232, 183, 81), "Delete", 24);
-    button find_button(WINDOW_WIDTH - 300, 250, 200, 50, sf::Color(232, 183, 81), "Find", 24);
-    
-    bgmain.setSize({800.f, 600.f});    
-    bgmain.setPosition({80 , 50});
-    bgmain.setFillColor(sf::Color(243, 243, 251, 100));
-    bgmain.setRadius(17);
-    bgmain.setOutlineThickness(5);
-    bgmain.setOutlineColor(sf::Color(217, 211, 209));
-    
-    block_width = int(bgmain.getSize().x / block_unit);
-    block_height = int(bgmain.getSize().y / block_unit);
+    // Background
+    sf::Texture backgroundTexture;
+    if (!backgroundTexture.loadFromFile("cs163-project/Visualizer/assets/bg_toty.png")) {
+        std::cerr << "cannot load background" << std::endl;
+    } else{
+        std::cerr << "load background successfully" << std::endl;    
+    }
+    sf::Sprite backgroundSprite(backgroundTexture);
+
+    // Line (Temporary)
+    sf::RectangleShape horizontal_line_1;
+    horizontal_line_1.setFillColor({0, 170, 255});
+    horizontal_line_1.setSize({float(WINDOW_WIDTH) / 4, 5.f});
+    horizontal_line_1.setPosition({0, float(WINDOW_HEIGHT) / scale});
+    sf::RectangleShape horizontal_line_2;
+    horizontal_line_2.setFillColor({0, 170, 255});
+    horizontal_line_2.setSize({float(WINDOW_WIDTH) / 4, 5.f});
+    horizontal_line_2.setPosition({0, float(WINDOW_HEIGHT) * ((scale - 1) / 2 + 1) / scale});
+    sf::RectangleShape horizontal_line_3;
+    horizontal_line_3.setFillColor({0, 170, 255});
+    horizontal_line_3.setSize({float(WINDOW_WIDTH) / 4, 5.f});
+    horizontal_line_3.setPosition({float(WINDOW_WIDTH) - float(WINDOW_WIDTH) / 4, float(WINDOW_HEIGHT) / scale});
+    sf::RectangleShape horizontal_line_4;
+    horizontal_line_4.setFillColor({0, 170, 255});
+    horizontal_line_4.setSize({float(WINDOW_WIDTH) / 4, 5.f});
+    horizontal_line_4.setPosition({float(WINDOW_WIDTH) - float(WINDOW_WIDTH) / 4, float(WINDOW_HEIGHT) * ((scale - 1) / 2 + 1) / scale});
+    sf::RectangleShape vertical_line_1;
+    vertical_line_1.setFillColor({0, 170, 255});
+    vertical_line_1.setSize({5.f, float(WINDOW_HEIGHT)});
+    vertical_line_1.setPosition({float(WINDOW_WIDTH) / 4, 0});
+    sf::RectangleShape vertical_line_2;
+    vertical_line_2.setFillColor({0, 170, 255});
+    vertical_line_2.setSize({5.f, float(WINDOW_HEIGHT)});
+    vertical_line_2.setPosition({float(WINDOW_WIDTH) * 3 / 4, 0});
+
+    // Button
+    button return_button(float(WINDOW_WIDTH) / 8 - button_width / 2, float(WINDOW_HEIGHT) / scale / 2 - button_height / 2, button_width, button_height, BUTTON_FILL_COLOR, "Return", 24);
+    button add_button(space_button, button_area_bot + section_tilte_word_height, button_width, button_height, BUTTON_FILL_COLOR, "Add", 24);
+    button delete_button(space_button * 2 + button_width, button_area_bot + section_tilte_word_height, button_width, button_height, BUTTON_FILL_COLOR, "Delete", 24);
+    button find_button(space_button, button_area_bot + section_tilte_word_height + button_height + space_button, button_width, button_height, BUTTON_FILL_COLOR, "Find", 24);
+    button clear_button(space_button * 2 + button_width, button_area_bot + section_tilte_word_height + button_height + space_button, button_width, button_height, BUTTON_FILL_COLOR, "Clear", 24);
+    button file_button(space_button, button_area_mid + section_tilte_word_height, button_width, button_height, BUTTON_FILL_COLOR, "File", 24);
+    button random_button(space_button * 2 + button_width, button_area_mid + section_tilte_word_height, button_width, button_height, BUTTON_FILL_COLOR, "Random", 24);
+    button build_button(float(WINDOW_WIDTH) / 8 - button_width / 2, button_area_mid + section_tilte_word_height + button_height + space_button, button_width, button_height, BUTTON_FILL_COLOR, "Build", 24);
+    button back_button(button_area_horizon * 3 + space_button, button_area_mid + 2 * space_button + slider_height, button_width, button_height, BUTTON_FILL_COLOR, "Back", 24);
+    button next_button(button_area_horizon * 3 + 2 * space_button + button_width, button_area_mid + 2 * space_button + slider_height, button_width, button_height, BUTTON_FILL_COLOR, "Next", 24);
+    button slowdown_button(button_area_horizon * 3 + space_button, button_area_mid + 3 * space_button + slider_height + button_height, button_small_width, button_height, BUTTON_FILL_COLOR, "-", 24);
+    button speedup_button(button_area_horizon * 3 + space_button + button_small_width + space_button, button_area_mid + 3 * space_button + slider_height + button_height, button_small_width, button_height, BUTTON_FILL_COLOR, "+", 24);
+
+    // Slider - Progess animation
+    RoundedRectangleShape slider_fix({slider_width, slider_height}, 10.f);
+    RoundedRectangleShape slider_run({slider_width, slider_height}, 10.f);
+
+    slider_fix.setPosition({button_area_horizon * 3 + space_button, button_area_mid + space_button});
+    slider_fix.setOutlineThickness(3);
+    slider_fix.setOutlineColor(sf::Color(233, 186, 85));
+    slider_fix.setFillColor(sf::Color(140, 155, 191));
+    slider_run.setPosition({button_area_horizon * 3 + space_button, button_area_mid + space_button});
+    slider_run.setFillColor(sf::Color(28, 41, 114));
+
+    // Frame (Khung) for Visual & Code
+    bgvisual.setSize({float(WINDOW_WIDTH) / 2 - 10.f, 600.f});
+    bgvisual.setPosition({float(WINDOW_WIDTH) / 4 + 10.f , 50});
+    bgvisual.setFillColor(sf::Color(251, 251, 253, 200));
+    bgvisual.setRadius(17);
+    bgvisual.setOutlineThickness(5);
+    bgvisual.setOutlineColor(sf::Color(217, 211, 209));
+    block_width = int(bgvisual.getSize().x / block_unit);
+    block_height = int(bgvisual.getSize().y / block_unit);
     std::cerr << "Rectangle -> Block : " << block_width << " " << block_height << "\n";
+    RoundedRectangleShape bgcode({400.f, 230.f});
+    bgcode.setPosition({float(WINDOW_WIDTH - 315), float(WINDOW_HEIGHT - 280)});
+    bgcode.setFillColor(sf::Color(243, 243, 251, 100));
+    // bgcode.setRadius(17);
+    // bgcode.setOutlineThickness(5);
+    // bgcode.setOutlineColor(sf::Color(217, 211, 209));
     
+    // Boxs
+    box input_box(space_button, button_area_bot + section_tilte_word_height + 2 * (button_height + space_button), button_width * 2 + space_button, button_height, BOX_FILL_COLOR, "   Type here", 24);
+    box build_box(space_button, button_area_mid + section_tilte_word_height + 2 * (button_height + space_button), button_width * 2 + space_button, button_height, BOX_FILL_COLOR, "   Type here", 24);
+    box speed_box(button_area_horizon * 3 + 2 * space_button + button_width, button_area_mid + 3 * space_button + slider_height + button_height, button_width, button_height, BOX_FILL_COLOR, "Speed : 0x", 24);
+
+    // Create Root node
     node* bennode = nullptr;
     bennode = create_node(block_width / 2, 0);
-    
-    RoundedRectangleShape bgcode({350.f, 200.f});
-    bgcode.setPosition({float(WINDOW_WIDTH - 300), float(WINDOW_HEIGHT - 250)});
-    bgcode.setFillColor(sf::Color(243, 243, 251, 100));
-    bgcode.setRadius(17);
-    bgcode.setOutlineThickness(5);
-    bgcode.setOutlineColor(sf::Color(217, 211, 209));
-    
-    // string input box
-    box input_box(WINDOW_WIDTH - 300, 350, 200, 50, sf::Color(232, 183, 81), "   Type here", 24);
     
     // Trie data
     Trie data;
@@ -61,11 +136,11 @@ void trie_page(){
 
     int frame_count = 0;
     
+    // Managing state variables
     bool left_mouse = false;
     bool left_mouse_last = false;
-
-    std::string current_input = "";
     bool input_box_active = false;
+    std::string current_input = "";
 
     while(window.isOpen()){
         // 1. Mouse information
@@ -148,16 +223,42 @@ void trie_page(){
         if(frame_count % 20 == 0)
             std::cerr << "Frame :" << frame_count << "\n";
         
-        // Draw new frame
+        // --- Draw new frame --- //
         window.clear(sf::Color(212, 188, 112, 0.71));
-        data.draw(window);
+        // Background
+        window.draw(backgroundSprite);
+        // Line
+            // window.draw(horizontal_line_1);
+            // window.draw(horizontal_line_2);
+            // window.draw(horizontal_line_3);
+            // window.draw(horizontal_line_4);
+            // window.draw(vertical_line_1);
+            // window.draw(vertical_line_2);
+        // Button
+        return_button.draw(window);
         add_button.draw(window);
         delete_button.draw(window);
         find_button.draw(window);
-        window.draw(bgmain);
+        clear_button.draw(window);
+        build_button.draw(window);
+        file_button.draw(window);
+        random_button.draw(window);
+        window.draw(bgvisual);
         window.draw(bgcode);
+        back_button.draw(window);
+        next_button.draw(window);
+        speedup_button.draw(window);
+        slowdown_button.draw(window);
+        // Box
         input_box.draw(window);
+        build_box.draw(window);
+        speed_box.draw(window);
+        // Slider
+        window.draw(slider_fix);
+        // Data Trie
+        data.draw(window);
         
+        // --- Display --- //
         window.display();
     }
 }
@@ -166,8 +267,8 @@ node* create_node(int block_x, int block_y){
     float x, y;
     x = block_unit * block_x;
     y = block_unit * block_y;
-    x = x + bgmain.getPosition().x;
-    y = y + bgmain.getPosition().y;
+    x = x + bgvisual.getPosition().x;
+    y = y + bgvisual.getPosition().y;
     x = x + block_unit / 2;
     y = y + block_unit / 2;
     node* getnode = new node(x, y, node_radius, NODE_FILL_COLOR, NODE_OUTLINE_COLOR, node_outline_thickness);
@@ -315,7 +416,7 @@ void Trie::cre_edge(NodeTrie *pnode)
         float y_cur = pnode->visual_node->getPosition().y;
         float x_nxt = pnode->pnext[i]->visual_node->getPosition().x;
         float y_nxt = pnode->pnext[i]->visual_node->getPosition().y;
-        pnode->visual_edge[i] = new edge(x_cur, y_cur, x_nxt, y_nxt, EDGE_COLOR);
+        pnode->visual_edge[i] = new edge(x_cur, y_cur, x_nxt, y_nxt, EDGE_COLOR, 2);
         pnode->visual_edge[i]->setPoints(x_cur, y_cur, x_nxt, y_nxt, false, node_radius);
         // Traverse
         cre_edge(pnode->pnext[i]);
@@ -327,39 +428,6 @@ void Trie::drawing(NodeTrie *pnode, sf::RenderWindow& window)
     // Draw edge
     for(int i = 0; i < LOWERCASE_CHAR; ++i) if(pnode->pnext[i] != nullptr){
         pnode->visual_edge[i]->draw(window);
-        
-        // Draw edge label (character)
-        // char edge_char = 'a' + i;
-        // sf::Text edge_text(font_impact, std::string(1, edge_char), 24);
-        // edge_text.setFillColor(sf::Color::Black);
-        
-        // sf::FloatRect textBounds = edge_text.getLocalBounds();
-        // edge_text.setOrigin({textBounds.position.x + textBounds.size.x / 2.f, 
-        //                      textBounds.position.y + textBounds.size.y / 2.f});
-        
-        // sf::Vector2f pos_u = pnode->visual_node->getPosition();
-        // sf::Vector2f pos_v = pnode->pnext[i]->visual_node->getPosition();
-        
-        // float dx = pos_v.x - pos_u.x;
-        // float dy = pos_v.y - pos_u.y;
-        // float edge_length = std::sqrt(dx * dx + dy * dy);
-        
-        // if(edge_length > 0) {
-        //     float perp_x = -dy / edge_length;
-        //     float perp_y = dx / edge_length;
-            
-        //     if(perp_y > 0) {
-        //         perp_x = -perp_x;
-        //         perp_y = -perp_y;
-        //     }
-            
-        //     float offset_dist = 15.0f;
-        //     float weight_x = (pos_u.x + pos_v.x) / 2.f + perp_x * offset_dist;
-        //     float weight_y = (pos_u.y + pos_v.y) / 2.f + perp_y * offset_dist;
-            
-        //     edge_text.setPosition({weight_x, weight_y});
-        //     window.draw(edge_text);
-        // }
     }
     // Draw node
     pnode->visual_node->draw(window);

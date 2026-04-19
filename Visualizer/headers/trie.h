@@ -24,23 +24,6 @@ struct NodeTrie{
     NodeTrie();
 };
 
-// Variable
-extern RoundedRectangleShape bgmain;
-extern const float block_unit;
-extern const int block_vertical;
-extern const int block_horizontal;
-extern int block_width;
-extern int block_height;
-
-extern const float node_radius;
-extern const float node_outline_thickness;
-extern const sf::Color NODE_FILL_COLOR;
-extern const sf::Color NODE_OUTLINE_COLOR;
-extern const sf::Color NODE_ACTIVE_COLOR;
-extern const sf::Color NODE_FOUND_COLOR;
-extern const sf::Color NODE_DELETE_COLOR;
-extern const sf::Color EDGE_COLOR;
-
 node* create_node(int block_x, int block_y);
 
 struct Trie{

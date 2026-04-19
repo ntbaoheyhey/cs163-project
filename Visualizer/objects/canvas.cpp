@@ -52,6 +52,7 @@ void button::setOutline(sf::Color color, float thickness) {
 
 void button::setOrigin(float x, float y){
     shape.setOrigin({x, y});
+    
 }
 
 bool button::contains(sf::Vector2i mousePos) {
