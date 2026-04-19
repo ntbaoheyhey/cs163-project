@@ -431,7 +431,7 @@ void random_graph(Visual_graph &vg, shortest_path_algorithm &graph, bool directe
 }
 
 void shortest_path_page() {
-
+    // load background
     sf::Texture backgroundTexture;
     if (!backgroundTexture.loadFromFile("cs163-project/Visualizer/assets/bg.png")) {
         std::cerr << "cannot load background" << std::endl;
@@ -453,6 +453,7 @@ void shortest_path_page() {
     RoundedRectangleShape visual_region, visual_code_region;
     sf::RectangleShape safe_region;
 
+    // load font
     sf::Text text_for_code(font_impact, "", 20);
     sf::Text error_text(font_impact, "", 16);
     error_text.setFillColor(sf::Color::Red);
@@ -476,6 +477,7 @@ void shortest_path_page() {
     safe_region.setSize({visual_region_width - Visual_graph.getRadius() * 2, visual_region_height - Visual_graph.getRadius() * 2});
     safe_region.setPosition({visual_region.getPosition().x + Visual_graph.getRadius(), visual_region.getPosition().y + Visual_graph.getRadius()});
 
+    // slider for speed
     sf::RectangleShape slider_bar(sf::Vector2f(500.0f, 20.0f));
     slider_bar.setFillColor(sf::Color(138,155,192));
     slider_bar.setPosition({400.0f, WINDOW_HEIGHT - 120.0f});
@@ -484,6 +486,7 @@ void shortest_path_page() {
     slider_knob.setFillColor(sf::Color(28, 41, 114));
     slider_knob.setPosition({slider_bar.getPosition().x + slider_bar.getSize().x / 2.0f - slider_knob.getRadius(), slider_bar.getPosition().y - 5.0f});
 
+    // buttons
     std::vector<button> buttons;
     bool state_buttons[7] = {0, 0, 0, 0, 0, 0, 0};
     float button_region_x = 1053.0f;
@@ -505,6 +508,7 @@ void shortest_path_page() {
     input_weight_box.setOutline(sf::Color::Transparent, 0.0f);
     std::string current_input_weight = "5";
 
+    // input for source vertex
     std::string source_vertrix = "0";
     int selected_algorithm = shortest_path_algorithm::ALGO_DIJKSTRA;
     bool show_algorithm_options = false;
@@ -525,6 +529,7 @@ void shortest_path_page() {
     button back_button(15.0f, 15.0f, button_width, button_height, sf::Color(232, 183, 81), "Return", 24);
     back_button.setOutline(sf::Color::Transparent, 0.0f);
 
+    // algorithm selection
     button algorithm_button(10.0f, 200.0f, button_width, button_height, sf::Color(232, 183, 81), shortest_path_algorithm::algorithm_names[shortest_path_algorithm::ALGO_DIJKSTRA], 16);
     algorithm_button.setOutline(sf::Color::Transparent, 0.0f);
     float algorithm_option_x = 1249.0f;
@@ -565,6 +570,7 @@ void shortest_path_page() {
                             for(int j = 0; j < buttons.size(); j++) {
                             if(j != i) state_buttons[j] = 0;
                         }
+                        // case: find path
                         if(i == 0) {
                             is_start_button_pressed = 0;
                             cur_step = 0;
@@ -581,7 +587,7 @@ void shortest_path_page() {
                                 error_time = now;
                             }
                         }
-                        else if(i == 4) {
+                        else if(i == 4) { //case toggle directed/undirected
                             bool cur_directed = Visual_graph.isDirected();
                             Visual_graph.setDirected(!cur_directed);
                             buttons[4].setLabel(Visual_graph.isDirected() ? "Directed" : "Undirected");
@@ -589,7 +595,7 @@ void shortest_path_page() {
                             // Toggle action doesn't remain selected as a mode button
                             for(int j = 0; j < 5; j++) state_buttons[j] = 0;
                         }
-                        else if(i == 1) {
+                        else if(i == 1) { // case load graph from file
                             if(!read_graph_from_file(Visual_graph, graph, Visual_graph.isDirected())) {
                                 error_time = now;
                             } else {
@@ -621,12 +627,14 @@ void shortest_path_page() {
                 }
             }
 
+            // Algorithm selection
             if (algorithm_button.isClicked(sf::Mouse::getPosition(window))) {
                 show_algorithm_options = !show_algorithm_options;
                 for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
                 is_start_button_pressed = 0;
             }
 
+            // Algorithm option selection
             if (show_algorithm_options) {
                 if (algorithm_option_0.isClicked(sf::Mouse::getPosition(window))) {
                     selected_algorithm = shortest_path_algorithm::ALGO_DIJKSTRA;
