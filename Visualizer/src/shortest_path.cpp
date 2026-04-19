@@ -251,7 +251,7 @@ void shortest_path_algorithm::_visual(Visual_graph &graph, RoundedRectangleShape
         text_for_code.setOrigin({0 , text_for_code.getLocalBounds().size.y / 2.0f});
 
 
-        text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x+4, visual_code_region.getGlobalBounds().position.y + 15 * (i+1) + text_for_code.getLocalBounds().size.y * i + 5});
+        text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x+4, visual_code_region.getGlobalBounds().position.y + 8 * (i+1) + text_for_code.getLocalBounds().size.y * i + 5});
 
         if(id == i) {
             // red
@@ -442,12 +442,12 @@ void shortest_path_page() {
     safe_region.setSize({visual_region_width - Visual_graph.getRadius() * 2, visual_region_height - Visual_graph.getRadius() * 2});
     safe_region.setPosition({visual_region.getPosition().x + Visual_graph.getRadius(), visual_region.getPosition().y + Visual_graph.getRadius()});
 
-    sf::RectangleShape slider_bar(sf::Vector2f(190.0f, 20.0f));
-    slider_bar.setFillColor(sf::Color(210, 210, 210));
+    sf::RectangleShape slider_bar(sf::Vector2f(500.0f, 20.0f));
+    slider_bar.setFillColor(sf::Color(138,155,192));
     slider_bar.setPosition({400.0f, WINDOW_HEIGHT - 120.0f});
 
     sf::CircleShape slider_knob(15.0f);
-    slider_knob.setFillColor(sf::Color(100, 100, 100));
+    slider_knob.setFillColor(sf::Color(28, 41, 114));
     slider_knob.setPosition({slider_bar.getPosition().x + slider_bar.getSize().x / 2.0f - slider_knob.getRadius(), slider_bar.getPosition().y - 5.0f});
 
     std::vector<button> buttons;
@@ -455,10 +455,10 @@ void shortest_path_page() {
     float button_region_x = 1053.0f;
     float button_region_y = 364.0f;
 
-    buttons.emplace_back(10, 325, button_width, button_height, sf::Color(232, 183, 81), "Find Path", 24);
-    buttons.emplace_back(260, 325, button_width, button_height, sf::Color(232, 183, 81), "File", 24);
-    buttons.emplace_back(10, 550, button_width, button_height, sf::Color(232, 183, 81), "Add Edge", 24);
-    buttons.emplace_back(10, 475, button_width, button_height, sf::Color(232, 183, 81), "Add Node", 24);
+    buttons.emplace_back(10, 325, button_width, button_height, sf::Color(232, 183, 81), "Find Path", 20);
+    buttons.emplace_back(260, 325, button_width, button_height, sf::Color(232, 183, 81), "File", 20);
+    buttons.emplace_back(10, 550, button_width, button_height, sf::Color(232, 183, 81), "Add Edge", 20);
+    buttons.emplace_back(10, 475, button_width, button_height, sf::Color(232, 183, 81), "Add Node", 20);
     buttons.emplace_back(135, 475, button_width, button_height, sf::Color(232, 183, 81), Visual_graph.isDirected() ? "Directed" : "Undirected", 18);
     for(int i = 0; i < 5; i++) {
         buttons[i].setOutline(sf::Color::Transparent, 0.0f);
@@ -466,7 +466,7 @@ void shortest_path_page() {
     }
     buttons.emplace_back(10, 625, button_width, button_height, sf::Color(232, 183, 81), "Clear", 24);
 
-    box input_weight_box(135, 550, button_width + 10.0f, button_height, sf::Color(200, 200, 200), "5", 16);
+    box input_weight_box(135, 550, button_width + 10.0f, button_height, sf::Color(138,155,192), "5", 16);
     input_weight_box.setOutline(sf::Color::Transparent, 0.0f);
     std::string current_input_weight = "5";
 
@@ -475,7 +475,7 @@ void shortest_path_page() {
     bool show_algorithm_options = false;
 
     sf::FloatRect po = buttons[0].getShape();
-    box input_source_box(135.0f, 325.0f, button_width - 30.0f, button_height, sf::Color(200, 200, 200), "0", 16);
+    box input_source_box(135.0f, 325.0f, button_width - 30.0f, button_height, sf::Color(138,155,192), "0", 16);
     input_source_box.setOutline(sf::Color::Transparent, 0.0f);
 
     button pre_step_button(10.0f, 400.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Prev", 24);
@@ -538,7 +538,6 @@ void shortest_path_page() {
                             int start_index = graph.label_to_index(source_vertrix);
                             if(start_index >= 0) {
                                 if(selected_algorithm == shortest_path_algorithm::ALGO_DIJKSTRA && graph.has_negative_weight()) {
-                                    error_message = "Dijkstra requires non-negative weights";
                                     error_time = now;
                                 } else {
                                     graph.find_shortest_path(start_index, selected_algorithm);
@@ -901,7 +900,7 @@ void shortest_path_page() {
             text_for_code.setFillColor(sf::Color::Black);
             text_for_code.setOrigin({0 , text_for_code.getLocalBounds().size.y / 2.0f});
 
-            text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x + 4, visual_code_region.getGlobalBounds().position.y + 15 * (i+1) + text_for_code.getLocalBounds().size.y * i + 5});
+            text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x + 4, visual_code_region.getGlobalBounds().position.y + 8 * (i+1) + text_for_code.getLocalBounds().size.y * i + 5});
 
             window.draw(text_for_code);
         }
