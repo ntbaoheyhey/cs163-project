@@ -396,6 +396,40 @@ bool read_graph_from_file(Visual_graph &vg, shortest_path_algorithm &graph, bool
     return false;
 }
 
+void random_graph(Visual_graph &vg, shortest_path_algorithm &graph, bool directed) {
+    vg.clearAll();
+    graph.clear();
+
+    int N = 5 + rand() % 6; // 5 to 10 nodes
+    int M = N + rand() % (N * (N - 1) / 2 - N + 1); // at least a tree, at most complete graph
+
+    std::vector<std::pair<int, int>> edges;
+    std::set<std::pair<int, int>> existing_edges;
+
+    // add nodes in circle
+    float center_x = 900, center_y = 325, radius = 150;
+    for (int i = 0; i < N; ++i) {
+        float angle = 2 * 3.1415926535f * i / N;
+        float x = center_x + radius * cos(angle);
+        float y = center_y + radius * sin(angle);
+        vg.add_node(x, y);
+        vg.setNodeLabel(i, std::to_string(i));
+    }
+
+    while (edges.size() < M) {
+        int u = rand() % N;
+        int v = rand() % N;
+        if (u != v && existing_edges.count({std::min(u,v), std::max(u,v)}) == 0) {
+            int w = 1 + rand() % 20; // weight between 1 and 20
+            edges.emplace_back(u, v);
+            graph.add_edge(u, v, graph.weights.size(), directed);
+            graph.weights.push_back(w);
+            existing_edges.insert({std::min(u,v), std::max(u,v)});
+            vg.add_edge(u, v, w, directed);
+        }
+    }
+}
+
 void shortest_path_page() {
 
     sf::Texture backgroundTexture;
@@ -451,12 +485,12 @@ void shortest_path_page() {
     slider_knob.setPosition({slider_bar.getPosition().x + slider_bar.getSize().x / 2.0f - slider_knob.getRadius(), slider_bar.getPosition().y - 5.0f});
 
     std::vector<button> buttons;
-    bool state_buttons[6] = {0, 0, 0, 0, 0, 0};
+    bool state_buttons[7] = {0, 0, 0, 0, 0, 0, 0};
     float button_region_x = 1053.0f;
     float button_region_y = 364.0f;
 
     buttons.emplace_back(10, 325, button_width, button_height, sf::Color(232, 183, 81), "Find Path", 20);
-    buttons.emplace_back(260, 325, button_width, button_height, sf::Color(232, 183, 81), "File", 20);
+    buttons.emplace_back(260, 625, button_width, button_height, sf::Color(232, 183, 81), "File", 20);
     buttons.emplace_back(10, 550, button_width, button_height, sf::Color(232, 183, 81), "Add Edge", 20);
     buttons.emplace_back(10, 475, button_width, button_height, sf::Color(232, 183, 81), "Add Node", 20);
     buttons.emplace_back(135, 475, button_width, button_height, sf::Color(232, 183, 81), Visual_graph.isDirected() ? "Directed" : "Undirected", 18);
@@ -465,6 +499,7 @@ void shortest_path_page() {
         buttons[i].setColor(sf::Color(232, 183, 81));
     }
     buttons.emplace_back(10, 625, button_width, button_height, sf::Color(232, 183, 81), "Clear", 24);
+    buttons.emplace_back(135, 625, button_width, button_height, sf::Color(232, 183, 81), "Random", 20);
 
     box input_weight_box(135, 550, button_width + 10.0f, button_height, sf::Color(138,155,192), "5", 16);
     input_weight_box.setOutline(sf::Color::Transparent, 0.0f);
@@ -523,11 +558,11 @@ void shortest_path_page() {
         mouse_left_pressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
 
         if(mouse_left_pressed and !mouse_left_pressed_last) {
-            for(int i = 0; i < 6; i++) {
+            for(int i = 0; i < buttons.size(); i++) {
                 if(buttons[i].isClicked(sf::Mouse::getPosition(window))) {
                     state_buttons[i] = !state_buttons[i];
                     if(state_buttons[i]) {
-                            for(int j = 0; j < 5; j++) {
+                            for(int j = 0; j < buttons.size(); j++) {
                             if(j != i) state_buttons[j] = 0;
                         }
                         if(i == 0) {
@@ -563,7 +598,6 @@ void shortest_path_page() {
                                 int start_index = graph.label_to_index(source_vertrix);
                                 if(start_index >= 0) {
                                     if(selected_algorithm == shortest_path_algorithm::ALGO_DIJKSTRA && graph.has_negative_weight()) {
-                                        error_message = "Dijkstra requires non-negative weights";
                                         error_time = now;
                                     } else {
                                         graph.code = shortest_path_algorithm::algorithm_code[selected_algorithm];
@@ -589,7 +623,7 @@ void shortest_path_page() {
 
             if (algorithm_button.isClicked(sf::Mouse::getPosition(window))) {
                 show_algorithm_options = !show_algorithm_options;
-                for(int i = 0; i < 5; i++) state_buttons[i] = 0;
+                for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
                 is_start_button_pressed = 0;
             }
 
@@ -598,14 +632,14 @@ void shortest_path_page() {
                     selected_algorithm = shortest_path_algorithm::ALGO_DIJKSTRA;
                     algorithm_button.setLabel(shortest_path_algorithm::algorithm_names[selected_algorithm]);
                     graph.code = shortest_path_algorithm::algorithm_code[selected_algorithm];
-                    for(int i = 0; i < 5; i++) state_buttons[i] = 0;
+                    for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
                     is_start_button_pressed = 0;
                     show_algorithm_options = false;
                 } else if (algorithm_option_1.isClicked(sf::Mouse::getPosition(window))) {
                     selected_algorithm = shortest_path_algorithm::ALGO_BELLMAN_FORD;
                     algorithm_button.setLabel(shortest_path_algorithm::algorithm_names[selected_algorithm]);
                     graph.code = shortest_path_algorithm::algorithm_code[selected_algorithm];
-                    for(int i = 0; i < 5; i++) state_buttons[i] = 0;
+                    for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
                     is_start_button_pressed = 0;
                     show_algorithm_options = false;
                 }
@@ -687,7 +721,6 @@ void shortest_path_page() {
                     int start_index = graph.label_to_index(source_vertrix);
                     if(start_index >= 0) {
                         if(selected_algorithm == shortest_path_algorithm::ALGO_DIJKSTRA && graph.has_negative_weight()) {
-                            error_message = "Dijkstra requires non-negative weights";
                             error_time = now;
                         } else {
                             graph.find_shortest_path(start_index, selected_algorithm);
@@ -702,7 +735,6 @@ void shortest_path_page() {
                     int start_index = graph.label_to_index(source_vertrix);
                     if(start_index >= 0) {
                         if(selected_algorithm == shortest_path_algorithm::ALGO_DIJKSTRA && graph.has_negative_weight()) {
-                            error_message = "Dijkstra requires non-negative weights";
                             error_time = now;
                         } else {
                             graph.find_shortest_path(start_index, selected_algorithm);
@@ -754,14 +786,24 @@ void shortest_path_page() {
             source_vertrix = "0";
             current_input_weight = "5";
             is_start_button_pressed = 0;
-            for(int i = 0; i < 6; i++) state_buttons[i] = 0;
+            for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
         }
 
         //
 
+        // case: random graph
+        if(state_buttons[6] and mouse_left_pressed and !mouse_left_pressed_last) {
+            random_graph(Visual_graph, graph, Visual_graph.isDirected());
+            source_vertrix = "0";
+            current_input_weight = "5";
+            is_start_button_pressed = 0;
+            for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
+        }
+        //
+
         // case: not one of buttons is active | move node
         bool no_button_active = 1;
-        for(int i=1; i<6; i++) {
+        for(int i=1; i<buttons.size(); i++) {
             no_button_active &= !state_buttons[i];
         }
 
@@ -789,7 +831,7 @@ void shortest_path_page() {
 
         // draw buttons with transparency + hover border
         sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-        for(int i = 0; i < 6; i++) {
+        for(int i = 0; i < buttons.size(); i++) {
             // transparent fill for all, active semi-green
             if(state_buttons[i]) {
                 buttons[i].setColor(sf::Color(140, 95, 30));
