@@ -371,7 +371,7 @@ bool read_graph_from_file(Visual_graph &vg, shortest_path_algorithm &graph, bool
         }
         int N = verts.size();
         // add nodes in circle
-        float center_x = 400, center_y = 300, radius = 150;
+        float center_x = 900, center_y = 325, radius = 150;
         for (int i = 0; i < N; ++i) {
             float angle = 2 * 3.1415926535f * i / N;
             float x = center_x + radius * cos(angle);
