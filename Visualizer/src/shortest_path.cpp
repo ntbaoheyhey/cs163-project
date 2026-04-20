@@ -106,8 +106,12 @@ void shortest_path_algorithm::find_shortest_path(int start) {
         step_history.push_back({2, cur});
         dist_history.push_back(dist);
 
-        if (d > dist[u]) continue;
-
+        if (d > dist[u]) {
+            cur.nodes_state_changed.pop_back();
+            cur.nodes_state_changed.push_back({u, 3});
+            continue;
+        }
+        
         for (auto& [v, id] : adj[u]) {
             step_history.push_back({3, cur});
             dist_history.push_back(dist);
@@ -445,7 +449,8 @@ void shortest_path_page() {
     sf::Texture backgroundTexture;
     if (!loadTextureFromAsset(backgroundTexture, "bg.png")) {
         std::cerr << "cannot load background" << std::endl;
-    }
+        !backgroundTexture.loadFromFile("cs163-project/Visualizer/assets/bg.png");
+    } 
     sf::Sprite backgroundSprite(backgroundTexture);
 
     shortest_path_algorithm graph(0);
@@ -673,7 +678,7 @@ void shortest_path_page() {
                 float max_x = slider_bar.getPosition().x + slider_bar.getSize().x;
                 float new_x = std::max(min_x, std::min(max_x, (float)mousePos.x));
                 slider_knob.setPosition({new_x - slider_knob.getRadius(), slider_knob.getPosition().y});
-                step_delay = 100 + (new_x - min_x) / slider_bar.getSize().x * (1000 - 5);
+                step_delay = 100 +  (max_x - new_x) / slider_bar.getSize().x * (1000 - 10);
             }
         } else {
             dragging_slider = false;
