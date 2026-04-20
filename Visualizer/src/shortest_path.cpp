@@ -467,7 +467,7 @@ void shortest_path_page() {
 
     // load font
     sf::Text text_for_code(font_impact, "", 20);
-    sf::Text error_text(font_impact, "", 16);
+    sf::Text error_text(font_impact, "", 30);
     error_text.setFillColor(sf::Color::Red);
 
     visual_region.setFillColor(sf::Color(251, 251, 253, 200));
@@ -967,9 +967,9 @@ void shortest_path_page() {
             window.draw(text_for_code);
         }
 
-        if (now - error_time < 3000) {
+        if (now - error_time < 2000) {
             error_text.setString(error_message);
-            error_text.setPosition({325, 400});
+            error_text.setPosition({425, 300});
             window.draw(error_text);
         }
 
