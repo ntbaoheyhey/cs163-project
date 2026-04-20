@@ -16,7 +16,13 @@ void openWindow() {
 
 void main_menu_page() {
 
-    button option_button(WINDOW_WIDTH/2 - 100, WINDOW_HEIGHT/2 - 50, 200, 50, sf::Color::White, "Option", 24);
+    float button_width = 300.0f;
+    float button_height = 80.0f;
+
+    button option_button(WINDOW_WIDTH/2 - button_width/2, WINDOW_HEIGHT/2 - button_height/2, button_width, button_height, sf::Color::White, "Data Structures", 24);
+    button setting_button(WINDOW_WIDTH/2 - button_width/2, WINDOW_HEIGHT/2 - button_height/2 + 100.0f, button_width, button_height, sf::Color(232, 183, 81), "Settings", 24);
+
+    std::vector<button*> all_buttons = {&option_button, &setting_button};
 
     bool is_mouse_left_pressed = 0;
     bool is_mouse_left_pressed_last = 0;
@@ -30,9 +36,17 @@ void main_menu_page() {
         }
         window.clear(sf::Color::Black);
 
-        option_button.draw(window);
-        if(option_button.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
-            option_page();
+        for (const auto& btn : all_buttons) {
+            btn->draw(window);
+        }
+
+        for(int i = 0; i < all_buttons.size(); i++) {
+            if(all_buttons[i]->isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
+                switch(i) {
+                    case 0: option_page(); break;
+                    case 1: break; // setting page
+                }
+            }
         }
 
         window.display();
@@ -100,3 +114,6 @@ void option_page() {
     }
 }
 
+void setting_page() {
+    
+}
