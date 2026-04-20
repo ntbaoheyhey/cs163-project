@@ -544,6 +544,10 @@ void shortest_path_page() {
     button back_button(15.0f, 15.0f, button_width, button_height, sf::Color(232, 183, 81), "Return", 24);
     back_button.setOutline(sf::Color::Transparent, 0.0f);
 
+    button speed_inc(700, WINDOW_HEIGHT - 75, 50, 50, sf::Color(232, 183, 81), "+", 24);
+    button speed_dec(760, WINDOW_HEIGHT - 75, 50, 50, sf::Color(232, 183, 81), "-", 24);
+    box speed_box(820, WINDOW_HEIGHT - 75, 50, 50, sf::Color(138,155,192), "0", 24);
+
     // algorithm selection
     button algorithm_button(10.0f, 200.0f, button_width, button_height, sf::Color(232, 183, 81), shortest_path_algorithm::algorithm_names[shortest_path_algorithm::ALGO_DIJKSTRA], 16);
     algorithm_button.setOutline(sf::Color::Transparent, 0.0f);
@@ -563,7 +567,7 @@ void shortest_path_page() {
 
     std::string error_message = "ERROR: Invalid input or algorithm cannot be applied!";
     long long error_time = -1000000;
-    int step_delay = 1000;
+    int step_delay = 500;
     bool dragging_slider = false;
     auto now_time = std::chrono::system_clock::now();
     auto duration = now_time.time_since_epoch();
@@ -678,11 +682,25 @@ void shortest_path_page() {
                 float max_x = slider_bar.getPosition().x + slider_bar.getSize().x;
                 float new_x = std::max(min_x, std::min(max_x, (float)mousePos.x));
                 slider_knob.setPosition({new_x - slider_knob.getRadius(), slider_knob.getPosition().y});
-                step_delay = 100 +  (max_x - new_x) / slider_bar.getSize().x * (1000 - 10);
+                step_delay = 100.0f +  (max_x - new_x) / slider_bar.getSize().x * (1000.0f - 10.0f);
             }
         } else {
             dragging_slider = false;
         }
+
+        //inc dec speed
+
+        if(speed_inc.isClicked(sf::Mouse::getPosition(window)) and mouse_left_pressed and !mouse_left_pressed_last) {
+            step_delay = std::max(10, step_delay - 100);
+            slider_knob.setPosition({slider_bar.getPosition().x + slider_bar.getSize().x * (1000 - step_delay) / (1000 - 10) - slider_knob.getRadius(), slider_knob.getPosition().y});
+        }
+
+        if(speed_dec.isClicked(sf::Mouse::getPosition(window)) and mouse_left_pressed and !mouse_left_pressed_last) {
+            step_delay = std::min(1000, step_delay + 100);
+            slider_knob.setPosition({slider_bar.getPosition().x + slider_bar.getSize().x * (1000 - step_delay) / (1000 - 10) - slider_knob.getRadius(), slider_knob.getPosition().y});
+        }
+
+        //
 
         // case: add node 
         if(state_buttons[3] and mouse_left_pressed and !mouse_left_pressed_last) {
@@ -1003,6 +1021,12 @@ void shortest_path_page() {
         if(state_buttons[0]) {
             window.draw(slider_bar);
             window.draw(slider_knob);
+            speed_inc.draw(window);
+            speed_dec.draw(window);
+            std::string speed_label = std::to_string(step_delay / 1000.0f);
+            while(speed_label.size() > 3) speed_label.pop_back();
+            speed_box.setLabel(speed_label + "s");
+            speed_box.draw(window);
         }
 
         window.display();
