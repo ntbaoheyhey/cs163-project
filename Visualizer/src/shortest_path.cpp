@@ -106,8 +106,12 @@ void shortest_path_algorithm::find_shortest_path(int start) {
         step_history.push_back({2, cur});
         dist_history.push_back(dist);
 
-        if (d > dist[u]) continue;
-
+        if (d > dist[u]) {
+            cur.nodes_state_changed.pop_back();
+            cur.nodes_state_changed.push_back({u, 3});
+            continue;
+        }
+        
         for (auto& [v, id] : adj[u]) {
             step_history.push_back({3, cur});
             dist_history.push_back(dist);
