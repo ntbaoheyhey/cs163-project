@@ -874,7 +874,7 @@ void shortest_path_page() {
         sf::Vector2i mousePos = sf::Mouse::getPosition(window);
         for(int i = 0; i < buttons.size(); i++) {
             // transparent fill for all, active semi-green
-            if(state_buttons[i]) {
+            if(state_buttons[i] or buttons[i].contains(mousePos)) {
                 buttons[i].setColor(sf::Color(140, 95, 30));
             } else {
                 buttons[i].setColor(sf::Color(232, 183, 81));
