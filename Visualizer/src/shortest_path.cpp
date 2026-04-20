@@ -21,7 +21,7 @@ shortest_path_algorithm::shortest_path_algorithm(int n) {
 }
 
 void shortest_path_algorithm::resize(int n) {
-    dist.resize(n+1);
+    dist.resize(n+1, 1e9);
     adj.resize(n+1);
     labels.resize(n+1);
     for(auto &x:dist) x = 1e9;
@@ -43,11 +43,15 @@ void shortest_path_algorithm::clear() {
 void shortest_path_algorithm::init(std::vector<std::pair<int,int>> &edges, std::vector<int> &edge_weights, bool directed_flag, const std::vector<std::string> &label_map) {
     int max_N = 0;
     for(auto edge:edges) max_N = std::max(max_N, std::max(edge.first, edge.second));
-
-    resize(max_N);
-    if(!label_map.empty() && label_map.size() == labels.size()) {
-        labels = label_map;
+    for(auto labels: label_map) {
+        int idx = label_to_index(labels);
+        if(idx != -1) {
+            max_N = std::max(max_N, idx);
+        }
     }
+    resize(max_N);
+    std::cerr << "max_N = " << max_N << '\n';
+    labels = label_map;
     weights = edge_weights;
     for(int i=0; i < std::min(edges.size(), edge_weights.size()); ++i) {
         add_edge(edges[i].first, edges[i].second, i, directed_flag);
@@ -72,11 +76,20 @@ void shortest_path_algorithm::add_edge(int u, int v, int id, bool directed_flag)
 }
 
 void shortest_path_algorithm::find_shortest_path(int start) {
-    if(start < 0 or start >= dist.size()) {
+    bool start_exists = false;
+    for(int i=0; i<labels.size(); ++i) {
+        if(labels[i] == std::to_string(start)) {
+            start_exists = true;
+            break;
+        }
+    }
+    if(start_exists == false) {
+        std::cerr << "Start vertex does not exist in the graph.\n";
         return;
     }
     step_history.clear();
     dist_history.clear();
+    for(int &x:dist) x = 1e9;
     std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<std::pair<int, int>>> heap;
     dist[start] = 0;
     heap.emplace(0, start);
@@ -204,7 +217,6 @@ void shortest_path_algorithm::find_shortest_path_bellman_ford(int start) {
 void shortest_path_algorithm::_visual(Visual_graph &graph, RoundedRectangleShape &visual_code_region, sf::Text &text_for_code, int cur_step) {
 
     sf::RectangleShape highlight;
-
     float max_right = visual_code_region.getGlobalBounds().position.x + visual_code_region.getGlobalBounds().size.x;
 
     int id = step_history[cur_step].first;
@@ -226,9 +238,9 @@ void shortest_path_algorithm::_visual(Visual_graph &graph, RoundedRectangleShape
         sf::Text dist_text(font_impact, "", 22);
         dist_text.setFillColor(sf::Color(255, 0, 0));
         
-        for(int i = 0; i < current_dist.size() && i < labels.size(); ++i) {
+        for(int i = 0; i < current_dist.size(); ++i) {
             std::string dist_str;
-            if(current_dist[i] == 1e9) {
+            if(current_dist[i] >= 1e9) {
                 dist_str = "inf";
             } else {
                 dist_str = std::to_string(static_cast<int>(current_dist[i]));
@@ -546,8 +558,8 @@ void shortest_path_page() {
 
     int cur_step = 0;
 
-    std::string error_message = "";
-    long long error_time = 0;
+    std::string error_message = "ERROR: Invalid input or algorithm cannot be applied!";
+    long long error_time = -1000000;
     int step_delay = 1000;
     bool dragging_slider = false;
     auto now_time = std::chrono::system_clock::now();
@@ -955,14 +967,14 @@ void shortest_path_page() {
             window.draw(text_for_code);
         }
 
-        if (error_message != "" && now - error_time < 3000) {
+        if (now - error_time < 3000) {
             error_text.setString(error_message);
-            error_text.setPosition({300, 200});
+            error_text.setPosition({325, 400});
             window.draw(error_text);
         }
 
         // Draw distance list
-        if(state_buttons[0] && cur_step >= 0 && cur_step < graph.step_history.size() && cur_step < graph.dist_history.size()) {
+        if(state_buttons[0] && cur_step >= 0 && cur_step < graph.step_history.size() && cur_step < graph.dist_history.size() && graph.labels.size() > 0) {
             const auto& current_dist = graph.dist_history[cur_step];
             sf::Text dist_list_text(font_impact, "", 14);
             dist_list_text.setFillColor(sf::Color::Black);
