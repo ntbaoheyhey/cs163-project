@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Gọi phiên bản 3 và Viết Hoa chữ cái đầu các components
-find_package(SFML 3 COMPONENTS Graphics Window System REQUIRED)
+find_package(SFML 3 COMPONENTS Graphics Window System Audio REQUIRED)
 
 # Liệt kê tất cả các file mã nguồn của project
 file(GLOB SRC_FILES "src/*.cpp" "objects/*.cpp")
@@ -25,6 +25,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     SFML::Graphics 
     SFML::Window 
     SFML::System
+    SFML::Audio
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
