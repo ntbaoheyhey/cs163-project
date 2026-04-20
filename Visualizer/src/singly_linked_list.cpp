@@ -55,10 +55,11 @@ enum class CodePanelMode {
     Build,
     AddTail,
     InsertHead,
-    InsertTail,
+    InsertIndex,
     DeleteHead,
     DeleteTail,
     Search,
+    Traversal,
     Update
 };
 
@@ -110,14 +111,14 @@ const std::string& codePanelText(CodePanelMode mode) {
         "    tail = newNode;\n"
         "}";
 
-    static const std::string insert_tail_code =
+    static const std::string insert_index_code =
+        "Node* cur = head;\n"
+        "for (int i = 0; i < idx - 1; ++i) {\n"
+        "    cur = cur->next;\n"
+        "}\n"
         "Node* newNode = new Node(x);\n"
-        "if (tail == nullptr) {\n"
-        "    head = tail = newNode;\n"
-        "} else {\n"
-        "    tail->next = newNode;\n"
-        "    tail = newNode;\n"
-        "}";
+        "newNode->next = cur->next;\n"
+        "cur->next = newNode;";
 
     static const std::string delete_head_code =
         "if (head == nullptr) return;\n"
@@ -148,6 +149,14 @@ const std::string& codePanelText(CodePanelMode mode) {
         "}\n"
         "return -1;";
 
+    static const std::string traversal_code =
+        "Node* cur = head;\n"
+        "while (cur != nullptr) {\n"
+        "    visit(cur);\n"
+        "    cur = cur->next;\n"
+        "}\n"
+        "return;";
+
     static const std::string update_code =
         "Node* cur = head;\n"
         "for (int i = 0; i < idx; ++i) {\n"
@@ -162,14 +171,16 @@ const std::string& codePanelText(CodePanelMode mode) {
             return add_tail_code;
         case CodePanelMode::InsertHead:
             return insert_head_code;
-        case CodePanelMode::InsertTail:
-            return insert_tail_code;
+        case CodePanelMode::InsertIndex:
+            return insert_index_code;
         case CodePanelMode::DeleteHead:
             return delete_head_code;
         case CodePanelMode::DeleteTail:
             return delete_tail_code;
         case CodePanelMode::Search:
             return search_code;
+        case CodePanelMode::Traversal:
+            return traversal_code;
         case CodePanelMode::Update:
             return update_code;
         case CodePanelMode::Idle:
@@ -183,15 +194,18 @@ int activeCodeStep(CodePanelMode mode) {
         case CodePanelMode::Build:
             return 2;
         case CodePanelMode::AddTail:
-        case CodePanelMode::InsertTail:
             return 4;
         case CodePanelMode::InsertHead:
             return 2;
+        case CodePanelMode::InsertIndex:
+            return 5;
         case CodePanelMode::DeleteHead:
             return 2;
         case CodePanelMode::DeleteTail:
             return 5;
         case CodePanelMode::Search:
+            return 2;
+        case CodePanelMode::Traversal:
             return 2;
         case CodePanelMode::Update:
             return 4;
@@ -206,16 +220,19 @@ int doneCodeStep(CodePanelMode mode, const StatusMessage& status) {
         case CodePanelMode::Build:
             return 4;
         case CodePanelMode::AddTail:
-        case CodePanelMode::InsertTail:
             return 5;
         case CodePanelMode::InsertHead:
             return 4;
+        case CodePanelMode::InsertIndex:
+            return 6;
         case CodePanelMode::DeleteHead:
             return 6;
         case CodePanelMode::DeleteTail:
             return 6;
         case CodePanelMode::Search:
             return status.tone == StatusTone::Success ? 3 : 7;
+        case CodePanelMode::Traversal:
+            return 5;
         case CodePanelMode::Update:
             return 4;
         case CodePanelMode::Idle:
@@ -1027,29 +1044,48 @@ void singly_linked_list_page() {
     status_panel.setOutlineThickness(4.0f);
     status_panel.setOutlineColor(PANEL_OUTLINE_COLOR);
 
-    button return_btn(15.f, 15.f, 100.f, 50.f, sf::Color(232, 183, 81), "RETURN", 24);
-    button random_btn(10.f, WINDOW_HEIGHT - 375.f, 100.f, 50.f, sf::Color(232, 183, 81), "RANDOM", 20);
-    button file_btn(125.f, WINDOW_HEIGHT - 375.f, 100.f, 50.f, sf::Color(232, 183, 81), "FILE", 20);
-    button build_btn(240.f, WINDOW_HEIGHT - 375.f, 100.f, 50.f, sf::Color(232, 183, 81), "BUILD", 20);
+    const float control_left = 14.0f;
+    const float control_gap = 10.0f;
+    const float button_width = 104.0f;
+    const float double_width = 161.0f;
+    const float control_height = 44.0f;
+    const float box_height = 48.0f;
+    const float build_row_y = WINDOW_HEIGHT - 348.0f;
+    const float build_box_y = build_row_y + control_height + control_gap;
+    const float input_row_y = build_box_y + box_height + control_gap;
+    const float action_row_1_y = input_row_y + box_height + control_gap;
+    const float action_row_2_y = action_row_1_y + control_height + control_gap;
+    const float action_row_3_y = action_row_2_y + control_height + control_gap;
 
-    box build_box(10.f, WINDOW_HEIGHT - 300.f, 325.f, 50.f, sf::Color(138, 155, 192), "0", 22);
-    button add_btn(10.f, WINDOW_HEIGHT - 225.f, 100.f, 50.f, sf::Color(232, 183, 81), "ADD", 22);
-    box value_box(125.f, WINDOW_HEIGHT - 225.f, 100.f, 50.f, sf::Color(138, 155, 192), "0", 22);
-    button search_btn(240.f, WINDOW_HEIGHT - 225.f, 100.f, 50.f, sf::Color(232, 183, 81), "SEARCH", 18);
+    const float col_1_x = control_left;
+    const float col_2_x = control_left + button_width + control_gap;
+    const float col_3_x = control_left + 2.0f * (button_width + control_gap);
+    const float wide_col_2_x = control_left + double_width + control_gap;
+    button return_btn(18.f, 18.f, 104.f, 52.f, sf::Color(232, 183, 81), "RETURN", 24);
+    button random_btn(col_1_x, build_row_y, button_width, control_height, sf::Color(232, 183, 81), "RANDOM", 18);
+    button file_btn(col_2_x, build_row_y, button_width, control_height, sf::Color(232, 183, 81), "FILE", 18);
+    button build_btn(col_3_x, build_row_y, button_width, control_height, sf::Color(232, 183, 81), "BUILD", 18);
 
-    button ins_head_btn(10.f, WINDOW_HEIGHT - 150.f, 100.f, 50.f, sf::Color(232, 183, 81), "INS HEAD", 18);
-    button ins_tail_btn(125.f, WINDOW_HEIGHT - 150.f, 100.f, 50.f, sf::Color(232, 183, 81), "INS TAIL", 18);
-    button del_head_btn(240.f, WINDOW_HEIGHT - 150.f, 100.f, 50.f, sf::Color(232, 183, 81), "DEL HEAD", 18);
+    box build_box(control_left, build_box_y, 332.f, box_height, sf::Color(138, 155, 192), "0", 22);
+    box value_box(control_left, input_row_y, double_width, box_height, sf::Color(138, 155, 192), "0", 22);
+    box index_box(wide_col_2_x, input_row_y, double_width, box_height, sf::Color(138, 155, 192), "0", 22);
 
-    button del_tail_btn(10.f, WINDOW_HEIGHT - 75.f, 100.f, 50.f, sf::Color(232, 183, 81), "DEL TAIL", 18);
-    button update_btn(125.f, WINDOW_HEIGHT - 75.f, 100.f, 50.f, sf::Color(232, 183, 81), "UPDATE", 20);
-    box index_box(240.f, WINDOW_HEIGHT - 75.f, 100.f, 50.f, sf::Color(138, 155, 192), "0", 22);
+    button add_btn(col_1_x, action_row_1_y, button_width, control_height, sf::Color(232, 183, 81), "ADD", 20);
+    button search_btn(col_2_x, action_row_1_y, button_width, control_height, sf::Color(232, 183, 81), "SEARCH", 18);
+    button traversal_btn(col_3_x, action_row_1_y, button_width, control_height, sf::Color(232, 183, 81), "TRAVERSE", 15);
+
+    button ins_head_btn(col_1_x, action_row_2_y, button_width, control_height, sf::Color(232, 183, 81), "INS HEAD", 16);
+    button ins_index_btn(col_2_x, action_row_2_y, button_width, control_height, sf::Color(232, 183, 81), "INS IDX", 16);
+    button update_btn(col_3_x, action_row_2_y, button_width, control_height, sf::Color(232, 183, 81), "UPDATE", 18);
+
+    button del_head_btn(control_left, action_row_3_y, double_width, control_height, sf::Color(232, 183, 81), "DEL HEAD", 18);
+    button del_tail_btn(wide_col_2_x, action_row_3_y, double_width, control_height, sf::Color(232, 183, 81), "DEL TAIL", 18);
 
     std::vector<button*> all_buttons = {
         &return_btn, &random_btn, &file_btn, &build_btn,
-        &add_btn, &search_btn,
-        &ins_head_btn, &ins_tail_btn, &del_head_btn,
-        &del_tail_btn, &update_btn
+        &add_btn, &search_btn, &traversal_btn,
+        &ins_head_btn, &ins_index_btn, &update_btn,
+        &del_head_btn, &del_tail_btn
     };
     for (button* button_ptr : all_buttons) {
         button_ptr->setRadius(10.0f);
@@ -1158,7 +1194,7 @@ void singly_linked_list_page() {
         if (build_active) build_label += '|';
         build_box.setLabel(build_label);
 
-        std::string value_label = value_text;
+        std::string value_label = "val:" + value_text;
         if (value_active) value_label += '|';
         value_box.setLabel(value_label);
 
@@ -1183,10 +1219,11 @@ void singly_linked_list_page() {
         const bool build_clicked = build_btn.update(mouse_pos);
         const bool create_clicked = add_btn.update(mouse_pos);
         const bool ins_head_clicked = ins_head_btn.update(mouse_pos);
-        const bool ins_tail_clicked = ins_tail_btn.update(mouse_pos);
+        const bool ins_index_clicked = ins_index_btn.update(mouse_pos);
         const bool del_head_clicked = del_head_btn.update(mouse_pos);
         const bool del_tail_clicked = del_tail_btn.update(mouse_pos);
         const bool search_clicked = search_btn.update(mouse_pos);
+        const bool traversal_clicked = traversal_btn.update(mouse_pos);
         const bool update_clicked = update_btn.update(mouse_pos);
         const bool return_clicked = return_btn.update(mouse_pos);
 
@@ -1195,9 +1232,9 @@ void singly_linked_list_page() {
         }
 
         const bool action_clicked = random_clicked || file_clicked || build_clicked ||
-                                    create_clicked || ins_head_clicked || ins_tail_clicked ||
+                                    create_clicked || ins_head_clicked || ins_index_clicked ||
                                     del_head_clicked || del_tail_clicked ||
-                                    search_clicked || update_clicked;
+                                    search_clicked || traversal_clicked || update_clicked;
 
         if (action_clicked && list_core.isBusy() && !random_clicked && !file_clicked) {
             page_status = StatusMessage{StatusTone::Warning, "Wait for the current animation to finish."};
@@ -1299,19 +1336,23 @@ void singly_linked_list_page() {
                     "Inserted " + std::to_string(input_value) + " at HEAD."
                 };
             }
-        } else if (ins_tail_clicked) {
-            set_code_panel(CodePanelMode::InsertTail, 0, false);
+        } else if (ins_index_clicked) {
+            set_code_panel(CodePanelMode::InsertIndex, 0, false);
             if (list_core.atCapacity()) {
                 page_status = StatusMessage{
                     StatusTone::Error,
                     "List is full for this view. Maximum visible nodes: " + std::to_string(list_core.maxNodes()) + "."
                 };
+            } else if (!list_core.insert_index(input_index, input_value)) {
+                page_status = StatusMessage{
+                    StatusTone::Error,
+                    "Insert index out of range. " + list_core.insertRangeHint()
+                };
             } else {
-                list_core.insert_tail(input_value);
-                set_code_panel(CodePanelMode::InsertTail, activeCodeStep(CodePanelMode::InsertTail), true);
+                set_code_panel(CodePanelMode::InsertIndex, activeCodeStep(CodePanelMode::InsertIndex), true);
                 page_status = StatusMessage{
                     StatusTone::Success,
-                    "Inserted " + std::to_string(input_value) + " at TAIL."
+                    "Inserted " + std::to_string(input_value) + " at index " + std::to_string(input_index) + "."
                 };
             }
         } else if (del_head_clicked) {
@@ -1341,6 +1382,14 @@ void singly_linked_list_page() {
                     StatusTone::Info,
                     "Searching for " + std::to_string(input_value) + " from HEAD to TAIL..."
                 };
+            }
+        } else if (traversal_clicked) {
+            set_code_panel(CodePanelMode::Traversal, 0, false);
+            if (!list_core.traversal()) {
+                page_status = StatusMessage{StatusTone::Error, "Traversal failed. The list is empty."};
+            } else {
+                set_code_panel(CodePanelMode::Traversal, activeCodeStep(CodePanelMode::Traversal), true);
+                page_status = StatusMessage{StatusTone::Info, "Traversing from HEAD to TAIL..."};
             }
         } else if (update_clicked) {
             set_code_panel(CodePanelMode::Update, 0, false);
