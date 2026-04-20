@@ -255,7 +255,9 @@ void shortest_path_algorithm::_visual(Visual_graph &graph, RoundedRectangleShape
     }
 
     // draw code
-
+    highlight.setFillColor(sf::Color(76, 86, 106, 120));
+    highlight.setSize({max_right - highlight.getGlobalBounds().position.x - 20, text_for_code.getLocalBounds().size.y + 5});
+    highlight.setOrigin({0, highlight.getSize().y / 2.0f});
     window.draw(visual_code_region);
     for(int i = 0; i < code.size(); ++i) {
         text_for_code.setString(code[i]);
@@ -263,14 +265,10 @@ void shortest_path_algorithm::_visual(Visual_graph &graph, RoundedRectangleShape
         text_for_code.setOrigin({0 , text_for_code.getLocalBounds().size.y / 2.0f});
 
 
-        text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x+4, visual_code_region.getGlobalBounds().position.y + 8 * (i+1) + text_for_code.getLocalBounds().size.y * i + 5});
+        text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x+4, visual_code_region.getGlobalBounds().position.y + 8 * (i+1) + 16 * i + 5});
 
         if(id == i) {
-            // red
-            highlight.setFillColor(sf::Color(246,88,88,100));
-            highlight.setPosition({text_for_code.getGlobalBounds().position.x, text_for_code.getGlobalBounds().position.y - text_for_code.getLocalBounds().size.y / 2 });
-
-            highlight.setSize({max_right - highlight.getGlobalBounds().position.x - 20, text_for_code.getLocalBounds().size.y + 20});
+            highlight.setPosition({text_for_code.getGlobalBounds().position.x, text_for_code.getGlobalBounds().position.y + 8});
 
             window.draw(highlight);
         }
@@ -962,7 +960,7 @@ void shortest_path_page() {
             text_for_code.setFillColor(sf::Color::Black);
             text_for_code.setOrigin({0 , text_for_code.getLocalBounds().size.y / 2.0f});
 
-            text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x + 4, visual_code_region.getGlobalBounds().position.y + 8 * (i+1) + text_for_code.getLocalBounds().size.y * i + 5});
+            text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x + 4, visual_code_region.getGlobalBounds().position.y + 8 * (i+1) + 16 * i + 5});
 
             window.draw(text_for_code);
         }
