@@ -15,8 +15,8 @@ bool loadFonts() {
     // Thử từng đường dẫn có thể
     std::vector<std::string> paths = {
         "Visualizer/assets/JetBrainsMono-Medium.ttf",
-        "../assets/impact.ttf",
-        "../../assets/impact.ttf",
+        "cs163-project/Visualizer/assets/JetBrainsMono-Medium.ttf",
+        "../../assets/JetBrainsMono-Medium.ttf",
         "Visualizer/assets/impact.ttf",
         "C:/Windows/Fonts/arial.ttf"  // Fallback system font
     };

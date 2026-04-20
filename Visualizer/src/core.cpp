@@ -17,9 +17,6 @@ void openWindow() {
 void main_menu_page() {
 
     button option_button(WINDOW_WIDTH/2 - 100, WINDOW_HEIGHT/2 - 50, 200, 50, sf::Color::White, "Option", 24);
-    button ducminh(500, 500, 100, 100, sf::Color::Cyan, "minh", 24);
-    button trie(200, 200, 100, 100, sf::Color::Green, "Trie", 24);
-    button linked_list(350, 200, 220, 100, sf::Color(232, 183, 81), "Singly List", 24);
 
     bool is_mouse_left_pressed = 0;
     bool is_mouse_left_pressed_last = 0;
@@ -34,24 +31,10 @@ void main_menu_page() {
         window.clear(sf::Color::Black);
 
         option_button.draw(window);
-        trie.draw(window);
-        linked_list.draw(window);
-        ducminh.draw(window);
         if(option_button.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
             option_page();
         }
-        if (ducminh.isClicked(sf::Mouse::getPosition(window)) 
-            && is_mouse_left_pressed 
-            && !is_mouse_left_pressed_last)
-        {
-            heap_page();
-        }
-        if(trie.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last){
-            trie_page();
-        }
-        if(linked_list.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last){
-            singly_linked_list_page();
-        }
+
         window.display();
 
         is_mouse_left_pressed_last = is_mouse_left_pressed;
@@ -61,6 +44,10 @@ void main_menu_page() {
 void option_page() {
 
     button shortest_path_button(WINDOW_WIDTH/2 - 100, WINDOW_HEIGHT/2 - 50, 200, 50, sf::Color::White, "Shortest Path", 24);
+
+    button ducminh(500, 500, 100, 100, sf::Color::Cyan, "minh", 24);
+    button trie(200, 200, 100, 100, sf::Color::Green, "Trie", 24);
+    button linked_list(350, 200, 220, 100, sf::Color(232, 183, 81), "Singly List", 24);
 
     bool is_mouse_left_pressed = 0;
     bool is_mouse_left_pressed_last = 1;
@@ -72,6 +59,20 @@ void option_page() {
             shortest_path_page();
             return;
         }
+        if (ducminh.isClicked(sf::Mouse::getPosition(window)) 
+            && is_mouse_left_pressed 
+            && !is_mouse_left_pressed_last)
+        {
+            heap_page();
+        }
+
+        if(trie.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last){
+            trie_page();
+        }
+
+        if(linked_list.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last){
+            singly_linked_list_page();
+        }
 
         while (const std::optional event = window.pollEvent())
         {
@@ -80,7 +81,9 @@ void option_page() {
         }
 
         window.clear(sf::Color::Black);
-
+        trie.draw(window);
+        linked_list.draw(window);
+        ducminh.draw(window);
         shortest_path_button.draw(window);
 
         window.display();

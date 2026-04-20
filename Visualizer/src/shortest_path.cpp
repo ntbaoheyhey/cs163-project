@@ -251,7 +251,7 @@ void shortest_path_algorithm::_visual(Visual_graph &graph, RoundedRectangleShape
         text_for_code.setOrigin({0 , text_for_code.getLocalBounds().size.y / 2.0f});
 
 
-        text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x+4, visual_code_region.getGlobalBounds().position.y + 15 * (i+1) + text_for_code.getLocalBounds().size.y * i + 5});
+        text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x+4, visual_code_region.getGlobalBounds().position.y + 8 * (i+1) + text_for_code.getLocalBounds().size.y * i + 5});
 
         if(id == i) {
             // red
@@ -371,7 +371,7 @@ bool read_graph_from_file(Visual_graph &vg, shortest_path_algorithm &graph, bool
         }
         int N = verts.size();
         // add nodes in circle
-        float center_x = 400, center_y = 300, radius = 150;
+        float center_x = 900, center_y = 325, radius = 150;
         for (int i = 0; i < N; ++i) {
             float angle = 2 * 3.1415926535f * i / N;
             float x = center_x + radius * cos(angle);
@@ -396,99 +396,146 @@ bool read_graph_from_file(Visual_graph &vg, shortest_path_algorithm &graph, bool
     return false;
 }
 
+void random_graph(Visual_graph &vg, shortest_path_algorithm &graph, bool directed) {
+    vg.clearAll();
+    graph.clear();
+
+    int N = 5 + rand() % 6; // 5 to 10 nodes
+    int M = N + rand() % (N * (N - 1) / 2 - N + 1); // at least a tree, at most complete graph
+
+    std::vector<std::pair<int, int>> edges;
+    std::set<std::pair<int, int>> existing_edges;
+
+    // add nodes in circle
+    float center_x = 900, center_y = 325, radius = 150;
+    for (int i = 0; i < N; ++i) {
+        float angle = 2 * 3.1415926535f * i / N;
+        float x = center_x + radius * cos(angle);
+        float y = center_y + radius * sin(angle);
+        vg.add_node(x, y);
+        vg.setNodeLabel(i, std::to_string(i));
+    }
+
+    while (edges.size() < M) {
+        int u = rand() % N;
+        int v = rand() % N;
+        if (u != v && existing_edges.count({std::min(u,v), std::max(u,v)}) == 0) {
+            int w = 1 + rand() % 20; // weight between 1 and 20
+            edges.emplace_back(u, v);
+            graph.add_edge(u, v, graph.weights.size(), directed);
+            graph.weights.push_back(w);
+            existing_edges.insert({std::min(u,v), std::max(u,v)});
+            vg.add_edge(u, v, w, directed);
+        }
+    }
+}
+
 void shortest_path_page() {
+    // load background
+    sf::Texture backgroundTexture;
+    if (!backgroundTexture.loadFromFile("cs163-project/Visualizer/assets/bg.png")) {
+        std::cerr << "cannot load background" << std::endl;
+    }
+    sf::Sprite backgroundSprite(backgroundTexture);
 
     shortest_path_algorithm graph(0);
     Visual_graph Visual_graph;
 
-    const float visual_region_width = 1019.0f;
-    const float visual_region_height = 672.0f;
+    const float visual_region_width = 975.0f;
+    const float visual_region_height = 525.0f;
 
-    const float button_width = 82.0f;
-    const float button_height = 44.0f;
+    const float button_width = 110.0f;
+    const float button_height = 60.0f;
 
-    const float visual_code_region_width = 301.0f;
-    const float visual_code_region_height = 336.0f;
+    const float visual_code_region_width = 450.0f;
+    const float visual_code_region_height = 250.0f;
 
     RoundedRectangleShape visual_region, visual_code_region;
     sf::RectangleShape safe_region;
 
-    sf::Text text_for_code(font_impact, "", 22);
+    // load font
+    sf::Text text_for_code(font_impact, "", 20);
     sf::Text error_text(font_impact, "", 16);
     error_text.setFillColor(sf::Color::Red);
 
-    visual_region.setFillColor(sf::Color(217, 217, 217));
-    visual_region.setOutlineColor(sf::Color(200, 200, 200, 255));
+    visual_region.setFillColor(sf::Color(251, 251, 253, 200));
+    visual_region.setOutlineColor(sf::Color(217, 211, 209));
     visual_region.setOutlineThickness(2.0f);
     visual_region.setSize({visual_region_width, visual_region_height});
     visual_region.setRadius(18.0f);
     visual_region.setCornerPointCount(40);
-    visual_region.setPosition({19.0f, 14.0f});
+    visual_region.setPosition({380.0f, 20.0f});
 
-    visual_code_region.setFillColor(sf::Color(220, 220, 220));
-    visual_code_region.setOutlineColor(sf::Color(180, 180, 180, 255));
-    visual_code_region.setOutlineThickness(2.0f);
+    visual_code_region.setFillColor(sf::Color(215, 161, 72, 200));
+    visual_code_region.setOutlineColor(sf::Color(217, 211, 209));
+    visual_code_region.setOutlineThickness(1.0f);
     visual_code_region.setSize({visual_code_region_width, visual_code_region_height});
-    visual_code_region.setRadius(8.0f);
+    visual_code_region.setRadius(0.0f);
     visual_code_region.setCornerPointCount(20);
-    visual_code_region.setPosition({1053.0f, 14.0f});
+    visual_code_region.setPosition({WINDOW_WIDTH - visual_code_region_width, WINDOW_HEIGHT - visual_code_region_height - 10.0f});
 
     safe_region.setSize({visual_region_width - Visual_graph.getRadius() * 2, visual_region_height - Visual_graph.getRadius() * 2});
     safe_region.setPosition({visual_region.getPosition().x + Visual_graph.getRadius(), visual_region.getPosition().y + Visual_graph.getRadius()});
 
-    sf::RectangleShape slider_bar(sf::Vector2f(190.0f, 20.0f));
-    slider_bar.setFillColor(sf::Color(210, 210, 210));
-    slider_bar.setPosition({1057.0f, 609.0f});
+    // slider for speed
+    sf::RectangleShape slider_bar(sf::Vector2f(500.0f, 20.0f));
+    slider_bar.setFillColor(sf::Color(138,155,192));
+    slider_bar.setPosition({400.0f, WINDOW_HEIGHT - 120.0f});
 
     sf::CircleShape slider_knob(15.0f);
-    slider_knob.setFillColor(sf::Color(100, 100, 100));
+    slider_knob.setFillColor(sf::Color(28, 41, 114));
     slider_knob.setPosition({slider_bar.getPosition().x + slider_bar.getSize().x / 2.0f - slider_knob.getRadius(), slider_bar.getPosition().y - 5.0f});
 
+    // buttons
     std::vector<button> buttons;
-    bool state_buttons[5] = {0, 0, 0, 0, 0};
+    bool state_buttons[7] = {0, 0, 0, 0, 0, 0, 0};
     float button_region_x = 1053.0f;
     float button_region_y = 364.0f;
 
-    buttons.emplace_back(button_region_x, button_region_y + 116.0f, button_width, button_height, sf::Color(200, 200, 200), "Find Path", 16);
-    buttons.emplace_back(button_region_x, button_region_y + 174.0f, button_width, button_height, sf::Color(200, 200, 200), "Read Graph", 16);
-    buttons.emplace_back(button_region_x, button_region_y + 58.0f, button_width, button_height, sf::Color(200, 200, 200), "Add Edge", 16);
-    buttons.emplace_back(button_region_x, button_region_y, button_width, button_height, sf::Color(200, 200, 200), "Add Node", 16);
-    buttons.emplace_back(1151.0f, button_region_y, button_width, button_height, sf::Color(200, 200, 200), Visual_graph.isDirected() ? "Directed" : "Undirected", 16);
+    buttons.emplace_back(10, 325, button_width, button_height, sf::Color(232, 183, 81), "Find Path", 20);
+    buttons.emplace_back(260, 625, button_width, button_height, sf::Color(232, 183, 81), "File", 20);
+    buttons.emplace_back(10, 550, button_width, button_height, sf::Color(232, 183, 81), "Add Edge", 20);
+    buttons.emplace_back(10, 475, button_width, button_height, sf::Color(232, 183, 81), "Add Node", 20);
+    buttons.emplace_back(135, 475, button_width, button_height, sf::Color(232, 183, 81), Visual_graph.isDirected() ? "Directed" : "Undirected", 18);
     for(int i = 0; i < 5; i++) {
         buttons[i].setOutline(sf::Color::Transparent, 0.0f);
-        buttons[i].setColor(sf::Color(255,255,255,50));
+        buttons[i].setColor(sf::Color(232, 183, 81));
     }
+    buttons.emplace_back(10, 625, button_width, button_height, sf::Color(232, 183, 81), "Clear", 24);
+    buttons.emplace_back(135, 625, button_width, button_height, sf::Color(232, 183, 81), "Random", 20);
 
-    box input_weight_box(1161.0f, button_region_y + 58.0f, button_width + 10.0f, button_height, sf::Color(200, 200, 200), "5", 16);
+    box input_weight_box(135, 550, button_width + 10.0f, button_height, sf::Color(138,155,192), "5", 16);
     input_weight_box.setOutline(sf::Color::Transparent, 0.0f);
     std::string current_input_weight = "5";
 
+    // input for source vertex
     std::string source_vertrix = "0";
     int selected_algorithm = shortest_path_algorithm::ALGO_DIJKSTRA;
     bool show_algorithm_options = false;
 
     sf::FloatRect po = buttons[0].getShape();
-    box input_source_box(1151.0f, button_region_y + 116.0f, button_width - 30.0f, button_height, sf::Color(200, 200, 200), "0", 16);
+    box input_source_box(135.0f, 325.0f, button_width - 30.0f, button_height, sf::Color(138,155,192), "0", 16);
     input_source_box.setOutline(sf::Color::Transparent, 0.0f);
 
-    button pre_step_button(1249.0f, button_region_y + 58.0f, button_width, button_height, sf::Color(200, 200, 200), "Prev", 16);
+    button pre_step_button(10.0f, 400.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Prev", 24);
     pre_step_button.setOutline(sf::Color::Transparent, 0.0f);
 
-    button start_button(1249.0f, button_region_y + 116.0f, button_width, button_height, sf::Color(200, 200, 200), "Start", 16);
+    button start_button(135.0f, 400.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Start", 24);
     start_button.setOutline(sf::Color::Transparent, 0.0f);
 
-    button nxt_step_button(1249.0f, button_region_y + 174.0f, button_width, button_height, sf::Color(200, 200, 200), "Next", 16);
+    button nxt_step_button(260.0f, 400.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Next", 24);
     nxt_step_button.setOutline(sf::Color::Transparent, 0.0f);
 
-    button back_button(1249.0f, button_region_y, button_width, button_height, sf::Color(200, 200, 200), "Back", 16);
+    button back_button(15.0f, 15.0f, button_width, button_height, sf::Color(232, 183, 81), "Return", 24);
     back_button.setOutline(sf::Color::Transparent, 0.0f);
 
-    button algorithm_button(1151.0f, button_region_y + 174.0f, button_width, button_height, sf::Color(200, 200, 200), shortest_path_algorithm::algorithm_names[shortest_path_algorithm::ALGO_DIJKSTRA], 16);
+    // algorithm selection
+    button algorithm_button(10.0f, 200.0f, button_width, button_height, sf::Color(232, 183, 81), shortest_path_algorithm::algorithm_names[shortest_path_algorithm::ALGO_DIJKSTRA], 16);
     algorithm_button.setOutline(sf::Color::Transparent, 0.0f);
     float algorithm_option_x = 1249.0f;
-    button algorithm_option_0(algorithm_option_x, button_region_y + 174.0f, button_width, button_height, sf::Color(200, 200, 200), shortest_path_algorithm::algorithm_names[shortest_path_algorithm::ALGO_DIJKSTRA], 16);
+    button algorithm_option_0(135, 200.0f, button_width, button_height, sf::Color(232, 183, 81), shortest_path_algorithm::algorithm_names[shortest_path_algorithm::ALGO_DIJKSTRA], 16);
     algorithm_option_0.setOutline(sf::Color::Transparent, 0.0f);
-    button algorithm_option_1(algorithm_option_x, button_region_y + 232.0f, button_width, button_height, sf::Color(200, 200, 200), shortest_path_algorithm::algorithm_names[shortest_path_algorithm::ALGO_BELLMAN_FORD], 14);
+    button algorithm_option_1(260, 200.0f, button_width, button_height, sf::Color(232, 183, 81), shortest_path_algorithm::algorithm_names[shortest_path_algorithm::ALGO_BELLMAN_FORD], 16);
     algorithm_option_1.setOutline(sf::Color::Transparent, 0.0f);
 
     bool mouse_left_pressed = 0;
@@ -516,13 +563,14 @@ void shortest_path_page() {
         mouse_left_pressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
 
         if(mouse_left_pressed and !mouse_left_pressed_last) {
-            for(int i = 0; i < 5; i++) {
+            for(int i = 0; i < buttons.size(); i++) {
                 if(buttons[i].isClicked(sf::Mouse::getPosition(window))) {
                     state_buttons[i] = !state_buttons[i];
                     if(state_buttons[i]) {
-                            for(int j = 0; j < 5; j++) {
+                            for(int j = 0; j < buttons.size(); j++) {
                             if(j != i) state_buttons[j] = 0;
                         }
+                        // case: find path
                         if(i == 0) {
                             is_start_button_pressed = 0;
                             cur_step = 0;
@@ -531,7 +579,6 @@ void shortest_path_page() {
                             int start_index = graph.label_to_index(source_vertrix);
                             if(start_index >= 0) {
                                 if(selected_algorithm == shortest_path_algorithm::ALGO_DIJKSTRA && graph.has_negative_weight()) {
-                                    error_message = "Dijkstra requires non-negative weights";
                                     error_time = now;
                                 } else {
                                     graph.find_shortest_path(start_index, selected_algorithm);
@@ -540,7 +587,7 @@ void shortest_path_page() {
                                 error_time = now;
                             }
                         }
-                        else if(i == 4) {
+                        else if(i == 4) { //case toggle directed/undirected
                             bool cur_directed = Visual_graph.isDirected();
                             Visual_graph.setDirected(!cur_directed);
                             buttons[4].setLabel(Visual_graph.isDirected() ? "Directed" : "Undirected");
@@ -548,7 +595,7 @@ void shortest_path_page() {
                             // Toggle action doesn't remain selected as a mode button
                             for(int j = 0; j < 5; j++) state_buttons[j] = 0;
                         }
-                        else if(i == 1) {
+                        else if(i == 1) { // case load graph from file
                             if(!read_graph_from_file(Visual_graph, graph, Visual_graph.isDirected())) {
                                 error_time = now;
                             } else {
@@ -557,7 +604,6 @@ void shortest_path_page() {
                                 int start_index = graph.label_to_index(source_vertrix);
                                 if(start_index >= 0) {
                                     if(selected_algorithm == shortest_path_algorithm::ALGO_DIJKSTRA && graph.has_negative_weight()) {
-                                        error_message = "Dijkstra requires non-negative weights";
                                         error_time = now;
                                     } else {
                                         graph.code = shortest_path_algorithm::algorithm_code[selected_algorithm];
@@ -581,25 +627,27 @@ void shortest_path_page() {
                 }
             }
 
+            // Algorithm selection
             if (algorithm_button.isClicked(sf::Mouse::getPosition(window))) {
                 show_algorithm_options = !show_algorithm_options;
-                for(int i = 0; i < 5; i++) state_buttons[i] = 0;
+                for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
                 is_start_button_pressed = 0;
             }
 
+            // Algorithm option selection
             if (show_algorithm_options) {
                 if (algorithm_option_0.isClicked(sf::Mouse::getPosition(window))) {
                     selected_algorithm = shortest_path_algorithm::ALGO_DIJKSTRA;
                     algorithm_button.setLabel(shortest_path_algorithm::algorithm_names[selected_algorithm]);
                     graph.code = shortest_path_algorithm::algorithm_code[selected_algorithm];
-                    for(int i = 0; i < 5; i++) state_buttons[i] = 0;
+                    for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
                     is_start_button_pressed = 0;
                     show_algorithm_options = false;
                 } else if (algorithm_option_1.isClicked(sf::Mouse::getPosition(window))) {
                     selected_algorithm = shortest_path_algorithm::ALGO_BELLMAN_FORD;
                     algorithm_button.setLabel(shortest_path_algorithm::algorithm_names[selected_algorithm]);
                     graph.code = shortest_path_algorithm::algorithm_code[selected_algorithm];
-                    for(int i = 0; i < 5; i++) state_buttons[i] = 0;
+                    for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
                     is_start_button_pressed = 0;
                     show_algorithm_options = false;
                 }
@@ -681,7 +729,6 @@ void shortest_path_page() {
                     int start_index = graph.label_to_index(source_vertrix);
                     if(start_index >= 0) {
                         if(selected_algorithm == shortest_path_algorithm::ALGO_DIJKSTRA && graph.has_negative_weight()) {
-                            error_message = "Dijkstra requires non-negative weights";
                             error_time = now;
                         } else {
                             graph.find_shortest_path(start_index, selected_algorithm);
@@ -696,7 +743,6 @@ void shortest_path_page() {
                     int start_index = graph.label_to_index(source_vertrix);
                     if(start_index >= 0) {
                         if(selected_algorithm == shortest_path_algorithm::ALGO_DIJKSTRA && graph.has_negative_weight()) {
-                            error_message = "Dijkstra requires non-negative weights";
                             error_time = now;
                         } else {
                             graph.find_shortest_path(start_index, selected_algorithm);
@@ -739,9 +785,33 @@ void shortest_path_page() {
 
         //
 
+
+        //case: clear
+
+        if(state_buttons[5] and mouse_left_pressed and !mouse_left_pressed_last) {
+            Visual_graph.clearAll();
+            graph.clear();
+            source_vertrix = "0";
+            current_input_weight = "5";
+            is_start_button_pressed = 0;
+            for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
+        }
+
+        //
+
+        // case: random graph
+        if(state_buttons[6] and mouse_left_pressed and !mouse_left_pressed_last) {
+            random_graph(Visual_graph, graph, Visual_graph.isDirected());
+            source_vertrix = "0";
+            current_input_weight = "5";
+            is_start_button_pressed = 0;
+            for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
+        }
+        //
+
         // case: not one of buttons is active | move node
         bool no_button_active = 1;
-        for(int i=1; i<4; i++) {
+        for(int i=1; i<buttons.size(); i++) {
             no_button_active &= !state_buttons[i];
         }
 
@@ -761,6 +831,7 @@ void shortest_path_page() {
         }
 
         window.clear(sf::Color(235, 235, 235)); // soft gray background
+        window.draw(backgroundSprite);
 
         // draw region 
         window.draw(visual_region);
@@ -768,12 +839,12 @@ void shortest_path_page() {
 
         // draw buttons with transparency + hover border
         sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-        for(int i = 0; i < 5; i++) {
+        for(int i = 0; i < buttons.size(); i++) {
             // transparent fill for all, active semi-green
             if(state_buttons[i]) {
-                buttons[i].setColor(sf::Color(100, 220, 100, 100));
+                buttons[i].setColor(sf::Color(140, 95, 30));
             } else {
-                buttons[i].setColor(sf::Color(255, 255, 255, 50));
+                buttons[i].setColor(sf::Color(232, 183, 81));
             }
 
             if(buttons[i].contains(mousePos)) {
@@ -787,10 +858,10 @@ void shortest_path_page() {
 
         if (algorithm_button.contains(mousePos) || show_algorithm_options) {
             algorithm_button.setOutline(sf::Color::Black, 2.0f);
-            algorithm_button.setColor(sf::Color(100, 220, 100, 100));
+            algorithm_button.setColor(sf::Color(140, 95, 30));
         } else {
             algorithm_button.setOutline(sf::Color::Transparent, 0.0f);
-            algorithm_button.setColor(sf::Color(255, 255, 255, 50));
+            algorithm_button.setColor(sf::Color(232, 183, 81));
         }
         algorithm_button.draw(window);
 
@@ -799,10 +870,10 @@ void shortest_path_page() {
             for (int i = 0; i < 2; ++i) {
                 if (algo_options[i]->contains(mousePos)) {
                     algo_options[i]->setOutline(sf::Color::Black, 2.0f);
-                    algo_options[i]->setColor(sf::Color(100, 220, 100, 100));
+                    algo_options[i]->setColor(sf::Color(140, 95, 30));
                 } else {
                     algo_options[i]->setOutline(sf::Color::Transparent, 0.0f);
-                    algo_options[i]->setColor(sf::Color(255, 255, 255, 50));
+                    algo_options[i]->setColor(sf::Color(232, 183, 81));
                 }
                 algo_options[i]->draw(window);
             }
@@ -824,9 +895,9 @@ void shortest_path_page() {
         }
 
         if(back_button.contains(mousePos)){
-            back_button.setOutline(sf::Color::Black, 2.0f);
+            back_button.setColor(sf::Color(140, 95, 30));
         } else {
-            back_button.setOutline(sf::Color::Transparent, 0.0f);
+            back_button.setColor(sf::Color(232, 183, 81));
         }
         back_button.draw(window);
 
@@ -844,28 +915,28 @@ void shortest_path_page() {
 
             if(pre_step_button.contains(mousePos)) {
                 pre_step_button.setOutline(sf::Color::Black, 2.0f);
-                pre_step_button.setColor(sf::Color(100, 220, 100, 100));
+                pre_step_button.setColor(sf::Color(140, 95, 30));
             } else {
                 pre_step_button.setOutline(sf::Color::Transparent, 0.0f);
-                pre_step_button.setColor(sf::Color(255, 255, 255, 50));
+                pre_step_button.setColor(sf::Color(232, 183, 81));
             }
             pre_step_button.draw(window);
 
             if(start_button.contains(mousePos) or is_start_button_pressed){
                 start_button.setOutline(sf::Color::Black, 2.0f);
-                start_button.setColor(sf::Color(100, 220, 100, 100));
+                start_button.setColor(sf::Color(140, 95, 30));
             } else {
                 start_button.setOutline(sf::Color::Transparent, 0.0f);
-                start_button.setColor(sf::Color(255, 255, 255, 50));
+                start_button.setColor(sf::Color(232, 183, 81));
             }
             start_button.draw(window);
 
             if(nxt_step_button.contains(mousePos)) {
                 nxt_step_button.setOutline(sf::Color::Black, 2.0f);
-                nxt_step_button.setColor(sf::Color(100, 220, 100, 100));
+                nxt_step_button.setColor(sf::Color(140, 95, 30));
             } else {
                 nxt_step_button.setOutline(sf::Color::Transparent, 0.0f);
-                nxt_step_button.setColor(sf::Color(255, 255, 255, 50));
+                nxt_step_button.setColor(sf::Color(232, 183, 81));
             }
             nxt_step_button.draw(window);
 
@@ -879,7 +950,7 @@ void shortest_path_page() {
             text_for_code.setFillColor(sf::Color::Black);
             text_for_code.setOrigin({0 , text_for_code.getLocalBounds().size.y / 2.0f});
 
-            text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x + 4, visual_code_region.getGlobalBounds().position.y + 15 * (i+1) + text_for_code.getLocalBounds().size.y * i + 5});
+            text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x + 4, visual_code_region.getGlobalBounds().position.y + 8 * (i+1) + text_for_code.getLocalBounds().size.y * i + 5});
 
             window.draw(text_for_code);
         }

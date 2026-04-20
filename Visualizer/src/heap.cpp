@@ -11,7 +11,7 @@ void heap_page(){
     sf::Texture backgroundTexture;
     // Lưu ý: Đảm bảo file "background.png" nằm cùng thư mục với file thực thi (executable) 
     // hoặc bạn phải truyền đường dẫn tuyệt đối/tương đối chính xác.
-    if (!backgroundTexture.loadFromFile("Visualizer/assets/bg.png")) {
+    if (!backgroundTexture.loadFromFile("cs163-project/Visualizer/assets/bg.png")) {
         std::cerr << "cannot load background" << std::endl;
     }
 
