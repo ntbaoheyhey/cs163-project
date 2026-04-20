@@ -195,6 +195,12 @@ void node::setColor(sf::Color color) {
     shape.setFillColor(color);
 }
 
+void node::setOpacity(std::uint8_t alpha) {
+    sf::Color fill = shape.getFillColor(); fill.a = alpha; shape.setFillColor(fill);
+    sf::Color outline = shape.getOutlineColor(); outline.a = alpha; shape.setOutlineColor(outline);
+    sf::Color txtColor = text.getFillColor(); txtColor.a = alpha; text.setFillColor(txtColor);
+}
+
 void node::setOutlineColor(sf::Color color) {
     shape.setOutlineColor(color);
 }
@@ -309,6 +315,15 @@ void edge::setPoints(float x1, float y1, float x2, float y2, bool directed, floa
 
 void edge::setColor(sf::Color color) {
     shape.setFillColor(color);
+}
+
+void edge::setOpacity(std::uint8_t alpha) {
+    sf::Color fill = shape.getFillColor(); fill.a = alpha; shape.setFillColor(fill);
+    sf::Color outline = shape.getOutlineColor(); outline.a = alpha; shape.setOutlineColor(outline);
+    if (has_arrow) {
+        sf::Color arrFill = arrow.getFillColor(); arrFill.a = alpha; arrow.setFillColor(arrFill);
+        sf::Color arrOut = arrow.getOutlineColor(); arrOut.a = alpha; arrow.setOutlineColor(arrOut);
+    }
 }
 
 void edge::setThickness(float th) {

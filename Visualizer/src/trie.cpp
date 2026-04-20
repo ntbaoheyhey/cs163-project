@@ -16,6 +16,7 @@ const sf::Color BUTTON_FILL_COLOR = sf::Color(232, 183, 81);
 const sf::Color BOX_FILL_COLOR = sf::Color(138, 155, 192);
 const sf::Color NODE_FILL_COLOR = sf::Color(218, 168, 74);
 const sf::Color NODE_OUTLINE_COLOR = sf::Color(202, 148, 95);
+const sf::Color NODE_END_COLOR = sf::Color(53, 125, 186);
 const sf::Color NODE_ACTIVE_COLOR = sf::Color(62, 188, 167);
 const sf::Color NODE_FOUND_COLOR = sf::Color(156, 229, 147);
 const sf::Color NODE_DELETE_COLOR = sf::Color(246, 88, 88);
@@ -40,6 +41,7 @@ void trie_page(){
     sf::Texture backgroundTexture;
     if (!loadTextureFromAsset(backgroundTexture, "bg_toty.png")) {
         std::cerr << "cannot load background" << std::endl;
+        !backgroundTexture.loadFromFile("cs163-project/Visualizer/assets/bg_toty.png");
     } else{
         std::cerr << "load background successfully" << std::endl;    
     }
@@ -118,20 +120,9 @@ void trie_page(){
     box build_box(space_button, button_area_mid + section_tilte_word_height + 2 * (button_height + space_button), button_width * 2 + space_button, button_height, BOX_FILL_COLOR, "   Type here", 24);
     box speed_box(button_area_horizon * 3 + 2 * space_button + button_width, button_area_mid + 3 * space_button + slider_height + button_height, button_width, button_height, BOX_FILL_COLOR, "Speed : 0x", 24);
 
-    // Create Root node
-    node* bennode = nullptr;
-    bennode = create_node(block_width / 2, 0);
-    
     // Trie data
     Trie data;
     data.init();
-    // data.add("aaa");
-    // data.add("sayy");
-    // data.add("crash");
-    // data.add("car");
-    // data.add("e");
-    // data.add("f");
-    // data.add("cringe");
     data.create_visual(); // Must have
 
     int frame_count = 0;
@@ -144,7 +135,17 @@ void trie_page(){
     bool build_box_active = false;
     std::string build_input = "";
 
+    // --- Animation state ---
+    std::vector<AnimStep> anim_queue;
+    int cur_step = -1;
+    NodeTrie* highlighted_node = nullptr;
+
+    // --- Delta time clock ---
+    sf::Clock frame_clock;
+
     while(window.isOpen()){
+        float dt = frame_clock.restart().asSeconds();
+
         // 1. Mouse information
         left_mouse = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
         sf::Vector2i mousePos = sf::Mouse::getPosition(window);
@@ -162,37 +163,63 @@ void trie_page(){
         file_button.update(mousePos);
         random_button.update(mousePos);
         build_button.update(mousePos);
-        
+        back_button.update(mousePos);
+        next_button.update(mousePos);
 
         // 3. Left-Mouse click handle
         if (left_mouse && !left_mouse_last) { 
-            // Button
             bool operation_button_pressed = false;
             bool build_button_pressed = false;
 
             if (return_button.contains(mousePos)){
                 std::cout << "Received Return Query: Exit Trie Page" << "\n";
+                for (auto& step : anim_queue) {
+                    if (step.stored_subtree) { data.clear_travese(step.stored_subtree); step.stored_subtree = nullptr; }
+                }
+                anim_queue.clear();
                 data.clear();
                 return;
             }
 
+            // ---- ADD ----
             if (add_button.contains(mousePos)) {
                 std::cout << "Received Add Query: " << current_input << "\n";
-                if (!current_input.empty()) {data.add(current_input); data.create_visual();}
+                if (!current_input.empty()) {
+                    if (highlighted_node) { data.unhighlight_node(highlighted_node); highlighted_node = nullptr; }
+                    for (auto& step : anim_queue) {
+                        if (step.stored_subtree) { data.clear_travese(step.stored_subtree); step.stored_subtree = nullptr; }
+                    }
+                    anim_queue = data.add_with_anim(current_input);
+                    cur_step = -1;
+                }
                 operation_button_pressed = true;
             }
+            // ---- DELETE ----
             if (delete_button.contains(mousePos)) {
                 std::cout << "Received Delete Query: " << current_input << "\n";
-                if (!current_input.empty()) {data.remove(current_input); data.create_visual();}
+                if (!current_input.empty()) {
+                    for (auto& step : anim_queue) {
+                        if (step.stored_subtree) { data.clear_travese(step.stored_subtree); step.stored_subtree = nullptr; }
+                    }
+                    anim_queue.clear(); cur_step = -1; highlighted_node = nullptr;
+                    data.remove(current_input); data.create_visual();
+                }
                 operation_button_pressed = true;
             }
+
             if (find_button.contains(mousePos)) {
                 std::cout << "Received Find Query: " << current_input << "\n";
                 operation_button_pressed = true;
             }
+
+            // ---- CLEAR ----
             if (clear_button.contains(mousePos)) {
                 std::cout << "Received Clear Query" << "\n";
-                {data.clear(); data.create_visual(); };
+                for (auto& step : anim_queue) {
+                    if (step.stored_subtree) { data.clear_travese(step.stored_subtree); step.stored_subtree = nullptr; }
+                }
+                anim_queue.clear(); cur_step = -1; highlighted_node = nullptr;
+                data.clear(); data.create_visual();
                 operation_button_pressed = true;
             }
 
@@ -209,40 +236,164 @@ void trie_page(){
                 build_button_pressed = true;
             }
 
+            // ---- NEXT ----
+            if (next_button.contains(mousePos) && !anim_queue.empty()) {
+                int next_step = cur_step + 1;
+                if (next_step < (int)anim_queue.size()) {
+                    cur_step = next_step;
+                    AnimStep& step = anim_queue[cur_step];
+
+                    if (step.type == StepType::Move) {
+                        if (highlighted_node) data.unhighlight_node(highlighted_node);
+                        // Move lưu parent+id, giải với step.node->pnext[step.char_id]
+                        highlighted_node = step.node->pnext[step.char_id];
+                        data.highlight_node(highlighted_node, NODE_ACTIVE_COLOR);
+                    }
+                    else if (step.type == StepType::Lerp) {
+                        // Hàn gắn lại nhánh bị tháo từ thao tác Back (nếu có)
+                        if (step.stored_subtree) {
+                            step.node->pnext[step.char_id] = step.stored_subtree;
+                            step.stored_subtree = nullptr;
+                        }
+                        // Reposition toàn bộ cây + tạo visual cho node mới
+                        data.create_visual_lerp(0.4f);
+                        // Ẩn toàn bộ subtree mới (cả node lẫn edge)
+                        std::function<void(NodeTrie*, NodeTrie*, int)> hide_sub = [&](NodeTrie* p, NodeTrie* par, int cid) {
+                            if (!p) return;
+                            if (p->visual_node) p->visual_node->setOpacity(0);
+                            if (par && par->visual_edge[cid])
+                                par->visual_edge[cid]->setOpacity(0);
+                            for (int ci = 0; ci < LOWERCASE_CHAR; ++ci) hide_sub(p->pnext[ci], p, ci);
+                        };
+                        hide_sub(step.node->pnext[step.char_id], step.node, step.char_id);
+                    }
+                    else if (step.type == StepType::Create) {
+                        if (highlighted_node) data.unhighlight_node(highlighted_node);
+                        NodeTrie* new_node = step.node->pnext[step.char_id];
+                        if (new_node && new_node->visual_node) {
+                            new_node->visual_node->setOpacity(255);
+                            new_node->visual_node->setColor(NODE_FOUND_COLOR);
+                        }
+                        // Hiện edge từ cha tới node mới
+                        if (step.node->visual_edge[step.char_id]) {
+                            step.node->visual_edge[step.char_id]->setOpacity(255);
+                            step.node->visual_edge[step.char_id]->setColor(EDGE_COLOR);
+                        }
+                        highlighted_node = new_node;
+                    }
+                    else if (step.type == StepType::MarkEnd) {
+                        if (highlighted_node) data.unhighlight_node(highlighted_node);
+                        // char_id == -1: node cũ (dùng trực tiếp)
+                        // char_id != -1: node mới (tra qua parent)
+                        NodeTrie* target = (step.char_id == -1)
+                            ? step.node
+                            : step.node->pnext[step.char_id];
+                        if (target) {
+                            target->isend = true;
+                            highlighted_node = target;
+                            data.highlight_node(highlighted_node, NODE_END_COLOR);
+                        }
+                    }
+                }
+            }
+
+            // ---- BACK ----
+            if (back_button.contains(mousePos) && !anim_queue.empty() && cur_step >= 0) {
+                AnimStep& step = anim_queue[cur_step];
+
+                if (step.type == StepType::Move) {
+                    if (highlighted_node) data.unhighlight_node(highlighted_node);
+                    highlighted_node = nullptr;
+                    if (cur_step - 1 >= 0) {
+                        AnimStep& prev = anim_queue[cur_step - 1];
+                        if (prev.type == StepType::Move) {
+                            // prev cũng dùng parent+id
+                            highlighted_node = prev.node->pnext[prev.char_id];
+                            data.highlight_node(highlighted_node, NODE_ACTIVE_COLOR);
+                        } else if (prev.type == StepType::Create) {
+                            NodeTrie* pn = prev.node->pnext[prev.char_id];
+                            if (pn) { highlighted_node = pn; data.highlight_node(highlighted_node, NODE_FOUND_COLOR); }
+                        }
+                    }
+                }
+                else if (step.type == StepType::MarkEnd) {
+                    // Hoàn tác: bỏ isend
+                    NodeTrie* target = (step.char_id == -1)
+                        ? step.node
+                        : step.node->pnext[step.char_id];
+                    if (target) target->isend = false;
+                    if (highlighted_node) data.unhighlight_node(highlighted_node);
+                    highlighted_node = nullptr;
+                    if (cur_step - 1 >= 0) {
+                        AnimStep& prev = anim_queue[cur_step - 1];
+                        if (prev.type == StepType::Create) {
+                            NodeTrie* pn = prev.node->pnext[prev.char_id];
+                            if (pn) { highlighted_node = pn; data.highlight_node(highlighted_node, NODE_FOUND_COLOR); }
+                        } else if (prev.type == StepType::Move) {
+                            highlighted_node = prev.node;
+                            data.highlight_node(highlighted_node, NODE_ACTIVE_COLOR);
+                        }
+                    }
+                }
+                else if (step.type == StepType::Create) {
+                    NodeTrie* new_node = step.node->pnext[step.char_id];
+                    // Ẩn node + edge
+                    if (new_node && new_node->visual_node)
+                        new_node->visual_node->setOpacity(0);
+                    if (step.node->visual_edge[step.char_id])
+                        step.node->visual_edge[step.char_id]->setOpacity(0);
+                    if (highlighted_node == new_node) highlighted_node = nullptr;
+                    // Highlight node trước
+                    if (cur_step - 1 >= 0) {
+                        AnimStep& prev = anim_queue[cur_step - 1];
+                        if (prev.type == StepType::Create) {
+                            NodeTrie* pn = prev.node->pnext[prev.char_id];
+                            if (pn) { highlighted_node = pn; data.highlight_node(highlighted_node, NODE_FOUND_COLOR); }
+                        } else if (prev.type == StepType::Move) {
+                            highlighted_node = prev.node;
+                            data.highlight_node(highlighted_node, NODE_ACTIVE_COLOR);
+                        } else if (prev.type == StepType::Lerp) {
+                            highlighted_node = nullptr; // Sau Lerp không có node nào highlight
+                        }
+                    }
+                }
+                else if (step.type == StepType::Lerp) {
+                    // Tháo toàn bộ subtree và cất vào step để Cây trở về form cũ
+                    step.stored_subtree = step.node->pnext[step.char_id];
+                    step.node->pnext[step.char_id] = nullptr;
+                    
+                    // Reposition cây cũ về layout cũ
+                    data.create_visual_lerp(0.4f);
+                }
+
+                cur_step--;
+            }
+
+            // Input box handling
             if(input_box.contains(mousePos)){
                 std::cout << "Received Input Box Activation: On" << "\n";
                 input_box_active = true;
                 input_box.update(input_box_active, mousePos);
-                if(current_input.empty()){
-                    input_box.setLabel("|");
-                }
+                if(current_input.empty()) input_box.setLabel("|");
             } else
             if(!operation_button_pressed && input_box_active){
                 std::cout << "Received Input Box Activation: Off" << "\n";
                 input_box_active = false;
-                if(current_input.empty()){
-                    input_box.setLabel("   Type here");
-                }
+                if(current_input.empty()) input_box.setLabel("   Type here");
             }
 
             if(build_box.contains(mousePos)){
                 std::cout << "Received Build Box Activation: On" << "\n";
                 build_box_active = true;
                 build_box.update(build_box_active, mousePos);
-                if(build_input.empty()){
-                    build_box.setLabel("|");
-                }
+                if(build_input.empty()) build_box.setLabel("|");
             } else
             if(!build_button_pressed && build_box_active){
                 std::cout << "Received Build Box Activation: Off" << "\n";
                 build_box_active = false;
-                if(build_input.empty()){
-                    build_box.setLabel("   Type here");
-                }
+                if(build_input.empty()) build_box.setLabel("   Type here");
             }
-
         }
-        // Lưu lại cờ click cho frame sau
         left_mouse_last = left_mouse;
 
         // Receive event of present frame
@@ -253,44 +404,29 @@ void trie_page(){
                 if (const auto* textEvent = event->getIf<sf::Event::TextEntered>()) {
                     bool change = false;
                     if (textEvent->unicode == '\b' || textEvent->unicode == 8) {
-                        if (!current_input.empty()) {
-                            current_input.pop_back();
-                            change = true;
-                        }
+                        if (!current_input.empty()) { current_input.pop_back(); change = true; }
                     }
                     else if (textEvent->unicode >= 97 && textEvent->unicode <= 122) {
-                        current_input += static_cast<char>(textEvent->unicode);
-                        change = true;
+                        current_input += static_cast<char>(textEvent->unicode); change = true;
                     }
                     input_box.setLabel(current_input + "|"); 
-                    if(change){
-                        std::cout << "Received new input string: " << current_input << "\n";
-                    }
+                    if(change) std::cout << "Received new input string: " << current_input << "\n";
                 }
             }
             if (build_box_active) {
                 if (const auto* textEvent = event->getIf<sf::Event::TextEntered>()) {
                     bool change = false;
                     if (textEvent->unicode == '\b' || textEvent->unicode == 8) {
-                        if (!build_input.empty()) {
-                            build_input.pop_back();
-                            change = true;
-                        }
+                        if (!build_input.empty()) { build_input.pop_back(); change = true; }
                     }
                     else if (textEvent->unicode >= 97 && textEvent->unicode <= 122) {
-                        // Lowercase letters a-z
-                        build_input += static_cast<char>(textEvent->unicode);
-                        change = true;
+                        build_input += static_cast<char>(textEvent->unicode); change = true;
                     }
                     else if (textEvent->unicode == ',') {
-                        // Comma separator
-                        build_input += ',';
-                        change = true;
+                        build_input += ','; change = true;
                     }
                     build_box.setLabel(build_input + "|");
-                    if(change){
-                        std::cout << "Received new build input string: " << build_input << "\n";
-                    }
+                    if(change) std::cout << "Received new build input string: " << build_input << "\n";
                 }
             }
         }
@@ -299,19 +435,19 @@ void trie_page(){
         ++frame_count;
         if(frame_count % 20 == 0)
             std::cerr << "Frame :" << frame_count << "\n";
+
+        // --- Cập nhật vị trí node (lerp) và edge ---
+        std::function<void(NodeTrie*)> update_nodes = [&](NodeTrie* p) {
+            if (!p) return;
+            if (p->visual_node) p->visual_node->updatePosition(dt);
+            for (int i = 0; i < LOWERCASE_CHAR; ++i) update_nodes(p->pnext[i]);
+        };
+        update_nodes(data.root);
+        data.update_edges(data.root);
         
         // --- Draw new frame --- //
         window.clear(sf::Color(212, 188, 112, 0.71));
-        // Background
         window.draw(backgroundSprite);
-        // Line
-            // window.draw(horizontal_line_1);
-            // window.draw(horizontal_line_2);
-            // window.draw(horizontal_line_3);
-            // window.draw(horizontal_line_4);
-            // window.draw(vertical_line_1);
-            // window.draw(vertical_line_2);
-        // Button
         return_button.draw(window);
         add_button.draw(window);
         delete_button.draw(window);
@@ -326,16 +462,11 @@ void trie_page(){
         next_button.draw(window);
         speedup_button.draw(window);
         slowdown_button.draw(window);
-        // Box
         input_box.draw(window);
         build_box.draw(window);
         speed_box.draw(window);
-        // Slider
         window.draw(slider_fix);
-        // Data Trie
         data.draw(window);
-        
-        // --- Display --- //
         window.display();
     }
 }
@@ -427,6 +558,10 @@ void Trie::remove(std::string s)
             }
             delete pnow;
             int id = s[i - 1] - int('a');
+            if (thepath[i - 1]->visual_edge[id] != nullptr) {
+                delete thepath[i - 1]->visual_edge[id];
+                thepath[i - 1]->visual_edge[id] = nullptr;
+            }
             thepath[i - 1]->pnext[id] = nullptr;
         }
     }
@@ -479,21 +614,35 @@ bool Trie::cal_block(NodeTrie *pnode)
 
 void Trie::cre_node(NodeTrie *pnode, int block_x, int block_y, int char_branch)
 {
-    // Create node
-    pnode->visual_node = create_node(block_x, block_y);
-    if(char_branch == -1)
-        pnode->visual_node->setLabel("R", 20);
-    else{
-        std::string tmp = "";
-        tmp.push_back(char_branch + 'a');
-        pnode->visual_node->setLabel(tmp, 20);
+    // --- Tính tọa độ đích ---
+    float x = block_unit * block_x + bgvisual.getPosition().x + block_unit / 2;
+    float y = block_unit * block_y + bgvisual.getPosition().y + block_unit / 2;
+
+    if (pnode->visual_node == nullptr) {
+        // Node chưa có visual -> tạo mới
+        pnode->visual_node = create_node(block_x, block_y);
+        if (char_branch == -1)
+            pnode->visual_node->setLabel("R", 20);
+        else {
+            std::string tmp = "";
+            tmp.push_back(char_branch + 'a');
+            pnode->visual_node->setLabel(tmp, 20);
+        }
+        // Đặt targetPos và currentPos về cùng vị trí (không lerp khi mới tạo)
+        pnode->visual_node->targetPos  = {x, y};
+        pnode->visual_node->currentPos = {x, y};
+        pnode->visual_node->startPos   = {x, y};
+        pnode->visual_node->setPosition(x, y);
+    } else {
+        // Node đã có visual -> chỉ cập nhật targetPos, giữ nguyên currentPos để lerp
+        pnode->visual_node->startPos  = pnode->visual_node->currentPos;
+        pnode->visual_node->targetPos = {x, y};
     }
 
     // Calculation
     int run_block = block_x - pnode->block_need / 2;
-    bool previous_leaf = false, previous = false;
+    bool previous = false;
     for(int i = 0; i < LOWERCASE_CHAR; ++i) if(pnode->pnext[i] != nullptr){
-        bool current_leaf = pnode->pnext[i]->isleaf;
         if(previous)
             run_block = run_block + (block_horizontal);
         int l = run_block;
@@ -504,6 +653,7 @@ void Trie::cre_node(NodeTrie *pnode, int block_x, int block_y, int char_branch)
     }
 }
 
+
 void Trie::cre_edge(NodeTrie *pnode)
 {
     if(pnode->isleaf) return;
@@ -513,7 +663,9 @@ void Trie::cre_edge(NodeTrie *pnode)
         float y_cur = pnode->visual_node->getPosition().y;
         float x_nxt = pnode->pnext[i]->visual_node->getPosition().x;
         float y_nxt = pnode->pnext[i]->visual_node->getPosition().y;
-        pnode->visual_edge[i] = new edge(x_cur, y_cur, x_nxt, y_nxt, EDGE_COLOR, 2);
+        if (pnode->visual_edge[i] == nullptr) {
+            pnode->visual_edge[i] = new edge(x_cur, y_cur, x_nxt, y_nxt, EDGE_COLOR, 2);
+        }
         pnode->visual_edge[i]->setPoints(x_cur, y_cur, x_nxt, y_nxt, false, node_radius);
         // Traverse
         cre_edge(pnode->pnext[i]);
@@ -522,8 +674,10 @@ void Trie::cre_edge(NodeTrie *pnode)
 
 void Trie::drawing(NodeTrie *pnode, sf::RenderWindow& window)
 {
-    // Draw edge
-    for(int i = 0; i < LOWERCASE_CHAR; ++i) if(pnode->pnext[i] != nullptr){
+    // Node chưa có visual (chưa qua Lerp step) → bỏ qua
+    if (!pnode->visual_node) return;
+    // Draw edge (chỉ nếu edge tồn tại)
+    for(int i = 0; i < LOWERCASE_CHAR; ++i) if(pnode->pnext[i] != nullptr && pnode->visual_edge[i] != nullptr){
         pnode->visual_edge[i]->draw(window);
     }
     // Draw node
@@ -556,9 +710,120 @@ void Trie::create_visual()
     create_visual_edge();
 }
 
+void Trie::create_visual_lerp(float speed)
+{
+    // Tính lại layout. cre_node sẽ chỉ cập nhật targetPos cho node đã có,
+    // và tạo mới visual_node cho node chưa có (startNodeMovement sẽ lerp từ startPos).
+    calculate_block();
+    create_visual_node();
+    create_visual_edge();
+    // Kích hoạt lerp cho tất cả node đã có visual
+    std::function<void(NodeTrie*)> activate = [&](NodeTrie* p) {
+        if (!p) return;
+        if (p->visual_node && p->visual_node->startPos != p->visual_node->targetPos) {
+            startNodeMovement(*p->visual_node, p->visual_node->targetPos, speed);
+        }
+        for (int i = 0; i < LOWERCASE_CHAR; ++i) activate(p->pnext[i]);
+    };
+    activate(root);
+}
+
 void Trie::draw(sf::RenderWindow &window)
 {
     drawing(root, window);
+}
+
+// ===================== ANIMATION HELPERS =====================
+
+std::vector<AnimStep> Trie::add_with_anim(std::string s)
+{
+    std::vector<AnimStep> steps;
+
+    // Bước 1: Tìm k — vị trí đầu tiên cần tạo node mới
+    NodeTrie* pnow = root;
+    int k = 0;
+    while (k < (int)s.size() && pnow->pnext[s[k] - 'a'] != nullptr) {
+        pnow = pnow->pnext[s[k] - 'a'];
+        ++k;
+    }
+    // s[0..k-1] → Move (node cũ)
+    // s[k..n-1] → 1 Lerp (tại k) + Create cho từng node mới
+
+    // Bước 2: Thêm thật vào data (không có temp node, không có dangling pointer)
+    add(s);
+
+    // Reset isend của node cuối: MarkEnd animation sẽ set lại
+    NodeTrie* last_node = root;
+    for (char c : s) last_node = last_node->pnext[c - 'a'];
+    last_node->isend = false;
+
+    // Bước 3: Build queue với pointer thật
+    pnow = root;
+    NodeTrie* last_parent = pnow;
+    int last_id = -1;
+    bool had_new = (k < (int)s.size());
+
+    for (int i = 0; i < (int)s.size(); ++i) {
+        int id = s[i] - 'a';
+        NodeTrie* parent = pnow;
+        pnow = pnow->pnext[id];
+        last_parent = parent;
+        last_id = id;
+
+        if (i < k) {
+            steps.push_back({ StepType::Move, parent, id, nullptr }); // lưu parent+id, nhất quán với Create/Lerp
+        } else if (i == k) {
+            // 1 Lerp duy nhất tại điểm rẽ nhánh
+            steps.push_back({ StepType::Lerp,   parent, id, nullptr });
+            steps.push_back({ StepType::Create, parent, id, nullptr });
+        } else {
+            // Các node mới tiếp theo: chỉ Create
+            steps.push_back({ StepType::Create, parent, id, nullptr });
+        }
+    }
+
+    // MarkEnd
+    if (!had_new) {
+        // Từ đã tồn tại hoàn toàn → pnow là node thật
+        steps.push_back({ StepType::MarkEnd, pnow, -1, nullptr });
+    } else {
+        // Node cuối là node mới → dùng parent + char_id
+        steps.push_back({ StepType::MarkEnd, last_parent, last_id, nullptr });
+    }
+
+    return steps;
+}
+
+
+
+void Trie::highlight_node(NodeTrie* pnode, sf::Color color)
+{
+    if (pnode && pnode->visual_node)
+        pnode->visual_node->setColor(color);
+}
+
+void Trie::unhighlight_node(NodeTrie* pnode)
+{
+    if (!pnode || !pnode->visual_node) return;
+    if (pnode->isend)
+        pnode->visual_node->setColor(NODE_END_COLOR);
+    else
+        pnode->visual_node->setColor(NODE_FILL_COLOR);
+}
+
+void Trie::update_edges(NodeTrie* pnode)
+{
+    if (!pnode || !pnode->visual_node) return;
+    for (int i = 0; i < LOWERCASE_CHAR; ++i) {
+        if (pnode->pnext[i] && pnode->pnext[i]->visual_node && pnode->visual_edge[i]) {
+            float x_cur = pnode->visual_node->currentPos.x;
+            float y_cur = pnode->visual_node->currentPos.y;
+            float x_nxt = pnode->pnext[i]->visual_node->currentPos.x;
+            float y_nxt = pnode->pnext[i]->visual_node->currentPos.y;
+            pnode->visual_edge[i]->setPoints(x_cur, y_cur, x_nxt, y_nxt, false, node_radius);
+        }
+        update_edges(pnode->pnext[i]);
+    }
 }
 
 NodeTrie::NodeTrie()
@@ -571,5 +836,4 @@ NodeTrie::NodeTrie()
     block_need = 0;
     isleaf = false;
     visual_node = nullptr;
-
 }

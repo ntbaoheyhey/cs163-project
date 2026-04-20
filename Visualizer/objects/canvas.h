@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <cstdint>
 
 #include "../headers/core.h"
 #include "../headers/global.h"
@@ -126,6 +127,9 @@ public:
     // đổi màu node
     void setColor(sf::Color color);
 
+    // đổi độ mờ toàn bộ (fill, outline, text)
+    void setOpacity(std::uint8_t alpha);
+
     // vẽ node lên cửa sổ
     void draw(sf::RenderWindow& window) const;
 
@@ -166,6 +170,9 @@ public:
 
     // đổi màu cạnh
     void setColor(sf::Color color);
+
+    // đổi độ mờ toàn bộ (fill, outline, arrow)
+    void setOpacity(std::uint8_t alpha);
 
     // đổi độ dày cạnh
     void setThickness(float th);
