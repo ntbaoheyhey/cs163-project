@@ -54,8 +54,9 @@ void option_page() {
     button ducminh(position_button_x, position_button_y + button_height + 20, button_width, button_height, sf::Color::Cyan, "Heap", 24);
     button trie(position_button_x, position_button_y + 2 * (button_height + 20), button_width, button_height, sf::Color::Green, "Trie", 24);
     button linked_list(position_button_x, position_button_y + 3 * (button_height + 20), button_width, button_height, sf::Color(232, 183, 81), "Singly List", 24);
+    button back_button(10.0f, 10.0f, 100.0f, 50.0f, sf::Color(232, 183, 81), "Back", 24);
 
-    std::vector<button*> all_buttons = {&shortest_path_button, &ducminh, &trie, &linked_list};
+    std::vector<button*> all_buttons = {&shortest_path_button, &ducminh, &trie, &linked_list, &back_button};
 
     bool is_mouse_left_pressed = 0;
     bool is_mouse_left_pressed_last = 1;
@@ -70,6 +71,7 @@ void option_page() {
                     case 1: heap_page(); break;
                     case 2: trie_page(); break;
                     case 3: singly_linked_list_page(); break;
+                    case 4: return; break;
                 }
             }
         }
