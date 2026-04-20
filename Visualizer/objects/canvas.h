@@ -232,8 +232,8 @@ private:
     bool directed = false; // 0: undirected, 1: directed
 
     // normal; choose. del. pass
-    sf::Color color_of_node_state[4] = {sf::Color::White, sf::Color(156,229,147), sf::Color(246,88,88), sf::Color(255,253,202)};
-    sf::Color color_of_edge_state[4] = {sf::Color(0,0,0), sf::Color(156,229,147), sf::Color(246,88,88), sf::Color(255,253,202)};
+    sf::Color color_of_node_state[4] = {sf::Color(238, 239, 244), sf::Color(138,155,192), sf::Color(246,88,88), sf::Color(242, 202, 110)};
+    sf::Color color_of_edge_state[4] = {sf::Color(0,0,0), sf::Color(138,155,192), sf::Color(246,88,88), sf::Color(242, 202, 110)};
 public:
     // lấy bán kính của node/
     int getRadius() {
