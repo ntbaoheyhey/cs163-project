@@ -1,5 +1,38 @@
 #include "../headers/core.h"
 #include "../headers/heap.h"
+
+void loadMuisc() {
+    std::string path = "cs163-project/Visualizer/assets/playlist";
+    try {
+        if(std::filesystem::exists(path) and std::filesystem::is_directory(path)) {
+            std::cerr << "Error: Playlist path is a directory, expected a file: " << path << std::endl;
+            for(const auto& entry : std::filesystem::directory_iterator(path)) {
+                std::string extension = entry.path().extension().string();
+                if(extension == ".mp3" or extension == ".ogg" or extension == ".wav") {
+                    playlist.push_back(entry.path());
+                }
+            }
+        } else {
+            std::cerr << "Playlist path does not exist or is not a directory: " << path << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error loading music: " << e.what() << std::endl;
+    }
+
+    current_music_index = -1; // No music loaded yet
+    if(!playlist.empty()) {
+        current_music_index = 0; // Start with the first track
+        for(auto &track : playlist) {
+            std::cout << "Loaded track: " << track.filename().string() << std::endl;
+        }
+    } else {
+        std::cerr << "No music files found in playlist directory: " << path << std::endl;
+    }
+    background_music.setVolume(50);
+    background_music.pause();
+    background_music.setLooping(false);
+}
+
 void openWindow() {
     sf::ContextSettings settings;
     settings.antiAliasingLevel = 10;
@@ -12,6 +45,8 @@ void openWindow() {
         std::cerr << "Warning: Could not load font!\n";
     }
     font_impact.setSmooth(true);
+
+    loadMuisc();
 }
 
 void main_menu_page() {
@@ -44,7 +79,7 @@ void main_menu_page() {
             if(all_buttons[i]->isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
                 switch(i) {
                     case 0: option_page(); break;
-                    case 1: break; // setting page
+                    case 1: setting_page(); break; // setting page
                 }
             }
         }
@@ -115,5 +150,171 @@ void option_page() {
 }
 
 void setting_page() {
-    
+    float choose_music_button_width = 390.0f;
+    float choose_music_button_height = 60.0f;
+    float button_width = 200.0f;
+    float button_height = 100.0f;
+    float choose_button_width = 80.0f;
+    float font_size = 24.0f;
+    float position_button_x = WINDOW_WIDTH / 2.0f - button_width / 2.0f;
+    float position_button_y = WINDOW_HEIGHT / 2.0f - button_height / 2.0f - 100.0f;
+
+
+    bool is_music_menu_active = false;
+    box music_button(106 , 110, choose_music_button_width, choose_music_button_height, sf::Color(232, 183, 81), "Music" , font_size);
+    box volume(      1215, 110, choose_button_width      , choose_button_width       , sf::Color(232, 183, 81), "Volume", font_size);
+
+    std::vector<box> music_options;
+    for(int i = 0; i < playlist.size(); i++) {
+        music_options.emplace_back(106, 110 + (i+1) * choose_music_button_height, choose_music_button_width, choose_music_button_height, sf::Color(232, 183, 81, 150), playlist[i].filename().string(), font_size);
+    }
+
+    button play_button(   106 , 390, choose_button_width, choose_button_width, sf::Color(232, 183, 81), "Play", font_size);
+    button loop_button(   106 , 540, choose_button_width, choose_button_width, sf::Color(232, 183, 81), "Loop", font_size);
+    button inc_vol_button(1045, 110, choose_button_width, choose_button_width, sf::Color(232, 183, 81), "+"   , font_size);
+    button dec_vol_button(944 , 110, choose_button_width, choose_button_width, sf::Color(232, 183, 81), "-"   , font_size);
+    button back_button(   1045, 520, button_width       , button_height      , sf::Color(232, 183, 81), "Back", font_size);
+
+    std::vector<button*> all_buttons = {&play_button, &loop_button, &inc_vol_button, &dec_vol_button, &back_button};
+    std::vector<bool> state_buttons(all_buttons.size(), 0);
+
+    bool is_mouse_left_pressed = 0;
+    bool is_mouse_left_pressed_last = 1;
+
+    while(window.isOpen()) {
+        is_mouse_left_pressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+
+        //====================================
+        //          PLAY BUTTON              //
+        if(play_button.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
+            // id = 0 means play/pause button
+            if(state_buttons[0]) {
+                state_buttons[0] = 0;
+                background_music.pause();
+            } else  if(current_music_index != -1 and current_music_index < playlist.size()) {
+                // NOTE Stopped not Paused: if music is stopped, we need to open it again before playing
+                if(background_music.getStatus() == sf::Music::Status::Stopped) {
+                    if(!background_music.openFromFile(playlist[current_music_index])) {
+                        std::cerr << "Error: Could not play music: " << playlist[current_music_index] << std::endl;
+                        state_buttons[0] = 0; // reset play button state
+                        continue;
+                    }
+                    background_music.play();
+                    state_buttons[0] = 1;
+                } else {
+                    background_music.play();
+                    state_buttons[0] = 1;
+                }
+            }
+        }
+
+        //====================================
+        //          LOOP BUTTON              //
+        if(loop_button.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
+            background_music.setLooping(!background_music.isLooping());
+            // 1 means loop button
+            state_buttons[1] = !state_buttons[1];
+
+            // Need to start playing if loop is enabled and music is not currently playing
+
+            if(state_buttons[1] and background_music.getStatus() == sf::Music::Status::Stopped and current_music_index != -1 and current_music_index < playlist.size()) {
+                if(!background_music.openFromFile(playlist[current_music_index])) {
+                    std::cerr << "Error: Could not play music: " << playlist[current_music_index] << std::endl;
+                    state_buttons[1] = 0; // reset loop button state
+                    continue;
+                }
+                background_music.play();
+            }
+        }
+
+        //====================================
+        //          VOLUME BUTTON            //
+        if(inc_vol_button.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
+            float current_volume = background_music.getVolume();
+            background_music.setVolume(std::min(100.0f, current_volume + 10.0f));
+        }
+
+        if(dec_vol_button.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
+            float current_volume = background_music.getVolume();
+            background_music.setVolume(std::max(0.0f, current_volume - 10.0f));
+        }
+
+        //====================================
+        //         BACK BUTTON              //
+        if(back_button.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
+            return;
+        }
+        
+        //====================================
+        //        MUSIC BUTTON              //
+        if(music_button.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
+            is_music_menu_active = !is_music_menu_active;
+        }
+
+        //====================================
+        //       MUSIC SELECTION MENU        //
+        if(is_music_menu_active) {
+            for(int i = 0; i < music_options.size(); i++) {
+                if(music_options[i].isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
+                    current_music_index = i;
+                    if(background_music.getStatus() == sf::Music::Status::Playing) {
+                        if(!background_music.openFromFile(playlist[current_music_index])) {
+                            std::cerr << "Error: Could not play music: " << playlist[current_music_index] << std::endl;
+                            continue;
+                        }
+                        background_music.play();
+                    }
+                }
+            }
+        }
+
+
+        while (const std::optional event = window.pollEvent())
+        {
+            if (event->is<sf::Event::Closed>())
+                window.close();
+        }
+        window.clear(sf::Color(235, 235, 235)); // soft gray background
+        
+        for(int i = 0; i < all_buttons.size(); i++) {
+            if(all_buttons[i]->contains(sf::Mouse::getPosition(window)) or state_buttons[i]) {
+                all_buttons[i]->setOutline(sf::Color::Black, 2.0f);
+                all_buttons[i]->setColor(sf::Color(140, 95, 30));
+            } else {
+                all_buttons[i]->setOutline(sf::Color::Transparent, 0.0f);
+                all_buttons[i]->setColor(sf::Color(232, 183, 81));
+            }
+            all_buttons[i]->draw(window);
+        }
+
+        //=============================
+        //      draw music box
+        music_button.setLabel(current_music_index != -1 and current_music_index < playlist.size() ? std::filesystem::path(playlist[current_music_index]).filename().string() : "No Music");
+        music_button.draw(window);
+
+        if(is_music_menu_active) {
+            for(int i = 0; i < music_options.size(); i++) {
+                if(music_options[i].contains(sf::Mouse::getPosition(window))) {
+                    music_options[i].setOutline(sf::Color::Black, 2.0f);
+                    music_options[i].setColor(sf::Color(140, 95, 30));
+                } else {
+                    music_options[i].setOutline(sf::Color::Transparent, 0.0f);
+                    music_options[i].setColor(sf::Color(232, 183, 81, 150));
+                }
+                music_options[i].draw(window);
+            }
+        }
+
+
+        //=============================
+        //      draw volume box
+        volume.setLabel(std::to_string((int)background_music.getVolume()));
+        volume.draw(window);
+
+        //=============================
+
+        window.display();
+
+        is_mouse_left_pressed_last = is_mouse_left_pressed;
+    }
 }

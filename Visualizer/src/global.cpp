@@ -17,6 +17,10 @@ sf::RenderWindow window;
 
 sf::Font font_impact;
 
+int current_music_index;
+std::vector<std::filesystem::path> playlist;
+sf::Music background_music;
+
 namespace {
 
 std::filesystem::path executableDirectory() {
