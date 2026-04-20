@@ -2,9 +2,20 @@
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 #include <optional>
+#include <random>
 #include <string>
 #include <vector>
+
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <commdlg.h>
+#endif
 
 namespace {
 
@@ -84,6 +95,63 @@ void append_digit(std::string& s, char32_t unicode, std::size_t max_length) {
     }
 
     if (s.empty()) s = "0";
+}
+
+std::string openTextFileDialog() {
+#ifdef _WIN32
+    OPENFILENAMEA ofn{};
+    char file_path[MAX_PATH] = {};
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = nullptr;
+    ofn.lpstrFile = file_path;
+    ofn.nMaxFile = sizeof(file_path);
+    ofn.lpstrFilter = "Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0";
+    ofn.nFilterIndex = 1;
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+    if (GetOpenFileNameA(&ofn) == TRUE) {
+        return std::string(ofn.lpstrFile);
+    }
+#endif
+
+    return "";
+}
+
+std::vector<int> readListValuesFromFile(const std::string& path) {
+    std::ifstream input(path);
+    if (!input.is_open()) {
+        return {};
+    }
+
+    std::vector<int> numbers;
+    int value = 0;
+    while (input >> value) {
+        numbers.push_back(value);
+    }
+
+    if (numbers.empty()) {
+        return {};
+    }
+
+    const auto values_are_valid = [](const std::vector<int>& values) {
+        return std::all_of(values.begin(), values.end(), [](int item) {
+            return 0 <= item && item <= 999;
+        });
+    };
+
+    if (numbers.size() >= 2 && numbers.front() >= 0 &&
+        static_cast<std::size_t>(numbers.front()) == numbers.size() - 1) {
+        std::vector<int> values(numbers.begin() + 1, numbers.end());
+        if (values_are_valid(values)) {
+            return values;
+        }
+    }
+
+    if (values_are_valid(numbers)) {
+        return numbers;
+    }
+
+    return {};
 }
 
 std::string insertRangeLabel(int size) {
@@ -202,6 +270,35 @@ public:
         items.emplace_back(value, spawnPositionForIndex(size()), current_radius, labelCharSize());
         applyLayout(true);
         highlightIndex(size() - 1, NODE_FOUND_COLOR, 0.25f);
+        return true;
+    }
+
+    bool rebuild_from_values(const std::vector<int>& values) {
+        refreshLayoutMetrics();
+        if (values.size() > static_cast<std::size_t>(max_visible_nodes)) return false;
+
+        clearVisualState(true);
+        pending_status.reset();
+        items.clear();
+        refreshLayoutMetrics();
+
+        const float spawn_y = canvas_bounds.position.y + canvas_bounds.size.y * 0.52f - 92.0f;
+        const float spawn_left = canvas_bounds.position.x + 44.0f;
+        const float spawn_right = canvas_bounds.position.x + canvas_bounds.size.x - 44.0f;
+
+        for (std::size_t i = 0; i < values.size(); ++i) {
+            float t = 0.5f;
+            if (values.size() > 1) {
+                t = static_cast<float>(i) / static_cast<float>(values.size() - 1);
+            }
+            const float spawn_x = spawn_left + (spawn_right - spawn_left) * t;
+            items.emplace_back(values[i], sf::Vector2f(spawn_x, spawn_y), current_radius, labelCharSize());
+        }
+
+        applyLayout(!items.empty());
+        if (!items.empty()) {
+            highlightIndex(0, NODE_ACTIVE_COLOR, 0.20f);
+        }
         return true;
     }
 
@@ -592,88 +689,74 @@ private:
 
 void singly_linked_list_page() {
     sf::Texture background_texture;
-    if (!loadTextureFromAsset(background_texture, "bg_toty.png")) {
+    if (!loadTextureFromAsset(background_texture, "bg.png")) {
         std::cerr << "cannot load background" << std::endl;
     }
     sf::Sprite background_sprite(background_texture);
 
-    RoundedRectangleShape visual_panel({980.f, 520.f});
-    visual_panel.setPosition({40.f, 40.f});
+    RoundedRectangleShape visual_panel({975.f, 525.f});
+    visual_panel.setPosition({380.f, 20.f});
     visual_panel.setFillColor(PANEL_FILL_COLOR);
     visual_panel.setRadius(17.0f);
     visual_panel.setOutlineThickness(5.0f);
     visual_panel.setOutlineColor(PANEL_OUTLINE_COLOR);
 
-    RoundedRectangleShape status_panel({980.f, 90.f});
-    status_panel.setPosition({40.f, 580.f});
+    RoundedRectangleShape status_panel({975.f, 120.f});
+    status_panel.setPosition({380.f, 560.f});
     status_panel.setFillColor(STATUS_FILL_COLOR);
     status_panel.setRadius(17.0f);
     status_panel.setOutlineThickness(4.0f);
     status_panel.setOutlineColor(PANEL_OUTLINE_COLOR);
 
-    RoundedRectangleShape side_panel({285.f, 660.f});
-    side_panel.setPosition({1045.f, 20.f});
-    side_panel.setFillColor(PANEL_FILL_COLOR);
-    side_panel.setRadius(17.0f);
-    side_panel.setOutlineThickness(4.0f);
-    side_panel.setOutlineColor(PANEL_OUTLINE_COLOR);
+    const float title_x = 18.0f;
+    const float input_x = 118.0f;
+    const float input_width = 236.0f;
+    const float input_height = 42.0f;
+    const float button_left_x = 118.0f;
+    const float button_width = 112.0f;
+    const float button_height = 34.0f;
+    const float button_gap = 8.0f;
+    const float button_right_x = button_left_x + button_width + 10.0f;
 
-    const float panel_x = side_panel.getPosition().x;
-    const float button_x = panel_x + 20.0f;
-    const float button_width = 245.0f;
-    const float button_height = 30.0f;
-    const float button_gap = 4.0f;
+    sf::Text panel_title(font_impact, "Singly Linked List", 22);
+    panel_title.setFillColor(sf::Color::White);
+    panel_title.setPosition({title_x, 30.0f});
 
-    sf::Text panel_title(font_impact, "Singly Linked List", 24);
-    panel_title.setFillColor(sf::Color::Black);
-    panel_title.setPosition({panel_x + 20.0f, 34.0f});
+    box value_box(input_x, 154.0f, input_width, input_height, sf::Color(138, 155, 192), "10", 22);
+    box index_box(input_x, 226.0f, input_width, input_height, sf::Color(138, 155, 192), "0", 22);
 
-    box value_box(button_x, 86.0f, button_width, 42.0f, sf::Color(138, 155, 192), "10", 22);
-    box index_box(button_x, 150.0f, button_width, 42.0f, sf::Color(138, 155, 192), "0", 22);
+    sf::Text value_label(font_impact, "Value (0-999)", 17);
+    value_label.setFillColor(sf::Color::White);
+    value_label.setPosition({input_x, 130.0f});
 
-    sf::Text value_label(font_impact, "Value (0-999)", 18);
-    value_label.setFillColor(sf::Color::Black);
-    value_label.setPosition({button_x, 64.0f});
+    sf::Text index_label(font_impact, "Index", 17);
+    index_label.setFillColor(sf::Color::White);
+    index_label.setPosition({input_x, 202.0f});
 
-    sf::Text index_label(font_impact, "Index", 18);
-    index_label.setFillColor(sf::Color::Black);
-    index_label.setPosition({button_x, 128.0f});
-
-    sf::Text input_hint(font_impact,
-        "Value is used for create / insert / search.\nIndex is used for insert / delete / update.",
-        14);
-    input_hint.setFillColor(MUTED_TEXT_COLOR);
-    input_hint.setPosition({button_x, 200.0f});
-
-    float y = 246.0f;
-    button create_btn(button_x, y, button_width, button_height, sf::Color(232, 183, 81), "Create / Add", 18);
+    float y = 336.0f;
+    button random_btn(button_left_x, y, button_width, button_height, sf::Color(232, 183, 81), "Random", 16);
+    button file_btn(button_right_x, y, button_width, button_height, sf::Color(232, 183, 81), "File", 16);
     y += button_height + button_gap;
-    button ins_head_btn(button_x, y, button_width, button_height, sf::Color(232, 183, 81), "Insert Head", 18);
+    button create_btn(button_left_x, y, button_width, button_height, sf::Color(232, 183, 81), "Create / Add", 14);
+    button search_btn(button_right_x, y, button_width, button_height, sf::Color(232, 183, 81), "Search", 16);
     y += button_height + button_gap;
-    button ins_tail_btn(button_x, y, button_width, button_height, sf::Color(232, 183, 81), "Insert Tail", 18);
+    button ins_head_btn(button_left_x, y, button_width, button_height, sf::Color(232, 183, 81), "Insert Head", 14);
+    button ins_tail_btn(button_right_x, y, button_width, button_height, sf::Color(232, 183, 81), "Insert Tail", 14);
     y += button_height + button_gap;
-    button ins_idx_btn(button_x, y, button_width, button_height, sf::Color(232, 183, 81), "Insert Index", 18);
-    y += button_height + 10.0f;
-    button del_head_btn(button_x, y, button_width, button_height, sf::Color(232, 183, 81), "Delete Head", 18);
+    button ins_idx_btn(button_left_x, y, button_width, button_height, sf::Color(232, 183, 81), "Insert Index", 14);
+    button update_btn(button_right_x, y, button_width, button_height, sf::Color(232, 183, 81), "Update Value", 14);
     y += button_height + button_gap;
-    button del_tail_btn(button_x, y, button_width, button_height, sf::Color(232, 183, 81), "Delete Tail", 18);
+    button del_head_btn(button_left_x, y, button_width, button_height, sf::Color(232, 183, 81), "Delete Head", 14);
+    button del_tail_btn(button_right_x, y, button_width, button_height, sf::Color(232, 183, 81), "Delete Tail", 14);
     y += button_height + button_gap;
-    button del_idx_btn(button_x, y, button_width, button_height, sf::Color(232, 183, 81), "Delete Index", 18);
-    y += button_height + 10.0f;
-    button search_btn(button_x, y, button_width, button_height, sf::Color(232, 183, 81), "Search", 18);
-    y += button_height + button_gap;
-    button traverse_btn(button_x, y, button_width, button_height, sf::Color(232, 183, 81), "Traversal", 18);
-    y += button_height + button_gap;
-    button update_btn(button_x, y, button_width, button_height, sf::Color(232, 183, 81), "Update Value", 18);
-    y += button_height + button_gap;
-    button clear_hl_btn(button_x, y, button_width, button_height, sf::Color(232, 183, 81), "Clear Highlight", 18);
-    y += button_height + 10.0f;
-    button return_btn(button_x, y, button_width, button_height, sf::Color(232, 183, 81), "Return", 18);
+    button del_idx_btn(button_left_x, y, button_width, button_height, sf::Color(232, 183, 81), "Delete Index", 14);
+    button return_btn(button_right_x, y, button_width, button_height, sf::Color(232, 183, 81), "Return", 16);
 
     std::vector<button*> all_buttons = {
-        &create_btn, &ins_head_btn, &ins_tail_btn, &ins_idx_btn,
-        &del_head_btn, &del_tail_btn, &del_idx_btn, &search_btn,
-        &traverse_btn, &update_btn, &clear_hl_btn, &return_btn
+        &random_btn, &file_btn,
+        &create_btn, &search_btn,
+        &ins_head_btn, &ins_tail_btn, &ins_idx_btn, &update_btn,
+        &del_head_btn, &del_tail_btn, &del_idx_btn, &return_btn
     };
     for (button* button_ptr : all_buttons) {
         button_ptr->setRadius(20.0f);
@@ -681,23 +764,38 @@ void singly_linked_list_page() {
 
     sf::Text status_title(font_impact, "Status", 20);
     status_title.setFillColor(sf::Color::Black);
-    status_title.setPosition({60.0f, 596.0f});
+    status_title.setPosition({
+        status_panel.getPosition().x + 20.0f,
+        status_panel.getPosition().y + 16.0f
+    });
 
     sf::Text status_text(font_impact, "Ready", 20);
     status_text.setFillColor(sf::Color::Black);
-    status_text.setPosition({60.0f, 626.0f});
+    status_text.setPosition({
+        status_panel.getPosition().x + 20.0f,
+        status_panel.getPosition().y + 50.0f
+    });
 
     sf::Text stats_text(font_impact, "", 16);
     stats_text.setFillColor(MUTED_TEXT_COLOR);
-    stats_text.setPosition({720.0f, 596.0f});
+    stats_text.setPosition({
+        status_panel.getPosition().x + 560.0f,
+        status_panel.getPosition().y + 18.0f
+    });
 
     sf::Text canvas_title(font_impact, "Visualization", 22);
     canvas_title.setFillColor(sf::Color::Black);
-    canvas_title.setPosition({60.0f, 56.0f});
+    canvas_title.setPosition({
+        visual_panel.getPosition().x + 20.0f,
+        visual_panel.getPosition().y + 16.0f
+    });
 
     sf::Text canvas_hint(font_impact, "Nodes scale to fit the panel. Tail always points to NULL.", 15);
     canvas_hint.setFillColor(MUTED_TEXT_COLOR);
-    canvas_hint.setPosition({60.0f, 84.0f});
+    canvas_hint.setPosition({
+        visual_panel.getPosition().x + 20.0f,
+        visual_panel.getPosition().y + 44.0f
+    });
 
     std::string value_text = "10";
     std::string index_text = "0";
@@ -755,6 +853,8 @@ void singly_linked_list_page() {
         index_box.setOutline(index_active ? sf::Color::Black : (index_box.contains(mouse_pos) ? sf::Color(90, 90, 90) : sf::Color::Transparent),
                              index_active || index_box.contains(mouse_pos) ? 2.0f : 0.0f);
 
+        const bool random_clicked = random_btn.update(mouse_pos);
+        const bool file_clicked = file_btn.update(mouse_pos);
         const bool create_clicked = create_btn.update(mouse_pos);
         const bool ins_head_clicked = ins_head_btn.update(mouse_pos);
         const bool ins_tail_clicked = ins_tail_btn.update(mouse_pos);
@@ -763,21 +863,71 @@ void singly_linked_list_page() {
         const bool del_tail_clicked = del_tail_btn.update(mouse_pos);
         const bool del_idx_clicked = del_idx_btn.update(mouse_pos);
         const bool search_clicked = search_btn.update(mouse_pos);
-        const bool traverse_clicked = traverse_btn.update(mouse_pos);
         const bool update_clicked = update_btn.update(mouse_pos);
-        const bool clear_clicked = clear_hl_btn.update(mouse_pos);
         const bool return_clicked = return_btn.update(mouse_pos);
 
         if (return_clicked) {
             return;
         }
 
-        const bool action_clicked = create_clicked || ins_head_clicked || ins_tail_clicked || ins_idx_clicked ||
+        const bool action_clicked = random_clicked || file_clicked ||
+                                    create_clicked || ins_head_clicked || ins_tail_clicked || ins_idx_clicked ||
                                     del_head_clicked || del_tail_clicked || del_idx_clicked ||
-                                    search_clicked || traverse_clicked || update_clicked || clear_clicked;
+                                    search_clicked || update_clicked;
 
         if (action_clicked && list_core.isBusy()) {
             page_status = StatusMessage{StatusTone::Warning, "Wait for the current animation to finish."};
+        } else if (random_clicked) {
+            std::mt19937 rng(std::random_device{}());
+            const int max_nodes = std::min(8, list_core.maxNodes());
+            const int min_nodes = std::min(3, max_nodes);
+
+            if (max_nodes <= 0) {
+                page_status = StatusMessage{StatusTone::Error, "Cannot generate a list in the current canvas."};
+            } else {
+                std::uniform_int_distribution<int> size_dist(std::max(1, min_nodes), max_nodes);
+                std::uniform_int_distribution<int> value_dist(0, 999);
+
+                std::vector<int> values;
+                const int count = size_dist(rng);
+                values.reserve(count);
+                for (int i = 0; i < count; ++i) {
+                    values.push_back(value_dist(rng));
+                }
+
+                if (list_core.rebuild_from_values(values)) {
+                    page_status = StatusMessage{
+                        StatusTone::Success,
+                        "Built a random list with " + std::to_string(count) + " nodes."
+                    };
+                } else {
+                    page_status = StatusMessage{
+                        StatusTone::Error,
+                        "Random build is too large for this view. Maximum visible nodes: " + std::to_string(list_core.maxNodes()) + "."
+                    };
+                }
+            }
+        } else if (file_clicked) {
+            const std::string path = openTextFileDialog();
+            if (!path.empty()) {
+                const std::vector<int> values = readListValuesFromFile(path);
+                if (values.empty()) {
+                    page_status = StatusMessage{
+                        StatusTone::Error,
+                        "Could not read list data. Use either: n followed by n values, or just a list of values (0-999)."
+                    };
+                } else if (!list_core.rebuild_from_values(values)) {
+                    page_status = StatusMessage{
+                        StatusTone::Error,
+                        "File has too many nodes for this view. Maximum visible nodes: " + std::to_string(list_core.maxNodes()) + "."
+                    };
+                } else {
+                    page_status = StatusMessage{
+                        StatusTone::Success,
+                        "Built list from file with " + std::to_string(values.size()) + " nodes."
+                    };
+                }
+            }
         } else if (create_clicked) {
             if (list_core.atCapacity()) {
                 page_status = StatusMessage{
@@ -868,12 +1018,6 @@ void singly_linked_list_page() {
                     "Searching for " + std::to_string(input_value) + " from HEAD to TAIL..."
                 };
             }
-        } else if (traverse_clicked) {
-            if (!list_core.traversal()) {
-                page_status = StatusMessage{StatusTone::Error, "Traversal failed. The list is empty."};
-            } else {
-                page_status = StatusMessage{StatusTone::Info, "Traversing the list from HEAD to TAIL..."};
-            }
         } else if (update_clicked) {
             if (!list_core.update_value(input_index, input_value)) {
                 page_status = StatusMessage{
@@ -885,11 +1029,6 @@ void singly_linked_list_page() {
                     StatusTone::Success,
                     "Updated index " + std::to_string(input_index) + " to " + std::to_string(input_value) + "."
                 };
-            }
-        } else if (clear_clicked) {
-            list_core.clear_highlight();
-            if (auto cleared_status = list_core.consumePendingStatus()) {
-                page_status = *cleared_status;
             }
         }
 
@@ -909,14 +1048,11 @@ void singly_linked_list_page() {
 
         window.draw(visual_panel);
         window.draw(status_panel);
-        window.draw(side_panel);
-
         window.draw(canvas_title);
         window.draw(canvas_hint);
         window.draw(panel_title);
         window.draw(value_label);
         window.draw(index_label);
-        window.draw(input_hint);
         window.draw(status_title);
         window.draw(status_text);
         window.draw(stats_text);
