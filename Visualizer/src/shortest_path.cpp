@@ -433,7 +433,7 @@ void random_graph(Visual_graph &vg, shortest_path_algorithm &graph, bool directe
 void shortest_path_page() {
     // load background
     sf::Texture backgroundTexture;
-    if (!backgroundTexture.loadFromFile("cs163-project/Visualizer/assets/bg.png")) {
+    if (!loadTextureFromAsset(backgroundTexture, "bg.png")) {
         std::cerr << "cannot load background" << std::endl;
     }
     sf::Sprite backgroundSprite(backgroundTexture);

@@ -38,7 +38,7 @@ void trie_page(){
     
     // Background
     sf::Texture backgroundTexture;
-    if (!backgroundTexture.loadFromFile("cs163-project/Visualizer/assets/bg_toty.png")) {
+    if (!loadTextureFromAsset(backgroundTexture, "bg_toty.png")) {
         std::cerr << "cannot load background" << std::endl;
     } else{
         std::cerr << "load background successfully" << std::endl;    
