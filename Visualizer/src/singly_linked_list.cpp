@@ -592,7 +592,7 @@ private:
 
 void singly_linked_list_page() {
     sf::Texture background_texture;
-    if (!background_texture.loadFromFile("Visualizer/assets/bg_toty.png")) {
+    if (!loadTextureFromAsset(background_texture, "bg_toty.png")) {
         std::cerr << "cannot load background" << std::endl;
     }
     sf::Sprite background_sprite(background_texture);
