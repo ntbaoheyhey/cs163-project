@@ -64,9 +64,9 @@ void openWindow() {
 
     loadMuisc();
 
-    if (!background_texture.loadFromFile("bg_toty.png")) {
+    if (!loadTextureFromAsset(background_texture,"bg_toty.png")) {
         std::cerr << "cannot load background" << std::endl;
-        if(!background_texture.loadFromFile("cs163-project/Visualizer/assets/bg_toty.png")) {
+        if(!background_texture.loadFromFile("cs163-project/Visualizer/assets/bg_totyZ.png")) {
             std::cerr << "Error: Could not load background texture!" << std::endl;
         }
     } 

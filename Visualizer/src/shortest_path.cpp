@@ -519,7 +519,7 @@ void shortest_path_page() {
     buttons.emplace_back(10, 625, button_width, button_height, sf::Color(232, 183, 81), "Clear", 24);
     buttons.emplace_back(135, 625, button_width, button_height, sf::Color(232, 183, 81), "Random", 20);
 
-    box input_weight_box(135, 550, button_width + 10.0f, button_height, sf::Color(138,155,192), "5", 16);
+    box input_weight_box(135, 550, button_width + 10.0f, button_height, sf::Color(138,155,192), "5", 18);
     input_weight_box.setOutline(sf::Color::Transparent, 0.0f);
     std::string current_input_weight = "5";
 
@@ -529,7 +529,7 @@ void shortest_path_page() {
     bool show_algorithm_options = false;
 
     sf::FloatRect po = buttons[0].getShape();
-    box input_source_box(135.0f, 325.0f, button_width - 30.0f, button_height, sf::Color(138,155,192), "0", 16);
+    box input_source_box(135.0f, 325.0f, button_width - 30.0f, button_height, sf::Color(138,155,192), "0", 18);
     input_source_box.setOutline(sf::Color::Transparent, 0.0f);
 
     button pre_step_button(10.0f, 400.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Prev", 24);
@@ -546,7 +546,7 @@ void shortest_path_page() {
 
     button speed_inc(700, WINDOW_HEIGHT - 75, 50, 50, sf::Color(232, 183, 81), "+", 24);
     button speed_dec(760, WINDOW_HEIGHT - 75, 50, 50, sf::Color(232, 183, 81), "-", 24);
-    box speed_box(820, WINDOW_HEIGHT - 75, 50, 50, sf::Color(138,155,192), "0", 24);
+    box speed_box(820, WINDOW_HEIGHT - 75, 60, 50, sf::Color(138,155,192), "0", 24);
 
     // algorithm selection
     button algorithm_button(10.0f, 200.0f, button_width, button_height, sf::Color(232, 183, 81), shortest_path_algorithm::algorithm_names[shortest_path_algorithm::ALGO_DIJKSTRA], 16);
@@ -1027,6 +1027,22 @@ void shortest_path_page() {
             while(speed_label.size() > 3) speed_label.pop_back();
             speed_box.setLabel(speed_label + "s");
             speed_box.draw(window);
+        }
+
+        if(speed_inc.contains(mousePos)) {
+            speed_inc.setOutline(sf::Color::Black, 2.0f);
+            speed_inc.setColor(sf::Color(140, 95, 30));
+        } else {
+            speed_inc.setOutline(sf::Color::Transparent, 0.0f);
+            speed_inc.setColor(sf::Color(232, 183, 81));
+        }
+
+        if(speed_dec.contains(mousePos)) {
+            speed_dec.setOutline(sf::Color::Black, 2.0f);
+            speed_dec.setColor(sf::Color(140, 95, 30));
+        } else {
+            speed_dec.setOutline(sf::Color::Transparent, 0.0f);
+            speed_dec.setColor(sf::Color(232, 183, 81));
         }
 
         window.display();
