@@ -393,6 +393,16 @@ void trie_page(){
                     if (!current_word.empty()) words_to_build.push_back(current_word);
                     
                     anim_queue = data.build_with_anim(words_to_build);
+                    
+                    // Detach ngược để bảo toàn đồ thị gốc đồng thời cập nhật đúng layout incremental cực mượt
+                    for (int i = (int)anim_queue.size() - 1; i >= 0; --i) {
+                        if (anim_queue[i].type == StepType::Lerp) {
+                            anim_queue[i].stored_subtree = anim_queue[i].node->pnext[anim_queue[i].char_id];
+                            anim_queue[i].node->pnext[anim_queue[i].char_id] = nullptr;
+                        }
+                    }
+                    data.create_visual(); // Đặt lại view ban đầu chưa bị giãn nỡ
+                    
                     cur_step = -1;
                     current_animation_type = OperationType::Build;
                 }
