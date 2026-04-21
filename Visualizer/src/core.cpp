@@ -14,7 +14,7 @@ void loadMuisc() {
             }
         } else {
             std::cerr << "Playlist path does not exist or is not a directory: " << path << std::endl;
-            path = "assets/playlist";
+            path = "cs163-project/Visualizer/assets/playlist";
             if(std::filesystem::exists(path) and std::filesystem::is_directory(path)) {
                 for(const auto& entry : std::filesystem::directory_iterator(path)) {
                     std::string extension = entry.path().extension().string();
