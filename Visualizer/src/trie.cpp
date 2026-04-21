@@ -154,7 +154,23 @@ void trie_page(){
                 }
             }
         } else if (current_animation_type == OperationType::Delete) {
-            // Prepare to implement animation
+            for (int i = std::max(0, cur_step + 1); i < (int)anim_queue.size(); ++i) {
+                auto& step = anim_queue[i];
+                if (step.type == StepType::UnmarkEnd && step.node != nullptr) {
+                    step.node->isend = false;
+                } else if (step.type == StepType::DeleteLerp && step.node != nullptr) {
+                    if (step.node->pnext[step.char_id] != nullptr) {
+                        step.stored_subtree = step.node->pnext[step.char_id];
+                        step.node->pnext[step.char_id] = nullptr;
+                    }
+                }
+            }
+            for (auto& step : anim_queue) {
+                if (step.stored_subtree) {
+                    data.clear_travese(step.stored_subtree);
+                    step.stored_subtree = nullptr;
+                }
+            }
         } else if (current_animation_type == OperationType::Find) {
             // Prepare to implement animation
         }
