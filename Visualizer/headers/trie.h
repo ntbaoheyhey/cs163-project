@@ -42,6 +42,7 @@ enum class StepType {
     MarkEnd,  // Đánh dấu node là cuối từ
 
     NotFound,          // Tìm kiếm thất bại: tắt highlight node cuối
+    Found,             // Tìm kiếm thành công: highlight xanh cho node cuối (dành cho bộ Find)
     UnmarkEnd,         // Tắt cờ isend và đưa về màu thường
     DeleteNodeMark,    // Đóng băng con, đánh dấu cha bằng màu Delete
     DeleteNodeNotMark, // Đóng băng con, không đổi màu cha

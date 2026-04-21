@@ -418,69 +418,132 @@ void trie_page(){
             if (back_button.contains(mousePos) && !anim_queue.empty() && cur_step >= 0) {
                 AnimStep& step = anim_queue[cur_step];
 
-                if (step.type == StepType::Move) {
-                    if (highlighted_node) data.unhighlight_node(highlighted_node);
-                    highlighted_node = nullptr;
-                    if (cur_step - 1 >= 0) {
-                        AnimStep& prev = anim_queue[cur_step - 1];
-                        if (prev.type == StepType::Move) {
-                            // prev cũng dùng parent+id
-                            highlighted_node = prev.node->pnext[prev.char_id];
-                            data.highlight_node(highlighted_node, NODE_ACTIVE_COLOR);
-                        } else if (prev.type == StepType::Create) {
-                            NodeTrie* pn = prev.node->pnext[prev.char_id];
-                            if (pn) { highlighted_node = pn; data.highlight_node(highlighted_node, NODE_FOUND_COLOR); }
+                if (current_animation_type == OperationType::Add) {
+                    if (step.type == StepType::Move) {
+                        if (highlighted_node) data.unhighlight_node(highlighted_node);
+                        highlighted_node = nullptr;
+                        if (cur_step - 1 >= 0) {
+                            AnimStep& prev = anim_queue[cur_step - 1];
+                            if (prev.type == StepType::Move) {
+                                highlighted_node = prev.node->pnext[prev.char_id];
+                                data.highlight_node(highlighted_node, NODE_ACTIVE_COLOR);
+                            } else if (prev.type == StepType::Create) {
+                                NodeTrie* pn = prev.node->pnext[prev.char_id];
+                                if (pn) { highlighted_node = pn; data.highlight_node(highlighted_node, NODE_FOUND_COLOR); }
+                            }
                         }
                     }
-                }
-                else if (step.type == StepType::MarkEnd) {
-                    // Hoàn tác: bỏ isend
-                    NodeTrie* target = (step.char_id == -1)
-                        ? step.node
-                        : step.node->pnext[step.char_id];
-                    if (target) target->isend = false;
-                    if (highlighted_node) data.unhighlight_node(highlighted_node);
-                    highlighted_node = nullptr;
-                    if (cur_step - 1 >= 0) {
-                        AnimStep& prev = anim_queue[cur_step - 1];
-                        if (prev.type == StepType::Create) {
-                            NodeTrie* pn = prev.node->pnext[prev.char_id];
-                            if (pn) { highlighted_node = pn; data.highlight_node(highlighted_node, NODE_FOUND_COLOR); }
-                        } else if (prev.type == StepType::Move) {
-                            highlighted_node = prev.node;
-                            data.highlight_node(highlighted_node, NODE_ACTIVE_COLOR);
+                    else if (step.type == StepType::MarkEnd) {
+                        NodeTrie* target = (step.char_id == -1) ? step.node : step.node->pnext[step.char_id];
+                        if (target) target->isend = false;
+                        if (highlighted_node) data.unhighlight_node(highlighted_node);
+                        highlighted_node = nullptr;
+                        if (cur_step - 1 >= 0) {
+                            AnimStep& prev = anim_queue[cur_step - 1];
+                            if (prev.type == StepType::Create) {
+                                NodeTrie* pn = prev.node->pnext[prev.char_id];
+                                if (pn) { highlighted_node = pn; data.highlight_node(highlighted_node, NODE_FOUND_COLOR); }
+                            } else if (prev.type == StepType::Move) {
+                                highlighted_node = prev.node;
+                                data.highlight_node(highlighted_node, NODE_ACTIVE_COLOR);
+                            }
                         }
                     }
-                }
-                else if (step.type == StepType::Create) {
-                    NodeTrie* new_node = step.node->pnext[step.char_id];
-                    // Ẩn node + edge
-                    if (new_node && new_node->visual_node)
-                        new_node->visual_node->setOpacity(0);
-                    if (step.node->visual_edge[step.char_id])
-                        step.node->visual_edge[step.char_id]->setOpacity(0);
-                    if (highlighted_node == new_node) highlighted_node = nullptr;
-                    // Highlight node trước
-                    if (cur_step - 1 >= 0) {
-                        AnimStep& prev = anim_queue[cur_step - 1];
-                        if (prev.type == StepType::Create) {
-                            NodeTrie* pn = prev.node->pnext[prev.char_id];
-                            if (pn) { highlighted_node = pn; data.highlight_node(highlighted_node, NODE_FOUND_COLOR); }
-                        } else if (prev.type == StepType::Move) {
-                            highlighted_node = prev.node;
-                            data.highlight_node(highlighted_node, NODE_ACTIVE_COLOR);
-                        } else if (prev.type == StepType::Lerp) {
-                            highlighted_node = nullptr; // Sau Lerp không có node nào highlight
+                    else if (step.type == StepType::Create) {
+                        NodeTrie* new_node = step.node->pnext[step.char_id];
+                        if (new_node && new_node->visual_node) new_node->visual_node->setOpacity(0);
+                        if (step.node->visual_edge[step.char_id]) step.node->visual_edge[step.char_id]->setOpacity(0);
+                        if (highlighted_node == new_node) highlighted_node = nullptr;
+                        if (cur_step - 1 >= 0) {
+                            AnimStep& prev = anim_queue[cur_step - 1];
+                            if (prev.type == StepType::Create) {
+                                NodeTrie* pn = prev.node->pnext[prev.char_id];
+                                if (pn) { highlighted_node = pn; data.highlight_node(highlighted_node, NODE_FOUND_COLOR); }
+                            } else if (prev.type == StepType::Move) {
+                                highlighted_node = prev.node;
+                                data.highlight_node(highlighted_node, NODE_ACTIVE_COLOR);
+                            } else if (prev.type == StepType::Lerp) {
+                                highlighted_node = nullptr;
+                            }
                         }
                     }
+                    else if (step.type == StepType::Lerp) {
+                        step.stored_subtree = step.node->pnext[step.char_id];
+                        step.node->pnext[step.char_id] = nullptr;
+                        data.create_visual_lerp(0.4f);
+                    }
                 }
-                else if (step.type == StepType::Lerp) {
-                    // Tháo toàn bộ subtree và cất vào step để Cây trở về form cũ
-                    step.stored_subtree = step.node->pnext[step.char_id];
-                    step.node->pnext[step.char_id] = nullptr;
-                    
-                    // Reposition cây cũ về layout cũ
-                    data.create_visual_lerp(0.4f);
+                else if (current_animation_type == OperationType::Delete || current_animation_type == OperationType::Find) {
+                    if (step.type == StepType::Move) {
+                        if (highlighted_node) data.unhighlight_node(highlighted_node);
+                        highlighted_node = nullptr;
+                        if (cur_step - 1 >= 0) {
+                            AnimStep& prev = anim_queue[cur_step - 1];
+                            if (prev.type == StepType::Move) {
+                                highlighted_node = prev.node->pnext[prev.char_id];
+                                data.highlight_node(highlighted_node, NODE_ACTIVE_COLOR);
+                            }
+                        }
+                    }
+                    else if (step.type == StepType::NotFound || step.type == StepType::Found) {
+                        if (highlighted_node) data.unhighlight_node(highlighted_node);
+                        highlighted_node = nullptr;
+                        if (cur_step - 1 >= 0) {
+                            AnimStep& prev = anim_queue[cur_step - 1];
+                            // Khi lùi từ Found/NotFound thì bước trước luôn là Move
+                            if (prev.type == StepType::Move) {
+                                highlighted_node = prev.node->pnext[prev.char_id];
+                                data.highlight_node(highlighted_node, NODE_ACTIVE_COLOR);
+                            }
+                        }
+                    }
+                    else if (step.type == StepType::UnmarkEnd) {
+                        if (step.node) step.node->isend = true;
+                        if (highlighted_node) data.unhighlight_node(highlighted_node);
+                        highlighted_node = nullptr;
+                        if (cur_step - 1 >= 0) {
+                            AnimStep& prev = anim_queue[cur_step - 1];
+                            if (prev.type == StepType::Move) {
+                                highlighted_node = prev.node->pnext[prev.char_id];
+                            }
+                        }
+                        if (highlighted_node) data.highlight_node(highlighted_node, NODE_END_COLOR); 
+                    }
+                    else if (step.type == StepType::DeleteNodeMark || step.type == StepType::DeleteNodeNotMark) {
+                        // Khôi phục Node con ẩn
+                        NodeTrie* child = step.node->pnext[step.char_id];
+                        if (child) {
+                            if (child->visual_node) child->visual_node->setOpacity(255);
+                            if (step.node->visual_edge[step.char_id]) step.node->visual_edge[step.char_id]->setOpacity(255);
+                        }
+                        
+                        if (highlighted_node) data.unhighlight_node(highlighted_node);
+                        highlighted_node = nullptr;
+                        
+                        // Đem màu đỏ về lại Node con
+                        if (child) {
+                            highlighted_node = child;
+                            data.highlight_node(highlighted_node, NODE_DELETE_COLOR);
+                        }
+                    }
+                    else if (step.type == StepType::DeleteLerp) {
+                        // Gắn lại nguyên cành cây
+                        if (step.stored_subtree) {
+                            step.node->pnext[step.char_id] = step.stored_subtree;
+                            step.stored_subtree = nullptr;
+                        }
+                        if (highlighted_node) data.unhighlight_node(highlighted_node);
+                        highlighted_node = nullptr;
+                        
+                        // Trả lại form đứng cũ
+                        data.create_visual_lerp(0.4f);
+                        
+                        // Phục hồi lại màu xoá đỏ trên node cha cao nhất
+                        if (cur_step - 1 >= 0 && anim_queue[cur_step - 1].type == StepType::DeleteNodeMark) {
+                            highlighted_node = anim_queue[cur_step - 1].node;
+                            data.highlight_node(highlighted_node, NODE_DELETE_COLOR);
+                        }
+                    }
                 }
 
                 cur_step--;
