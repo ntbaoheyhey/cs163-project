@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <cstdlib>
 
 #include "global.h"
 #include "../objects/canvas.h"

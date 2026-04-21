@@ -36,6 +36,27 @@ const float button_small_width = (button_width - space_button) / 2;
 const float slider_width = button_area_horizon - space_button * 2; 
 const float slider_height = button_height;
 
+const int min_random_words = 2;
+const int max_random_words = 7;
+const std::string words[] = {"apple", 
+                            "avocado", 
+                            "banana", 
+                            "grape", 
+                            "mango", 
+                            "kiwi", 
+                            "durian", 
+                            "lemon", 
+                            "lime", 
+                            "papaya", 
+                            "peach", 
+                            "pear", 
+                            "melon", 
+                            "longan", 
+                            "berry", 
+                            "guava", 
+                            "cherry", 
+                            "plum"};
+
 void trie_page(){
     
     // Background
@@ -136,6 +157,9 @@ void trie_page(){
     std::string current_input = "";
     bool build_box_active = false;
     std::string build_input = "";
+
+    // Random prepare
+    srand(time(NULL));
 
     // --- Animation state ---
     std::vector<AnimStep> anim_queue;
@@ -295,6 +319,21 @@ void trie_page(){
             }
             if (random_button.contains(mousePos)) {
                 std::cout << "Received Random Query" << "\n";
+                build_input.clear();
+                
+                int total_vocab = sizeof(words) / sizeof(words[0]);
+                int num_words = min_random_words + rand() % (max_random_words - min_random_words + 1);
+                
+                for (int i = 0; i < num_words; ++i) {
+                    build_input += words[rand() % total_vocab];
+                    if (i < num_words - 1) build_input += ",";
+                }
+                
+                if (build_input.size() <= max_character_show)
+                    build_box.setLabel(build_input + "|");
+                else
+                    build_box.setLabel(build_input.substr(build_input.size() - max_character_show, max_character_show) + "|");
+                
                 build_button_pressed = true;
             }
             if (build_button.contains(mousePos)) {
