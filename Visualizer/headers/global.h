@@ -13,6 +13,9 @@ extern sf::RenderWindow window;
 
 extern sf::Font font_impact;
 
+extern sf::Texture background_texture;
+extern sf::Sprite background_sprite;
+
 extern int current_music_index;
 extern std::vector<std::filesystem::path> playlist;
 extern sf::Music background_music;
