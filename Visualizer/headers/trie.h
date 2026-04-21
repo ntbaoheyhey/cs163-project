@@ -26,6 +26,14 @@ struct NodeTrie{
     NodeTrie();
 };
 
+// --- Operation Type ---
+enum class OperationType {
+    None,
+    Add,
+    Delete,
+    Find
+};
+
 // --- Animation Step ---
 enum class StepType {
     Move,     // Di chuyển qua node đã tồn tại (chỉ highlight)
@@ -42,7 +50,7 @@ struct AnimStep {
     NodeTrie* stored_subtree; // Dùng để cất giữ nhánh khi bị tháo lúc Back
 };
 
-node* create_node(int block_x, int block_y);
+node* create_node(int block_x, int block_y, bool isend = false);
 
 struct Trie{
     NodeTrie* root;

@@ -86,6 +86,7 @@ void trie_page(){
     button next_button(button_area_horizon * 3 + 2 * space_button + button_width, button_area_mid + 2 * space_button + slider_height, button_width, button_height, BUTTON_FILL_COLOR, "Next", 24);
     button slowdown_button(button_area_horizon * 3 + space_button, button_area_mid + 3 * space_button + slider_height + button_height, button_small_width, button_height, BUTTON_FILL_COLOR, "-", 24);
     button speedup_button(button_area_horizon * 3 + space_button + button_small_width + space_button, button_area_mid + 3 * space_button + slider_height + button_height, button_small_width, button_height, BUTTON_FILL_COLOR, "+", 24);
+    button skip_button(button_area_horizon * 3 + space_button, button_area_mid + 4 * space_button + slider_height + 2 * button_height, button_width, button_height, BUTTON_FILL_COLOR, "Skip", 24);
 
     // Slider - Progess animation
     RoundedRectangleShape slider_fix({slider_width, slider_height}, 10.f);
@@ -139,6 +140,54 @@ void trie_page(){
     std::vector<AnimStep> anim_queue;
     int cur_step = -1;
     NodeTrie* highlighted_node = nullptr;
+    OperationType current_animation_type = OperationType::None;
+
+    auto skip_animation = [&]() {
+        if (current_animation_type == OperationType::Add) {
+            for (auto& step : anim_queue) {
+                if (step.stored_subtree) {
+                    step.node->pnext[step.char_id] = step.stored_subtree;
+                    step.stored_subtree = nullptr;
+                }
+                if(step.type == StepType::MarkEnd){
+                    step.node->pnext[step.char_id]->isend = true;
+                }
+            }
+        } else if (current_animation_type == OperationType::Delete) {
+            // Prepare to implement animation
+        } else if (current_animation_type == OperationType::Find) {
+            // Prepare to implement animation
+        }
+
+        if (current_animation_type != OperationType::None) {
+            if (highlighted_node) { data.unhighlight_node(highlighted_node); highlighted_node = nullptr; }
+            data.create_visual();
+            std::function<void(NodeTrie*)> reset_visual = [&](NodeTrie* p) {
+                if (!p) return;
+                if (p->visual_node) {
+                    p->visual_node->setOpacity(255);
+                    if (p->isend) p->visual_node->setColor(NODE_END_COLOR);
+                    else p->visual_node->setColor(NODE_FILL_COLOR);
+                    p->visual_node->currentPos = p->visual_node->targetPos;
+                    p->visual_node->setPosition(p->visual_node->targetPos.x, p->visual_node->targetPos.y);
+                }
+                for (int i = 0; i < LOWERCASE_CHAR; ++i) {
+                    if (p->visual_edge[i]) {
+                        p->visual_edge[i]->setOpacity(255);
+                        p->visual_edge[i]->setColor(EDGE_COLOR);
+                    }
+                    reset_visual(p->pnext[i]);
+                }
+            };
+            reset_visual(data.root);
+            data.update_edges(data.root);
+
+            anim_queue.clear();
+            cur_step = -1;
+            current_animation_type = OperationType::None;
+        }
+    };
+
 
     // --- Delta time clock ---
     sf::Clock frame_clock;
@@ -165,6 +214,9 @@ void trie_page(){
         build_button.update(mousePos);
         back_button.update(mousePos);
         next_button.update(mousePos);
+        speedup_button.update(mousePos);
+        slowdown_button.update(mousePos);
+        skip_button.update(mousePos);
 
         // 3. Left-Mouse click handle
         if (left_mouse && !left_mouse_last) { 
@@ -173,10 +225,7 @@ void trie_page(){
 
             if (return_button.contains(mousePos)){
                 std::cout << "Received Return Query: Exit Trie Page" << "\n";
-                for (auto& step : anim_queue) {
-                    if (step.stored_subtree) { data.clear_travese(step.stored_subtree); step.stored_subtree = nullptr; }
-                }
-                anim_queue.clear();
+                skip_animation();
                 data.clear();
                 return;
             }
@@ -185,12 +234,10 @@ void trie_page(){
             if (add_button.contains(mousePos)) {
                 std::cout << "Received Add Query: " << current_input << "\n";
                 if (!current_input.empty()) {
-                    if (highlighted_node) { data.unhighlight_node(highlighted_node); highlighted_node = nullptr; }
-                    for (auto& step : anim_queue) {
-                        if (step.stored_subtree) { data.clear_travese(step.stored_subtree); step.stored_subtree = nullptr; }
-                    }
+                    skip_animation();
                     anim_queue = data.add_with_anim(current_input);
                     cur_step = -1;
+                    current_animation_type = OperationType::Add;
                 }
                 operation_button_pressed = true;
             }
@@ -198,27 +245,26 @@ void trie_page(){
             if (delete_button.contains(mousePos)) {
                 std::cout << "Received Delete Query: " << current_input << "\n";
                 if (!current_input.empty()) {
-                    for (auto& step : anim_queue) {
-                        if (step.stored_subtree) { data.clear_travese(step.stored_subtree); step.stored_subtree = nullptr; }
-                    }
-                    anim_queue.clear(); cur_step = -1; highlighted_node = nullptr;
+                    skip_animation();
                     data.remove(current_input); data.create_visual();
+                    // Prepare to implement animation
                 }
                 operation_button_pressed = true;
             }
 
             if (find_button.contains(mousePos)) {
                 std::cout << "Received Find Query: " << current_input << "\n";
+                if (!current_input.empty()) {
+                    skip_animation();
+                    // Prepare to implement animation
+                }
                 operation_button_pressed = true;
             }
 
             // ---- CLEAR ----
             if (clear_button.contains(mousePos)) {
                 std::cout << "Received Clear Query" << "\n";
-                for (auto& step : anim_queue) {
-                    if (step.stored_subtree) { data.clear_travese(step.stored_subtree); step.stored_subtree = nullptr; }
-                }
-                anim_queue.clear(); cur_step = -1; highlighted_node = nullptr;
+                skip_animation();
                 data.clear(); data.create_visual();
                 operation_button_pressed = true;
             }
@@ -237,7 +283,7 @@ void trie_page(){
             }
 
             // ---- NEXT ----
-            if (next_button.contains(mousePos) && !anim_queue.empty()) {
+            if (next_button.contains(mousePos) && !anim_queue.empty() && cur_step + 1 < anim_queue.size()) {
                 int next_step = cur_step + 1;
                 if (next_step < (int)anim_queue.size()) {
                     cur_step = next_step;
@@ -369,6 +415,12 @@ void trie_page(){
                 cur_step--;
             }
 
+            // -- Skip --
+            if(skip_button.contains(mousePos)){
+                std::cout << "Received Skip Operation" << "\n";
+                skip_animation();
+            }
+
             // Input box handling
             if(input_box.contains(mousePos)){
                 std::cout << "Received Input Box Activation: On" << "\n";
@@ -462,6 +514,7 @@ void trie_page(){
         next_button.draw(window);
         speedup_button.draw(window);
         slowdown_button.draw(window);
+        skip_button.draw(window);
         input_box.draw(window);
         build_box.draw(window);
         speed_box.draw(window);
@@ -471,7 +524,7 @@ void trie_page(){
     }
 }
 
-node* create_node(int block_x, int block_y){
+node* create_node(int block_x, int block_y, bool isend){
     float x, y;
     x = block_unit * block_x;
     y = block_unit * block_y;
@@ -479,7 +532,11 @@ node* create_node(int block_x, int block_y){
     y = y + bgvisual.getPosition().y;
     x = x + block_unit / 2;
     y = y + block_unit / 2;
-    node* getnode = new node(x, y, node_radius, NODE_FILL_COLOR, NODE_OUTLINE_COLOR, node_outline_thickness);
+    node* getnode;
+    if(!isend)
+        getnode = new node(x, y, node_radius, NODE_FILL_COLOR, NODE_OUTLINE_COLOR, node_outline_thickness);
+    else
+        getnode = new node(x, y, node_radius, NODE_END_COLOR, NODE_OUTLINE_COLOR, node_outline_thickness);
     return getnode;
 }
 
@@ -620,7 +677,10 @@ void Trie::cre_node(NodeTrie *pnode, int block_x, int block_y, int char_branch)
 
     if (pnode->visual_node == nullptr) {
         // Node chưa có visual -> tạo mới
-        pnode->visual_node = create_node(block_x, block_y);
+        if(pnode->isend)
+            pnode->visual_node = create_node(block_x, block_y, true);
+        else
+            pnode->visual_node = create_node(block_x, block_y);
         if (char_branch == -1)
             pnode->visual_node->setLabel("R", 20);
         else {
