@@ -1,4 +1,26 @@
 #include "../headers/trie.h"
+#include <windows.h>
+#include <fstream>
+
+static std::string openFileDialog() {
+    OPENFILENAMEA ofn;
+    CHAR szFile[260] = {0};
+    ZeroMemory(&ofn, sizeof(OPENFILENAMEA));
+    ofn.lStructSize = sizeof(OPENFILENAMEA);
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = sizeof(szFile);
+    ofn.lpstrFilter = "Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0";
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFileTitle = NULL;
+    ofn.nMaxFileTitle = 0;
+    ofn.lpstrInitialDir = NULL;
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+    if (GetOpenFileNameA(&ofn) == TRUE) {
+        return std::string(ofn.lpstrFile);
+    }
+    return "";
+}
 
 // Global variable definitions
 const int max_charater = 7;
@@ -315,6 +337,33 @@ void trie_page(){
 
             if (file_button.contains(mousePos)) {
                 std::cout << "Received File Query" << "\n";
+                std::string dir = openFileDialog();
+                if (!dir.empty()) {
+                    std::cout << "Opened file: " << dir << '\n';
+                    std::ifstream fin(dir);
+                    if (fin.is_open()) {
+                        build_input.clear();
+                        std::string word;
+                        bool first = true;
+                        while (std::getline(fin, word)) { 
+                            if (!word.empty() && word.back() == '\r') word.pop_back();
+                            if (word.empty()) continue; // Bỏ qua dòng trống
+                            
+                            if (!first) build_input += ",";
+                            build_input += word;
+                            first = false;
+                        }
+                        
+                        if (build_input.size() <= max_character_show)
+                            build_box.setLabel(build_input + "|");
+                        else
+                            build_box.setLabel(build_input.substr(build_input.size() - max_character_show, max_character_show) + "|");
+                        
+                        fin.close();
+                    } else {
+                        std::cerr << "Loi: Khong the mo file!\n";
+                    }
+                }
                 build_button_pressed = true;
             }
             if (random_button.contains(mousePos)) {
