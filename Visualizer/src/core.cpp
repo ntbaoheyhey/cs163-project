@@ -2,7 +2,7 @@
 #include "../headers/heap.h"
 
 void loadMuisc() {
-    std::string path = "cs163-project/Visualizer/assets/playlist";
+    std::string path = "../cs163-project/Visualizer/assets/playlist";
     try {
         if(std::filesystem::exists(path) and std::filesystem::is_directory(path)) {
             std::cerr << "Error: Playlist path is a directory, expected a file: " << path << std::endl;
@@ -108,7 +108,17 @@ void main_menu_page() {
             }
         }
 
-        
+        for(int i = 0; i < all_buttons.size(); i++) {
+            if(all_buttons[i]->contains(sf::Mouse::getPosition(window))) {
+                all_buttons[i]->setOutline(sf::Color::Black, 2.0f);
+                all_buttons[i]->setColor(sf::Color(140, 95, 30));
+            } else {
+                all_buttons[i]->setOutline(sf::Color::Transparent, 0.0f);
+                all_buttons[i]->setColor(sf::Color(232, 183, 81));
+            }
+            all_buttons[i]->draw(window);
+        }
+
         window.display();
 
         is_mouse_left_pressed_last = is_mouse_left_pressed;
