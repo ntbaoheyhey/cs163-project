@@ -3,8 +3,10 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <iomanip>
 #include <optional>
 #include <random>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -42,6 +44,9 @@ const float LIST_ANIMATION_SECONDS = 0.35f;
 const float COLOR_ANIMATION_SECONDS = 0.20f;
 const float SCRIPT_STEP_SECONDS = 0.32f;
 const float DELETE_DELAY_SECONDS = 0.20f;
+const float MIN_PLAYBACK_SPEED = 0.25f;
+const float MAX_PLAYBACK_SPEED = 3.00f;
+const float PLAYBACK_SPEED_STEP = 0.25f;
 
 enum class StatusTone {
     Info,
@@ -339,6 +344,45 @@ std::string join_values(const std::vector<int>& values) {
         result += std::to_string(values[i]);
     }
     return result.empty() ? "0" : result;
+}
+
+std::string wrapTextToWidth(const std::string& text, const sf::Font& font, unsigned int char_size, float max_width) {
+    if (text.empty()) {
+        return {};
+    }
+
+    sf::Text measure(font, "", char_size);
+    std::istringstream input(text);
+    std::string word;
+    std::string current_line;
+    std::string wrapped;
+
+    while (input >> word) {
+        const std::string candidate = current_line.empty() ? word : current_line + " " + word;
+        measure.setString(candidate);
+
+        if (current_line.empty() || measure.getLocalBounds().size.x <= max_width) {
+            current_line = candidate;
+            continue;
+        }
+
+        if (!wrapped.empty()) wrapped += '\n';
+        wrapped += current_line;
+        current_line = word;
+    }
+
+    if (!current_line.empty()) {
+        if (!wrapped.empty()) wrapped += '\n';
+        wrapped += current_line;
+    }
+
+    return wrapped;
+}
+
+std::string formatPlaybackSpeed(float speed) {
+    std::ostringstream output;
+    output << std::fixed << std::setprecision(2) << speed << "x";
+    return output.str();
 }
 
 std::string openTextFileDialog() {
@@ -1024,6 +1068,10 @@ private:
 } // namespace
 
 void singly_linked_list_page() {
+    const float code_box_width = 435.0f;
+    const float code_box_height = 250.0f;
+    const float code_box_right_margin = 10.0f;
+
     RoundedRectangleShape visual_panel({975.f, 525.f});
     visual_panel.setPosition({380.f, 20.f});
     visual_panel.setFillColor(PANEL_FILL_COLOR);
@@ -1031,12 +1079,27 @@ void singly_linked_list_page() {
     visual_panel.setOutlineThickness(5.0f);
     visual_panel.setOutlineColor(PANEL_OUTLINE_COLOR);
 
-    RoundedRectangleShape status_panel({975.f, 120.f});
-    status_panel.setPosition({380.f, 560.f});
-    status_panel.setFillColor(STATUS_FILL_COLOR);
-    status_panel.setRadius(17.0f);
-    status_panel.setOutlineThickness(4.0f);
-    status_panel.setOutlineColor(PANEL_OUTLINE_COLOR);
+    const float bottom_panel_x = 380.0f;
+    const float bottom_panel_y = 560.0f;
+    const float bottom_panel_height = 120.0f;
+    const float bottom_panel_gap = 10.0f;
+    const float code_box_left = WINDOW_WIDTH - code_box_right_margin - code_box_width;
+    const float bottom_panel_width = code_box_left - bottom_panel_x - bottom_panel_gap;
+    const float bottom_panel_mid_x = bottom_panel_x + bottom_panel_width / 2.0f;
+
+    RoundedRectangleShape bottom_panel({bottom_panel_width, bottom_panel_height});
+    bottom_panel.setPosition({bottom_panel_x, bottom_panel_y});
+    bottom_panel.setFillColor(STATUS_FILL_COLOR);
+    bottom_panel.setRadius(17.0f);
+    bottom_panel.setOutlineThickness(4.0f);
+    bottom_panel.setOutlineColor(PANEL_OUTLINE_COLOR);
+
+    sf::RectangleShape panel_divider({4.0f, bottom_panel_height - 24.0f});
+    panel_divider.setFillColor(PANEL_OUTLINE_COLOR);
+    panel_divider.setPosition({
+        bottom_panel_mid_x - panel_divider.getSize().x / 2.0f,
+        bottom_panel_y + 12.0f
+    });
 
     const float control_left = 14.0f;
     const float control_gap = 10.0f;
@@ -1080,12 +1143,16 @@ void singly_linked_list_page() {
 
     button del_head_btn(control_left, action_row_3_y, double_width, control_height, sf::Color(232, 183, 81), "DEL HEAD", 18);
     button del_tail_btn(wide_col_2_x, action_row_3_y, double_width, control_height, sf::Color(232, 183, 81), "DEL TAIL", 18);
+    button speed_down_btn(bottom_panel_mid_x + 18.0f, bottom_panel_y + 48.0f, 52.0f, 42.0f, sf::Color(232, 183, 81), "-", 22);
+    button speed_up_btn(bottom_panel_mid_x + 178.0f, bottom_panel_y + 48.0f, 52.0f, 42.0f, sf::Color(232, 183, 81), "+", 22);
+    box speed_box(bottom_panel_mid_x + 78.0f, bottom_panel_y + 48.0f, 92.0f, 42.0f, sf::Color(138, 155, 192), "1.00x", 18);
 
     std::vector<button*> all_buttons = {
         &return_btn, &random_btn, &file_btn, &build_btn,
         &add_btn, &search_btn, &traversal_btn,
         &ins_head_btn, &ins_index_btn, &update_btn,
-        &del_head_btn, &del_tail_btn
+        &del_head_btn, &del_tail_btn,
+        &speed_down_btn, &speed_up_btn
     };
     for (button* button_ptr : all_buttons) {
         button_ptr->setRadius(10.0f);
@@ -1094,22 +1161,29 @@ void singly_linked_list_page() {
     sf::Text status_title(font_impact, "Status", 20);
     status_title.setFillColor(sf::Color::Black);
     status_title.setPosition({
-        status_panel.getPosition().x + 20.0f,
-        status_panel.getPosition().y + 16.0f
+        bottom_panel.getPosition().x + 20.0f,
+        bottom_panel.getPosition().y + 14.0f
     });
 
-    sf::Text status_text(font_impact, "Ready", 20);
+    sf::Text status_text(font_impact, "Ready", 16);
     status_text.setFillColor(sf::Color::Black);
     status_text.setPosition({
-        status_panel.getPosition().x + 20.0f,
-        status_panel.getPosition().y + 50.0f
+        bottom_panel.getPosition().x + 20.0f,
+        bottom_panel.getPosition().y + 42.0f
     });
 
-    sf::Text stats_text(font_impact, "", 16);
-    stats_text.setFillColor(MUTED_TEXT_COLOR);
-    stats_text.setPosition({
-        status_panel.getPosition().x + 20.0f,
-        status_panel.getPosition().y + 82.0f
+    sf::Text speed_title(font_impact, "Speed", 20);
+    speed_title.setFillColor(sf::Color::Black);
+    speed_title.setPosition({
+        bottom_panel_mid_x + 18.0f,
+        bottom_panel.getPosition().y + 14.0f
+    });
+
+    sf::Text nodes_text(font_impact, "", 16);
+    nodes_text.setFillColor(MUTED_TEXT_COLOR);
+    nodes_text.setPosition({
+        bottom_panel_mid_x + 18.0f,
+        bottom_panel.getPosition().y + 92.0f
     });
 
     std::string build_text = "0";
@@ -1123,11 +1197,12 @@ void singly_linked_list_page() {
     StatusMessage page_status{StatusTone::Info, "Ready. Enter a value and choose an operation."};
     CodePanelMode code_mode = CodePanelMode::Idle;
     bool code_waiting_for_completion = false;
+    float playback_speed = 1.0f;
 
     SinglyLinkedListVisualizer list_core(visual_panel.getGlobalBounds());
-    CodeBox code_box({435.f, 250.f}, font_impact, 19);
-    code_box.setOrigin({435.f, 250.f});
-    code_box.setPosition({float(WINDOW_WIDTH) - 10.0f, float(WINDOW_HEIGHT) - 10.0f});
+    CodeBox code_box({code_box_width, code_box_height}, font_impact, 19);
+    code_box.setOrigin({code_box_width, code_box_height});
+    code_box.setPosition({float(WINDOW_WIDTH) - code_box_right_margin, float(WINDOW_HEIGHT) - 10.0f});
     code_box.setCode(codePanelText(code_mode));
     code_box.setStep(-1);
 
@@ -1168,7 +1243,7 @@ void singly_linked_list_page() {
             }
         }
 
-        list_core.update(dt);
+        list_core.update(dt * playback_speed);
         if (auto completed_status = list_core.consumePendingStatus()) {
             page_status = *completed_status;
         }
@@ -1226,9 +1301,18 @@ void singly_linked_list_page() {
         const bool traversal_clicked = traversal_btn.update(mouse_pos);
         const bool update_clicked = update_btn.update(mouse_pos);
         const bool return_clicked = return_btn.update(mouse_pos);
+        const bool speed_down_clicked = speed_down_btn.update(mouse_pos);
+        const bool speed_up_clicked = speed_up_btn.update(mouse_pos);
 
         if (return_clicked) {
             return;
+        }
+
+        if (speed_down_clicked) {
+            playback_speed = std::max(MIN_PLAYBACK_SPEED, playback_speed - PLAYBACK_SPEED_STEP);
+        }
+        if (speed_up_clicked) {
+            playback_speed = std::min(MAX_PLAYBACK_SPEED, playback_speed + PLAYBACK_SPEED_STEP);
         }
 
         const bool action_clicked = random_clicked || file_clicked || build_clicked ||
@@ -1407,25 +1491,22 @@ void singly_linked_list_page() {
             }
         }
 
-        status_text.setString(page_status.text);
+        status_text.setString(wrapTextToWidth(page_status.text, font_impact, 16, bottom_panel_width / 2.0f - 40.0f));
         status_text.setFillColor(statusTextColor(page_status.tone));
 
-        std::string stats_label = "Nodes: " + std::to_string(list_core.size()) + " / " + std::to_string(list_core.maxNodes());
-        if (list_core.layoutIsCompact()) {
-            stats_label += "\nLayout compressed to keep the list readable.";
-        } else {
-            stats_label += "\nLayout is in normal spacing.";
-        }
-        stats_text.setString(stats_label);
+        speed_box.setLabel(formatPlaybackSpeed(playback_speed));
+        nodes_text.setString("Nodes: " + std::to_string(list_core.size()) + " / " + std::to_string(list_core.maxNodes()));
 
         window.clear(sf::Color(212, 188, 112, 180));
         window.draw(background_sprite);
 
         window.draw(visual_panel);
-        window.draw(status_panel);
+        window.draw(bottom_panel);
+        window.draw(panel_divider);
         window.draw(status_title);
         window.draw(status_text);
-        window.draw(stats_text);
+        window.draw(speed_title);
+        window.draw(nodes_text);
 
         for (button* button_ptr : all_buttons) {
             button_ptr->draw(window);
@@ -1434,6 +1515,7 @@ void singly_linked_list_page() {
         build_box.draw(window);
         value_box.draw(window);
         index_box.draw(window);
+        speed_box.draw(window);
         list_core.render(window);
         window.draw(code_box);
 
