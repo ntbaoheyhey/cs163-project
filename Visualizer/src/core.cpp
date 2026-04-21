@@ -14,7 +14,7 @@ void loadMuisc() {
             }
         } else {
             std::cerr << "Playlist path does not exist or is not a directory: " << path << std::endl;
-            path = "assets/playlist";
+            path = "cs163-project/Visualizer/assets/playlist";
             if(std::filesystem::exists(path) and std::filesystem::is_directory(path)) {
                 for(const auto& entry : std::filesystem::directory_iterator(path)) {
                     std::string extension = entry.path().extension().string();
@@ -66,7 +66,7 @@ void openWindow() {
 
     if (!loadTextureFromAsset(background_texture,"bg_toty.png")) {
         std::cerr << "cannot load background" << std::endl;
-        if(!background_texture.loadFromFile("cs163-project/Visualizer/assets/bg_totyZ.png")) {
+        if(!background_texture.loadFromFile("cs163-project/Visualizer/assets/bg_toty.png")) {
             std::cerr << "Error: Could not load background texture!" << std::endl;
         }
     } 

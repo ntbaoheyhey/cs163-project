@@ -80,17 +80,6 @@ const std::string words[] = {"apple",
                             "plum"};
 
 void trie_page(){
-    
-    // Background
-    sf::Texture backgroundTexture;
-    if (!loadTextureFromAsset(backgroundTexture, "bg_toty.png")) {
-        std::cerr << "cannot load background" << std::endl;
-        !backgroundTexture.loadFromFile("cs163-project/Visualizer/assets/bg_toty.png");
-    } else{
-        std::cerr << "load background successfully" << std::endl;    
-    }
-    sf::Sprite backgroundSprite(backgroundTexture);
-
     // Line (Temporary)
     sf::RectangleShape horizontal_line_1;
     horizontal_line_1.setFillColor({0, 170, 255});
@@ -727,7 +716,7 @@ void trie_page(){
         
         // --- Draw new frame --- //
         window.clear(sf::Color(212, 188, 112, 0.71));
-        window.draw(backgroundSprite);
+        window.draw(background_sprite);
         return_button.draw(window);
         add_button.draw(window);
         delete_button.draw(window);

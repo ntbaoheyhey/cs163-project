@@ -13,6 +13,9 @@ void heap_page(){
     // hoặc bạn phải truyền đường dẫn tuyệt đối/tương đối chính xác.
     if (!loadTextureFromAsset(backgroundTexture, "bg.png")) {
         std::cerr << "cannot load background" << std::endl;
+        if (!backgroundTexture.loadFromFile("cs163-project/Visualizer/assets/bg.png")) {
+            std::cerr << "Error: Could not load background texture!" << std::endl;
+        }
     }
 
     // 3. Khai báo Sprite và gán Texture cho nó
