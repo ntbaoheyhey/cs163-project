@@ -2,6 +2,7 @@
 
 // Global variable definitions
 const int max_charater = 7;
+const int max_character_show = 20;
 
 RoundedRectangleShape bgvisual({800.f, 600.f});
 const float block_unit = 40.f;
@@ -595,7 +596,7 @@ void trie_page(){
                         if (!current_input.empty()) { current_input.pop_back(); change = true; }
                     }
                     else if (textEvent->unicode >= 97 && textEvent->unicode <= 122) {
-                        current_input += static_cast<char>(textEvent->unicode); change = true;
+                        if (current_input.size() < max_charater) {current_input += static_cast<char>(textEvent->unicode); change = true;}
                     }
                     input_box.setLabel(current_input + "|"); 
                     if(change) std::cout << "Received new input string: " << current_input << "\n";
@@ -613,7 +614,10 @@ void trie_page(){
                     else if (textEvent->unicode == ',') {
                         build_input += ','; change = true;
                     }
-                    build_box.setLabel(build_input + "|");
+                    if(build_input.size() <= max_character_show)
+                        build_box.setLabel(build_input + "|");
+                    else
+                        build_box.setLabel(build_input.substr(build_input.size() - max_character_show, max_character_show) + "|");    
                     if(change) std::cout << "Received new build input string: " << build_input << "\n";
                 }
             }
