@@ -1024,12 +1024,6 @@ private:
 } // namespace
 
 void singly_linked_list_page() {
-    sf::Texture background_texture;
-    if (!loadTextureFromAsset(background_texture, "bg_toty.png")) {
-        std::cerr << "cannot load background" << std::endl;
-    }
-    sf::Sprite background_sprite(background_texture);
-
     RoundedRectangleShape visual_panel({975.f, 525.f});
     visual_panel.setPosition({380.f, 20.f});
     visual_panel.setFillColor(PANEL_FILL_COLOR);
