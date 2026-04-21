@@ -17,6 +17,9 @@ sf::RenderWindow window;
 
 sf::Font font_impact;
 
+sf::Texture background_texture;
+sf::Sprite background_sprite(background_texture);
+
 int current_music_index;
 std::vector<std::filesystem::path> playlist;
 sf::Music background_music;

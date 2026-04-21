@@ -2,7 +2,7 @@
 #include "../headers/heap.h"
 
 void loadMuisc() {
-    std::string path = "cs163-project/Visualizer/assets/playlist";
+    std::string path = "../cs163-project/Visualizer/assets/playlist";
     try {
         if(std::filesystem::exists(path) and std::filesystem::is_directory(path)) {
             std::cerr << "Error: Playlist path is a directory, expected a file: " << path << std::endl;
@@ -14,23 +14,39 @@ void loadMuisc() {
             }
         } else {
             std::cerr << "Playlist path does not exist or is not a directory: " << path << std::endl;
+            path = "assets/playlist";
+            if(std::filesystem::exists(path) and std::filesystem::is_directory(path)) {
+                for(const auto& entry : std::filesystem::directory_iterator(path)) {
+                    std::string extension = entry.path().extension().string();
+                    if(extension == ".mp3" or extension == ".ogg" or extension == ".wav") {
+                        playlist.push_back(entry.path());
+                    }
+                }
+            } else {
+                std::cerr << "Playlist path does not exist or is not a directory: " << path << std::endl;
+            }
         }
     } catch (const std::exception& e) {
         std::cerr << "Error loading music: " << e.what() << std::endl;
     }
 
     current_music_index = -1; // No music loaded yet
+    background_music.setVolume(50);
+    background_music.setLooping(false);
     if(!playlist.empty()) {
         current_music_index = 0; // Start with the first track
+        if(!background_music.openFromFile(playlist[0])) {
+            std::cerr << "Error: Could not play music: " << playlist[0] << std::endl;
+            current_music_index = -1; // reset to no music
+        }
+        background_music.play();
         for(auto &track : playlist) {
             std::cout << "Loaded track: " << track.filename().string() << std::endl;
         }
     } else {
         std::cerr << "No music files found in playlist directory: " << path << std::endl;
+        background_music.pause();
     }
-    background_music.setVolume(50);
-    background_music.pause();
-    background_music.setLooping(false);
 }
 
 void openWindow() {
@@ -47,6 +63,14 @@ void openWindow() {
     font_impact.setSmooth(true);
 
     loadMuisc();
+
+    if (!loadTextureFromAsset(background_texture,"bg_toty.png")) {
+        std::cerr << "cannot load background" << std::endl;
+        if(!background_texture.loadFromFile("cs163-project/Visualizer/assets/bg_totyZ.png")) {
+            std::cerr << "Error: Could not load background texture!" << std::endl;
+        }
+    } 
+    background_sprite.setTexture(background_texture, 1);
 }
 
 void main_menu_page() {
@@ -69,7 +93,7 @@ void main_menu_page() {
             if (event->is<sf::Event::Closed>())
                 window.close();
         }
-        window.clear(sf::Color::Black);
+        window.draw(background_sprite);
 
         for (const auto& btn : all_buttons) {
             btn->draw(window);
@@ -82,6 +106,17 @@ void main_menu_page() {
                     case 1: setting_page(); break; // setting page
                 }
             }
+        }
+
+        for(int i = 0; i < all_buttons.size(); i++) {
+            if(all_buttons[i]->contains(sf::Mouse::getPosition(window))) {
+                all_buttons[i]->setOutline(sf::Color::Black, 2.0f);
+                all_buttons[i]->setColor(sf::Color(140, 95, 30));
+            } else {
+                all_buttons[i]->setOutline(sf::Color::Transparent, 0.0f);
+                all_buttons[i]->setColor(sf::Color(232, 183, 81));
+            }
+            all_buttons[i]->draw(window);
         }
 
         window.display();
@@ -130,7 +165,8 @@ void option_page() {
             if (event->is<sf::Event::Closed>())
                 window.close();
         }
-        window.clear(sf::Color(235, 235, 235)); // soft gray background
+
+        window.draw(background_sprite);
         
         for(int i = 0; i < all_buttons.size(); i++) {
             if(all_buttons[i]->contains(sf::Mouse::getPosition(window))) {
@@ -177,6 +213,7 @@ void setting_page() {
 
     std::vector<button*> all_buttons = {&play_button, &loop_button, &inc_vol_button, &dec_vol_button, &back_button};
     std::vector<bool> state_buttons(all_buttons.size(), 0);
+    state_buttons[0] = background_music.getStatus() == sf::Music::Status::Playing; // play button state
 
     bool is_mouse_left_pressed = 0;
     bool is_mouse_left_pressed_last = 1;
@@ -274,7 +311,7 @@ void setting_page() {
             if (event->is<sf::Event::Closed>())
                 window.close();
         }
-        window.clear(sf::Color(235, 235, 235)); // soft gray background
+        window.draw(background_sprite);
         
         for(int i = 0; i < all_buttons.size(); i++) {
             if(all_buttons[i]->contains(sf::Mouse::getPosition(window)) or state_buttons[i]) {
