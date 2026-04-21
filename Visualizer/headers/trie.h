@@ -40,6 +40,13 @@ enum class StepType {
     Lerp,     // Tạo node mới vào data, dịch chuyển các node cũ
     Create,   // Hiện node mới ngay lập tức, highlight
     MarkEnd,  // Đánh dấu node là cuối từ
+
+    NotFound,          // Tìm kiếm thất bại: tắt highlight node cuối
+    Found,             // Tìm kiếm thành công: highlight xanh cho node cuối (dành cho bộ Find)
+    UnmarkEnd,         // Tắt cờ isend và đưa về màu thường
+    DeleteNodeMark,    // Đóng băng con, đánh dấu cha bằng màu Delete
+    DeleteNodeNotMark, // Đóng băng con, không đổi màu cha
+    DeleteLerp         // Cắt nhánh tháo vào túi ảo và co gọn Layout
 };
 
 struct AnimStep {
@@ -66,6 +73,8 @@ struct Trie{
     
     // Animation function
     std::vector<AnimStep> add_with_anim(std::string s);
+    std::vector<AnimStep> remove_with_anim(std::string s);
+    std::vector<AnimStep> find_with_anim(std::string s);
     void highlight_node(NodeTrie* node, sf::Color color);
     void unhighlight_node(NodeTrie* node);
     void update_edges(NodeTrie* pnode);   // Cập nhật endpoints của toàn bộ edge
