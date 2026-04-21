@@ -262,8 +262,9 @@ void trie_page(){
                 std::cout << "Received Delete Query: " << current_input << "\n";
                 if (!current_input.empty()) {
                     skip_animation();
-                    data.remove(current_input); data.create_visual();
-                    // Prepare to implement animation
+                    anim_queue = data.remove_with_anim(current_input);
+                    cur_step = -1;
+                    current_animation_type = OperationType::Delete;
                 }
                 operation_button_pressed = true;
             }
@@ -876,6 +877,75 @@ void Trie::highlight_node(NodeTrie* pnode, sf::Color color)
 {
     if (pnode && pnode->visual_node)
         pnode->visual_node->setColor(color);
+}
+
+std::vector<AnimStep> Trie::remove_with_anim(std::string s)
+{
+    std::vector<AnimStep> steps;
+    if (s.empty()) return steps;
+
+    NodeTrie* pnow = root;
+    std::vector<NodeTrie*> path;
+    path.push_back(root);
+
+    bool found = true;
+    for (int i = 0; i < (int)s.size(); ++i) {
+        int id = s[i] - 'a';
+        if (pnow->pnext[id] == nullptr) {
+            found = false;
+            break;
+        }
+        steps.push_back({ StepType::Move, pnow, id, nullptr });
+        pnow = pnow->pnext[id];
+        path.push_back(pnow);
+    }
+
+    if (!found || !pnow->isend) {
+        steps.push_back({ StepType::NotFound, pnow, -1, nullptr });
+        return steps;
+    }
+
+    steps.push_back({ StepType::UnmarkEnd, pnow, -1, nullptr });
+
+    std::vector<int> deleted_indices;
+    // Đi ngược để thu thập danh sách các node sẽ bị delete
+    for(int i = path.size() - 1; i >= 1; --i){
+        pnow = path[i];
+        bool has_other = false;
+        for(int c = 0; c < LOWERCASE_CHAR; ++c) {
+            if(pnow->pnext[c] != nullptr) {
+                if (i < s.size() && c == s[i] - 'a') continue; 
+                has_other = true; 
+            }
+        }
+        bool is_leaf = (i == s.size());
+        if (has_other || (!is_leaf && pnow->isend)) {
+            break; 
+        }
+        deleted_indices.push_back(i);
+    }
+
+    for (int k = 0; k < deleted_indices.size(); ++k) {
+        int idx = deleted_indices[k];
+        int id = s[idx - 1] - 'a';
+        NodeTrie* parent = path[idx - 1];
+        
+        bool is_last_deleted = (k == deleted_indices.size() - 1);
+        if (is_last_deleted) {
+            steps.push_back({ StepType::DeleteNodeNotMark, parent, id, nullptr });
+        } else {
+            steps.push_back({ StepType::DeleteNodeMark, parent, id, nullptr });
+        }
+    }
+
+    if (!deleted_indices.empty()) {
+        int top_idx = deleted_indices.back();
+        int top_id = s[top_idx - 1] - 'a';
+        NodeTrie* top_parent = path[top_idx - 1];
+        steps.push_back({ StepType::DeleteLerp, top_parent, top_id, nullptr });
+    }
+
+    return steps;
 }
 
 void Trie::unhighlight_node(NodeTrie* pnode)
