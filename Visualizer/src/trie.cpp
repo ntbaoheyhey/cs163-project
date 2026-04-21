@@ -273,7 +273,9 @@ void trie_page(){
                 std::cout << "Received Find Query: " << current_input << "\n";
                 if (!current_input.empty()) {
                     skip_animation();
-                    // Prepare to implement animation
+                    anim_queue = data.find_with_anim(current_input);
+                    cur_step = -1;
+                    current_animation_type = OperationType::Find;
                 }
                 operation_button_pressed = true;
             }
@@ -1062,6 +1064,31 @@ std::vector<AnimStep> Trie::remove_with_anim(std::string s)
         steps.push_back({ StepType::DeleteLerp, top_parent, top_id, nullptr });
     }
 
+    return steps;
+}
+
+std::vector<AnimStep> Trie::find_with_anim(std::string s)
+{
+    std::vector<AnimStep> steps;
+    if (s.empty()) return steps;
+
+    NodeTrie* pnow = root;
+    bool found = true;
+    for (int i = 0; i < (int)s.size(); ++i) {
+        int id = s[i] - 'a';
+        if (pnow->pnext[id] == nullptr) {
+            found = false;
+            break;
+        }
+        steps.push_back({ StepType::Move, pnow, id, nullptr });
+        pnow = pnow->pnext[id];
+    }
+
+    if (!found || !pnow->isend) {
+        steps.push_back({ StepType::NotFound, pnow, -1, nullptr });
+    } else {
+        steps.push_back({ StepType::Found, pnow, -1, nullptr });
+    }
     return steps;
 }
 
