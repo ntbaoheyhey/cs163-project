@@ -14,6 +14,17 @@ void loadMuisc() {
             }
         } else {
             std::cerr << "Playlist path does not exist or is not a directory: " << path << std::endl;
+            path = "assets/playlist";
+            if(std::filesystem::exists(path) and std::filesystem::is_directory(path)) {
+                for(const auto& entry : std::filesystem::directory_iterator(path)) {
+                    std::string extension = entry.path().extension().string();
+                    if(extension == ".mp3" or extension == ".ogg" or extension == ".wav") {
+                        playlist.push_back(entry.path());
+                    }
+                }
+            } else {
+                std::cerr << "Playlist path does not exist or is not a directory: " << path << std::endl;
+            }
         }
     } catch (const std::exception& e) {
         std::cerr << "Error loading music: " << e.what() << std::endl;
@@ -52,11 +63,14 @@ void openWindow() {
     font_impact.setSmooth(true);
 
     loadMuisc();
-    if (!loadTextureFromAsset(background_texture, "bg.png")) {
+
+    if (!background_texture.loadFromFile("bg_toty.png")) {
         std::cerr << "cannot load background" << std::endl;
-        !background_texture.loadFromFile("cs163-project/Visualizer/assets/bg.png");
+        if(!background_texture.loadFromFile("cs163-project/Visualizer/assets/bg_toty.png")) {
+            std::cerr << "Error: Could not load background texture!" << std::endl;
+        }
     } 
-    background_sprite.setTexture(background_texture);
+    background_sprite.setTexture(background_texture, 1);
 }
 
 void main_menu_page() {
@@ -79,7 +93,6 @@ void main_menu_page() {
             if (event->is<sf::Event::Closed>())
                 window.close();
         }
-        window.clear(sf::Color::Black);
         window.draw(background_sprite);
 
         for (const auto& btn : all_buttons) {
@@ -143,7 +156,6 @@ void option_page() {
                 window.close();
         }
 
-        window.clear(sf::Color(235, 235, 235)); // soft gray background
         window.draw(background_sprite);
         
         for(int i = 0; i < all_buttons.size(); i++) {
@@ -289,8 +301,8 @@ void setting_page() {
             if (event->is<sf::Event::Closed>())
                 window.close();
         }
-        window.clear(sf::Color(235, 235, 235)); // soft gray background
         window.draw(background_sprite);
+        
         for(int i = 0; i < all_buttons.size(); i++) {
             if(all_buttons[i]->contains(sf::Mouse::getPosition(window)) or state_buttons[i]) {
                 all_buttons[i]->setOutline(sf::Color::Black, 2.0f);
