@@ -76,6 +76,7 @@ struct Trie{
     std::vector<AnimStep> add_with_anim(std::string s);
     std::vector<AnimStep> remove_with_anim(std::string s);
     std::vector<AnimStep> find_with_anim(std::string s);
+    std::vector<AnimStep> build_with_anim(std::vector<std::string> words);
     void highlight_node(NodeTrie* node, sf::Color color);
     void unhighlight_node(NodeTrie* node);
     void update_edges(NodeTrie* pnode);   // Cập nhật endpoints của toàn bộ edge
