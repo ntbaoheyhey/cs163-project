@@ -32,7 +32,8 @@ enum class OperationType {
     None,
     Add,
     Delete,
-    Find
+    Find,
+    Build
 };
 
 // --- Animation Step ---

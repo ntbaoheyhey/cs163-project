@@ -179,7 +179,7 @@ void trie_page(){
     OperationType current_animation_type = OperationType::None;
 
     auto skip_animation = [&]() {
-        if (current_animation_type == OperationType::Add) {
+        if (current_animation_type == OperationType::Add || current_animation_type == OperationType::Build) {
             for (auto& step : anim_queue) {
                 if (step.stored_subtree) {
                     step.node->pnext[step.char_id] = step.stored_subtree;
@@ -376,6 +376,27 @@ void trie_page(){
             }
             if (build_button.contains(mousePos)) {
                 std::cout << "Received build query : " << build_input << "\n";
+                if (!build_input.empty()) {
+                    skip_animation();
+                    data.clear();
+                    
+                    std::vector<std::string> words_to_build;
+                    std::string current_word = "";
+                    for (char c : build_input) {
+                        if (c == ',') {
+                            if (!current_word.empty()) words_to_build.push_back(current_word);
+                            current_word = "";
+                        } else {
+                            current_word += c;
+                        }
+                    }
+                    if (!current_word.empty()) words_to_build.push_back(current_word);
+                    
+                    anim_queue = data.build_with_anim(words_to_build);
+                    cur_step = -1;
+                    current_animation_type = OperationType::Build;
+                }
+                
                 build_button_pressed = true;
             }
 
@@ -386,7 +407,7 @@ void trie_page(){
                     cur_step = next_step;
                     AnimStep& step = anim_queue[cur_step];
 
-                    if (current_animation_type == OperationType::Add) {
+                    if (current_animation_type == OperationType::Add || current_animation_type == OperationType::Build) {
                         if (step.type == StepType::Move) {
                             if (highlighted_node) data.unhighlight_node(highlighted_node);
                             // Move lưu parent+id, giải với step.node->pnext[step.char_id]
@@ -498,7 +519,7 @@ void trie_page(){
             if (back_button.contains(mousePos) && !anim_queue.empty() && cur_step >= 0) {
                 AnimStep& step = anim_queue[cur_step];
 
-                if (current_animation_type == OperationType::Add) {
+                if (current_animation_type == OperationType::Add || current_animation_type == OperationType::Build) {
                     if (step.type == StepType::Move) {
                         if (highlighted_node) data.unhighlight_node(highlighted_node);
                         highlighted_node = nullptr;
@@ -1171,6 +1192,17 @@ std::vector<AnimStep> Trie::find_with_anim(std::string s)
         steps.push_back({ StepType::Found, pnow, -1, nullptr });
     }
     return steps;
+}
+
+std::vector<AnimStep> Trie::build_with_anim(std::vector<std::string> words)
+{
+    std::vector<AnimStep> total_steps;
+    for (const auto& w : words) {
+        if (w.empty()) continue;
+        auto steps = add_with_anim(w);
+        total_steps.insert(total_steps.end(), steps.begin(), steps.end());
+    }
+    return total_steps;
 }
 
 void Trie::unhighlight_node(NodeTrie* pnode)
