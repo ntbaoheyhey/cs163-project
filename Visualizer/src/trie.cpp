@@ -793,6 +793,16 @@ void trie_page(){
         update_nodes(data.root);
         data.update_edges(data.root);
         
+        // --- Cập nhật biến dạng Progress Slider ---
+        if (!anim_queue.empty()) {
+            float ratio = float(cur_step + 1) / float(anim_queue.size());
+            if (ratio < 0) ratio = 0.f;
+            if (ratio > 1) ratio = 1.f;
+            slider_run.setSize({slider_fix.getSize().x * ratio, slider_fix.getSize().y});
+        } else {
+            slider_run.setSize({0.f, slider_fix.getSize().y});
+        }
+
         // --- Draw new frame --- //
         window.clear(sf::Color(212, 188, 112, 0.71));
         window.draw(background_sprite);
@@ -805,7 +815,7 @@ void trie_page(){
         file_button.draw(window);
         random_button.draw(window);
         window.draw(bgvisual);
-        window.draw(bgcode);
+        // window.draw(bgcode);
         back_button.draw(window);
         next_button.draw(window);
         speedup_button.draw(window);
@@ -816,6 +826,7 @@ void trie_page(){
         build_box.draw(window);
         speed_box.draw(window);
         window.draw(slider_fix);
+        window.draw(slider_run);
         data.draw(window);
         window.display();
     }
