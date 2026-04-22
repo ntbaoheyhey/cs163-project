@@ -88,6 +88,14 @@ const std::string words[] = {"apple",
 Trie data;
 
 void trie_page(){
+    // load background
+    sf::Texture backgroundTexture;
+    if (!loadTextureFromAsset(backgroundTexture, "bg_trie.png")) {
+        std::cerr << "cannot load background" << std::endl;
+        !backgroundTexture.loadFromFile("cs163-project/Visualizer/assets/bg_trie.png");
+    } 
+    sf::Sprite backgroundSprite(backgroundTexture);
+
     // Line (Temporary)
     sf::RectangleShape horizontal_line_1;
     horizontal_line_1.setFillColor({0, 170, 255});
@@ -812,7 +820,7 @@ void trie_page(){
 
         // --- Draw new frame --- //
         window.clear(sf::Color(212, 188, 112, 0.71));
-        window.draw(background_sprite);
+        window.draw(backgroundSprite);
         return_button.draw(window);
         add_button.draw(window);
         delete_button.draw(window);
@@ -835,6 +843,9 @@ void trie_page(){
         window.draw(slider_fix);
         window.draw(slider_run);
         data.draw(window);
+        // window.draw(horizontal_line_1);
+        // window.draw(horizontal_line_2);
+        // window.draw(vertical_line_1);
         window.display();
     }
 }
