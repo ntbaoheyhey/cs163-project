@@ -58,6 +58,12 @@ const float button_small_width = (button_width - space_button) / 2;
 const float slider_width = button_area_horizon - space_button * 2; 
 const float slider_height = button_height;
 
+const float eps = 0.0001f;
+const float speed_jump = 0.2f;
+const float speed_min = 0.4f;
+const float speed_max = 2.f;
+const int base_pace = 100;
+
 const int min_random_words = 2;
 const int max_random_words = 7;
 const std::string words[] = {"apple", 
@@ -154,7 +160,7 @@ void trie_page(){
     // Boxs
     box input_box(space_button, button_area_bot + section_tilte_word_height + 2 * (button_height + space_button), button_width * 2 + space_button, button_height, BOX_FILL_COLOR, "   Type here", 24);
     box build_box(space_button, button_area_mid + section_tilte_word_height + 2 * (button_height + space_button), button_width * 2 + space_button, button_height, BOX_FILL_COLOR, "   Type here", 24);
-    box speed_box(button_area_horizon * 3 + 2 * space_button + button_width, button_area_mid + 3 * space_button + slider_height + button_height, button_width, button_height, BOX_FILL_COLOR, "Speed : 0x", 24);
+    box speed_box(button_area_horizon * 3 + 2 * space_button + button_width, button_area_mid + 3 * space_button + slider_height + button_height, button_width, button_height, BOX_FILL_COLOR, "speed : 1x", 24);
 
     // Trie data
     Trie data;
@@ -171,7 +177,8 @@ void trie_page(){
     bool build_box_active = false;
     std::string build_input = "";
     ModeType mode = ModeType::Manual;
-    int speed_per_animation = 100;
+    float speed = 1; 
+    int pace = float(base_pace) / speed;
 
     // Random prepare
     srand(time(NULL));
@@ -411,6 +418,24 @@ void trie_page(){
                     std::cout << "Received Change Mod Query, new mode : Manual" << "\n";
                 }
             }
+
+            if (slowdown_button.contains(mousePos) && speed - speed_jump > speed_min - eps){
+                speed = speed - speed_jump;
+                pace = float(base_pace) / speed;
+            };
+            if (speedup_button.contains(mousePos) && speed + speed_jump < speed_max + eps){
+                speed = speed + speed_jump;
+                pace = float(base_pace) / speed;
+            };
+            if (slowdown_button.contains(mousePos) || speedup_button.contains(mousePos)) {
+                char buf[32];
+                snprintf(buf, sizeof(buf), "%.2f", speed);
+                std::string s = buf;
+                s.erase(s.find_last_not_of('0') + 1, std::string::npos);
+                if (s.back() == '.') s.pop_back();
+                speed_box.setLabel("speed : " + s + "x");
+            }
+            
 
             // ---- ADD ----
             if (add_button.contains(mousePos)) {
@@ -712,7 +737,7 @@ void trie_page(){
             }
         }
         left_mouse_last = left_mouse;
-        if(frame_count % speed_per_animation == 0 && mode == ModeType::Auto && !anim_queue.empty() && cur_step + 1 < anim_queue.size()){
+        if(frame_count % pace == 0 && mode == ModeType::Auto && !anim_queue.empty() && cur_step + 1 < anim_queue.size()){
             next_animation();
         }
 
