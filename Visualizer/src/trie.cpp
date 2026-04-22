@@ -517,8 +517,14 @@ void trie_page(){
                 int total_vocab = sizeof(words) / sizeof(words[0]);
                 int num_words = min_random_words + rand() % (max_random_words - min_random_words + 1);
                 
+                std::vector<int> ids(total_vocab);
+                for (int i = 0; i < total_vocab; ++i) ids[i] = i;
+                for (int i = total_vocab - 1; i > 0; --i) {
+                    std::swap(ids[i], ids[rand() % (i + 1)]);
+                }
+                
                 for (int i = 0; i < num_words; ++i) {
-                    build_input += words[rand() % total_vocab];
+                    build_input += words[ids[i]];
                     if (i < num_words - 1) build_input += ",";
                 }
                 
