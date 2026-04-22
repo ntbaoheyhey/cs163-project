@@ -513,14 +513,12 @@ void shortest_path_page() {
     buttons.emplace_back(10, 475, button_width, button_height, sf::Color(232, 183, 81), "Add Node", 20);
     buttons.emplace_back(135, 475, button_width, button_height, sf::Color(232, 183, 81), Visual_graph.isDirected() ? "Directed" : "Undirected", 18);
     for(int i = 0; i < 5; i++) {
-        buttons[i].setOutline(sf::Color::Transparent, 0.0f);
         buttons[i].setColor(sf::Color(232, 183, 81));
     }
     buttons.emplace_back(10, 625, button_width, button_height, sf::Color(232, 183, 81), "Clear", 24);
     buttons.emplace_back(135, 625, button_width, button_height, sf::Color(232, 183, 81), "Random", 20);
 
     box input_weight_box(135, 550, button_width + 10.0f, button_height, sf::Color(138,155,192), "5", 18);
-    input_weight_box.setOutline(sf::Color::Transparent, 0.0f);
     std::string current_input_weight = "5";
 
     // input for source vertex
@@ -530,19 +528,14 @@ void shortest_path_page() {
 
     sf::FloatRect po = buttons[0].getShape();
     box input_source_box(135.0f, 325.0f, button_width - 30.0f, button_height, sf::Color(138,155,192), "0", 18);
-    input_source_box.setOutline(sf::Color::Transparent, 0.0f);
 
     button pre_step_button(10.0f, 400.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Prev", 24);
-    pre_step_button.setOutline(sf::Color::Transparent, 0.0f);
 
     button start_button(135.0f, 400.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Start", 24);
-    start_button.setOutline(sf::Color::Transparent, 0.0f);
 
     button nxt_step_button(260.0f, 400.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Next", 24);
-    nxt_step_button.setOutline(sf::Color::Transparent, 0.0f);
 
     button back_button(15.0f, 15.0f, button_width, button_height, sf::Color(232, 183, 81), "Return", 24);
-    back_button.setOutline(sf::Color::Transparent, 0.0f);
 
     button speed_inc(700, WINDOW_HEIGHT - 75, 50, 50, sf::Color(232, 183, 81), "+", 24);
     button speed_dec(760, WINDOW_HEIGHT - 75, 50, 50, sf::Color(232, 183, 81), "-", 24);
@@ -550,12 +543,9 @@ void shortest_path_page() {
 
     // algorithm selection
     button algorithm_button(10.0f, 200.0f, button_width, button_height, sf::Color(232, 183, 81), shortest_path_algorithm::algorithm_names[shortest_path_algorithm::ALGO_DIJKSTRA], 16);
-    algorithm_button.setOutline(sf::Color::Transparent, 0.0f);
     float algorithm_option_x = 1249.0f;
     button algorithm_option_0(135, 200.0f, button_width, button_height, sf::Color(232, 183, 81), shortest_path_algorithm::algorithm_names[shortest_path_algorithm::ALGO_DIJKSTRA], 16);
-    algorithm_option_0.setOutline(sf::Color::Transparent, 0.0f);
     button algorithm_option_1(260, 200.0f, button_width, button_height, sf::Color(232, 183, 81), shortest_path_algorithm::algorithm_names[shortest_path_algorithm::ALGO_BELLMAN_FORD], 16);
-    algorithm_option_1.setOutline(sf::Color::Transparent, 0.0f);
 
     bool mouse_left_pressed = 0;
     bool mouse_left_pressed_last = 1;
@@ -612,7 +602,7 @@ void shortest_path_page() {
                             buttons[4].setLabel(Visual_graph.isDirected() ? "Directed" : "Undirected");
 
                             // Toggle action doesn't remain selected as a mode button
-                            for(int j = 0; j < 5; j++) state_buttons[j] = 0;
+                            for(int j = 0; j < buttons.size(); j++) state_buttons[j] = 0;
                         }
                         else if(i == 1) { // case load graph from file
                             if(!read_graph_from_file(Visual_graph, graph, Visual_graph.isDirected())) {
@@ -853,7 +843,7 @@ void shortest_path_page() {
         }
         // 
 
-        if(mouse_left_pressed and !mouse_left_pressed_last and back_button.isClicked(sf::Mouse::getPosition(window))) {
+        if(!mouse_left_pressed and mouse_left_pressed_last and back_button.contains(sf::Mouse::getPosition(window))) {
             return;
         }
 
@@ -880,20 +870,12 @@ void shortest_path_page() {
                 buttons[i].setColor(sf::Color(232, 183, 81));
             }
 
-            if(buttons[i].contains(mousePos)) {
-                buttons[i].setOutline(sf::Color::Black, 2.0f);
-            } else {
-                buttons[i].setOutline(sf::Color::Transparent, 0.0f);
-            }
-
             buttons[i].draw(window);
         }
 
         if (algorithm_button.contains(mousePos) || show_algorithm_options) {
-            algorithm_button.setOutline(sf::Color::Black, 2.0f);
             algorithm_button.setColor(sf::Color(140, 95, 30));
         } else {
-            algorithm_button.setOutline(sf::Color::Transparent, 0.0f);
             algorithm_button.setColor(sf::Color(232, 183, 81));
         }
         algorithm_button.draw(window);
@@ -902,10 +884,8 @@ void shortest_path_page() {
             button* algo_options[] = {&algorithm_option_0, &algorithm_option_1};
             for (int i = 0; i < 2; ++i) {
                 if (algo_options[i]->contains(mousePos)) {
-                    algo_options[i]->setOutline(sf::Color::Black, 2.0f);
                     algo_options[i]->setColor(sf::Color(140, 95, 30));
                 } else {
-                    algo_options[i]->setOutline(sf::Color::Transparent, 0.0f);
                     algo_options[i]->setColor(sf::Color(232, 183, 81));
                 }
                 algo_options[i]->draw(window);
@@ -914,18 +894,8 @@ void shortest_path_page() {
 
         // input boxes hover border
         bool input_weight_hover = input_weight_box.contains(mousePos);
-        if(input_weight_hover) {
-            input_weight_box.setOutline(sf::Color::Black, 2.0f);
-        } else {
-            input_weight_box.setOutline(sf::Color::Transparent, 0.0f);
-        }
 
         bool input_source_hover = input_source_box.contains(mousePos);
-        if(input_source_hover) {
-            input_source_box.setOutline(sf::Color::Black, 2.0f);
-        } else {
-            input_source_box.setOutline(sf::Color::Transparent, 0.0f);
-        }
 
         if(back_button.contains(mousePos)){
             back_button.setColor(sf::Color(140, 95, 30));
@@ -947,28 +917,22 @@ void shortest_path_page() {
             input_source_box.draw(window);
 
             if(pre_step_button.contains(mousePos)) {
-                pre_step_button.setOutline(sf::Color::Black, 2.0f);
                 pre_step_button.setColor(sf::Color(140, 95, 30));
             } else {
-                pre_step_button.setOutline(sf::Color::Transparent, 0.0f);
                 pre_step_button.setColor(sf::Color(232, 183, 81));
             }
             pre_step_button.draw(window);
 
             if(start_button.contains(mousePos) or is_start_button_pressed){
-                start_button.setOutline(sf::Color::Black, 2.0f);
                 start_button.setColor(sf::Color(140, 95, 30));
             } else {
-                start_button.setOutline(sf::Color::Transparent, 0.0f);
                 start_button.setColor(sf::Color(232, 183, 81));
             }
             start_button.draw(window);
 
             if(nxt_step_button.contains(mousePos)) {
-                nxt_step_button.setOutline(sf::Color::Black, 2.0f);
                 nxt_step_button.setColor(sf::Color(140, 95, 30));
             } else {
-                nxt_step_button.setOutline(sf::Color::Transparent, 0.0f);
                 nxt_step_button.setColor(sf::Color(232, 183, 81));
             }
             nxt_step_button.draw(window);
@@ -1030,18 +994,14 @@ void shortest_path_page() {
         }
 
         if(speed_inc.contains(mousePos)) {
-            speed_inc.setOutline(sf::Color::Black, 2.0f);
             speed_inc.setColor(sf::Color(140, 95, 30));
         } else {
-            speed_inc.setOutline(sf::Color::Transparent, 0.0f);
             speed_inc.setColor(sf::Color(232, 183, 81));
         }
 
         if(speed_dec.contains(mousePos)) {
-            speed_dec.setOutline(sf::Color::Black, 2.0f);
             speed_dec.setColor(sf::Color(140, 95, 30));
         } else {
-            speed_dec.setOutline(sf::Color::Transparent, 0.0f);
             speed_dec.setColor(sf::Color(232, 183, 81));
         }
 
