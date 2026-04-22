@@ -71,6 +71,7 @@ struct Trie{
     NodeTrie* root;
 
     Trie();
+    ~Trie();
     
     // Logic function
     void init();

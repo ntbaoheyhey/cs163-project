@@ -860,9 +860,26 @@ Trie::Trie()
     root = new NodeTrie();
 }
 
+Trie::~Trie()
+{
+    if (root) {
+        clear();
+        if (root->visual_node) {
+            delete root->visual_node;
+            root->visual_node = nullptr;
+        }
+        delete root;
+        root = nullptr;
+    }
+}
+
 void Trie::init()
 {
-    root = new NodeTrie();   
+    if (!root) {
+        root = new NodeTrie();   
+    } else {
+        clear();
+    }
 }
 
 void Trie::add(std::string s)
@@ -956,6 +973,11 @@ void Trie::clear_travese(NodeTrie *pnode, bool isRoot){
     if(!isRoot){
         delete pnode->visual_node;
         delete pnode;
+    } else {
+        if (pnode->visual_node) {
+            delete pnode->visual_node;
+            pnode->visual_node = nullptr;
+        }
     }
 }
 
