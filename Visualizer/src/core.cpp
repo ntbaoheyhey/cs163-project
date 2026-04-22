@@ -110,10 +110,8 @@ void main_menu_page() {
 
         for(int i = 0; i < all_buttons.size(); i++) {
             if(all_buttons[i]->contains(sf::Mouse::getPosition(window))) {
-                all_buttons[i]->setOutline(sf::Color::Black, 2.0f);
                 all_buttons[i]->setColor(sf::Color(140, 95, 30));
             } else {
-                all_buttons[i]->setOutline(sf::Color::Transparent, 0.0f);
                 all_buttons[i]->setColor(sf::Color(232, 183, 81));
             }
             all_buttons[i]->draw(window);
@@ -170,10 +168,8 @@ void option_page() {
         
         for(int i = 0; i < all_buttons.size(); i++) {
             if(all_buttons[i]->contains(sf::Mouse::getPosition(window))) {
-                all_buttons[i]->setOutline(sf::Color::Black, 2.0f);
                 all_buttons[i]->setColor(sf::Color(140, 95, 30));
             } else {
-                all_buttons[i]->setOutline(sf::Color::Transparent, 0.0f);
                 all_buttons[i]->setColor(sf::Color(232, 183, 81));
             }
             all_buttons[i]->draw(window);
@@ -315,10 +311,8 @@ void setting_page() {
         
         for(int i = 0; i < all_buttons.size(); i++) {
             if(all_buttons[i]->contains(sf::Mouse::getPosition(window)) or state_buttons[i]) {
-                all_buttons[i]->setOutline(sf::Color::Black, 2.0f);
                 all_buttons[i]->setColor(sf::Color(140, 95, 30));
             } else {
-                all_buttons[i]->setOutline(sf::Color::Transparent, 0.0f);
                 all_buttons[i]->setColor(sf::Color(232, 183, 81));
             }
             all_buttons[i]->draw(window);
@@ -332,10 +326,8 @@ void setting_page() {
         if(is_music_menu_active) {
             for(int i = 0; i < music_options.size(); i++) {
                 if(music_options[i].contains(sf::Mouse::getPosition(window))) {
-                    music_options[i].setOutline(sf::Color::Black, 2.0f);
                     music_options[i].setColor(sf::Color(140, 95, 30));
                 } else {
-                    music_options[i].setOutline(sf::Color::Transparent, 0.0f);
                     music_options[i].setColor(sf::Color(232, 183, 81, 150));
                 }
                 music_options[i].draw(window);
@@ -349,7 +341,6 @@ void setting_page() {
         volume.draw(window);
 
         //=============================
-
         window.display();
 
         is_mouse_left_pressed_last = is_mouse_left_pressed;
