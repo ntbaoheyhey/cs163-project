@@ -183,6 +183,18 @@ void heap_page(){
             bool clear_active  = clear_button.update(mousePos);
             bool peek_active   = peek_button.update(mousePos);
 
+            if (core_heap.isSkip) {
+                skip_button.setColor(sf::Color(207, 152, 182));
+                skip_button.setLabel("FAST");
+            }
+            else {
+                skip_button.setColor(sf::Color(183, 219, 75));
+                skip_button.setLabel("SLOW");
+            }
+            if (skip_button.contains(mousePos)) {
+                skip_button.setColor(sf::Color(140, 95, 30));
+            }
+
             if (core_heap.isMinHeap) {
                 min_button.setColor(sf::Color(140, 95, 30));
             } else {
@@ -209,7 +221,7 @@ void heap_page(){
             }
             
             else if (skip_active) {
-                core_heap.isSkip = true;
+                core_heap.isSkip = !core_heap.isSkip;
             }
 
             else if (inc_active) {
@@ -429,7 +441,7 @@ void heap_page(){
                 } 
             }
             if (core_heap.cur_step == core_heap.animation_queue.size()) {
-                core_heap.isSkip = false;
+                //core_heap.isSkip = false;
                 core_heap.hasAnimation = false;
             }
 
