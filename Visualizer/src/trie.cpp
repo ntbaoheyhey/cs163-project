@@ -85,6 +85,8 @@ const std::string words[] = {"apple",
                             "cherry", 
                             "plum"};
 
+Trie data;
+
 void trie_page(){
     // Line (Temporary)
     sf::RectangleShape horizontal_line_1;
@@ -163,7 +165,6 @@ void trie_page(){
     box speed_box(button_area_horizon * 3 + 2 * space_button + button_width, button_area_mid + 3 * space_button + slider_height + button_height, button_width, button_height, BOX_FILL_COLOR, "speed : 1x", 24);
 
     // Trie data
-    Trie data;
     data.init();
     data.create_visual(); // Must have
 
@@ -1130,7 +1131,6 @@ std::vector<AnimStep> Trie::add_with_anim(std::string s)
     NodeTrie* last_node = root;
     for (char c : s) last_node = last_node->pnext[c - 'a'];
     last_node->isend = false;
-
     // Bước 3: Build queue với pointer thật
     pnow = root;
     NodeTrie* last_parent = pnow;
@@ -1159,7 +1159,7 @@ std::vector<AnimStep> Trie::add_with_anim(std::string s)
     // MarkEnd
     if (!had_new) {
         // Từ đã tồn tại hoàn toàn → pnow là node thật
-        steps.push_back({ StepType::MarkEnd, pnow, -1, nullptr });
+        steps.push_back({ StepType::MarkEnd, last_parent, last_id, nullptr });
     } else {
         // Node cuối là node mới → dùng parent + char_id
         steps.push_back({ StepType::MarkEnd, last_parent, last_id, nullptr });
