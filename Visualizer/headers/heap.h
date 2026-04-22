@@ -300,6 +300,13 @@ enum ActionType {INSERT, POP, SWAPUI, HIGHLIGHT, UNHIGHLIGHT, SNAPSHOT};
             return ans;
         }
 
+        int peek() {
+            animation_queue.push_back({HIGHLIGHT, 0, 0});
+            codebox_queue.push_back(0);
+            animation_queue.push_back({UNHIGHLIGHT, 0, 0});
+            codebox_queue.push_back(1);
+            return v[0];
+        }
         
         void UISWAPUI(int i, int j){
             startNodeMovement(nodelist[i], nodelist[j].currentPos, 2);

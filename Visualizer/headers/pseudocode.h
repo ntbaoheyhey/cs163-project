@@ -109,6 +109,10 @@ namespace PseudoCode {
         "  else: return\n"                 // Dòng 6: Dừng nếu root đã là nhỏ nhất
         "\n"                               // Dòng 7: (Dòng trống đệm)
         "Done",                            // Dòng 8: Kết thúc
+    },
+    {
+        "Return v[0]\n"
+        "Done",
     }
     };
 };

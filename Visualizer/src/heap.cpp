@@ -25,6 +25,7 @@ void heap_page(){
     button insert_button(10, WINDOW_HEIGHT - 225, 100, 50, sf::Color(232, 183, 81), "PUSH", 24);
     button pop_button(10, WINDOW_HEIGHT - 150, 100, 50, sf::Color(232, 183, 81), "POP", 24);
     button clear_button(135, WINDOW_HEIGHT - 150, 100, 50, sf::Color(232, 183, 81), "CLEAR", 24);
+    button peek_button(250, WINDOW_HEIGHT - 150, 100, 50, sf::Color(232, 183, 81), "PEEK", 24);
     button next_button(400, WINDOW_HEIGHT - 75, 75, 50, sf::Color(232, 183, 81), "NEXT", 24);
     button previous_button(500, WINDOW_HEIGHT - 75, 75, 50, sf::Color(232, 183, 81), "BACK", 24);
     button getout_button(15, 15, 100, 50, sf::Color(232, 183, 81), "RETURN", 24);
@@ -60,7 +61,7 @@ void heap_page(){
     &insert_button, &pop_button, &next_button, &previous_button, 
     &getout_button, &speed_inc, &speed_dec, &build_button, &update_button,
     &skip_button, &random_button, &txtfile_button, &clear_button,
-    &min_button, &max_button
+    &min_button, &max_button, &peek_button,
     };
 
     std::vector<box*> all_boxes = {
@@ -180,6 +181,7 @@ void heap_page(){
             bool random_active = random_button.update(mousePos);
             bool file_active   = txtfile_button.update(mousePos);
             bool clear_active  = clear_button.update(mousePos);
+            bool peek_active   = peek_button.update(mousePos);
 
             if (core_heap.isMinHeap) {
                 min_button.setColor(sf::Color(140, 95, 30));
@@ -316,6 +318,15 @@ void heap_page(){
                 }
             }
 
+            else if (peek_active) {
+                core_heap.RESET();
+                if (!core_heap.v.empty()) {
+                    codeBox.setCode(PseudoCode::heapCode[2][0]);
+                    core_heap.peek();
+                    core_heap.hasAnimation = true;
+                }
+            }
+
             else if (back_active && core_heap.cur_step > 0) {
                 
                 core_heap.hasAnimation = false;
@@ -436,7 +447,7 @@ void heap_page(){
                 c.draw(window);
             }
             for (int i=0; i<core_heap.nodelist.size(); ++i) {
-                if (core_heap.isSkip) dt = 100000000;
+                if (core_heap.isSkip) dt = 1000000000000000000;
                 core_heap.nodelist[i].updatePosition(core_heap.animation_speed * dt);
                 core_heap.nodelist[i].updateColor(core_heap.animation_speed * dt);
                 if (core_heap.nodelist[i].isMoving || core_heap.nodelist[i].isColoring) core_heap.isAnimate = true;
