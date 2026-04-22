@@ -534,6 +534,7 @@ void shortest_path_page() {
     button start_button(135.0f, 400.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Start", 24);
 
     button nxt_step_button(260.0f, 400.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Next", 24);
+    button skip_button(260.0f, 325.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Skip", 24);
 
     button back_button(15.0f, 15.0f, button_width, button_height, sf::Color(232, 183, 81), "Return", 24);
 
@@ -798,6 +799,11 @@ void shortest_path_page() {
                 if(cur_step < graph.step_history.size()-1) cur_step++;
             }
 
+            if(mouse_left_pressed == 1 and !mouse_left_pressed_last and skip_button.isClicked(sf::Mouse::getPosition(window))) {
+                cur_step = graph.step_history.size() - 1;
+                is_start_button_pressed = 0;
+            }
+
             if(auto_run_after_load && graph.step_history.size() > 0 && cur_step == graph.step_history.size() - 1) {
                 auto_run_after_load = false;
                 is_start_button_pressed = 0;
@@ -936,6 +942,13 @@ void shortest_path_page() {
                 nxt_step_button.setColor(sf::Color(232, 183, 81));
             }
             nxt_step_button.draw(window);
+
+            if(skip_button.contains(mousePos)) {
+                skip_button.setColor(sf::Color(140, 95, 30));
+            } else {
+                skip_button.setColor(sf::Color(232, 183, 81));
+            }
+            skip_button.draw(window);
 
             if(cur_step >= 0 and cur_step < graph.step_history.size()) {
                 graph._visual(Visual_graph, visual_code_region, text_for_code, cur_step);
