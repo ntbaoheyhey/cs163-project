@@ -120,7 +120,9 @@ void trie_page(){
     button slowdown_button(button_area_horizon * 3 + space_button, button_area_mid + 3 * space_button + slider_height + button_height, button_small_width, button_height, BUTTON_FILL_COLOR, "-", 24);
     button speedup_button(button_area_horizon * 3 + space_button + button_small_width + space_button, button_area_mid + 3 * space_button + slider_height + button_height, button_small_width, button_height, BUTTON_FILL_COLOR, "+", 24);
     button skip_button(button_area_horizon * 3 + space_button, button_area_mid + 4 * space_button + slider_height + 2 * button_height, button_width, button_height, BUTTON_FILL_COLOR, "Skip", 24);
-
+    button mode_button(button_area_horizon * 3 + 2 * space_button + button_width, button_area_mid + 4 * space_button + slider_height + 2 * button_height, button_width, button_height, BUTTON_FILL_COLOR, "Manual", 24);
+           mode_button.setLabel("Manual");
+    
     // Slider - Progess animation
     RoundedRectangleShape slider_fix({slider_width, slider_height}, 10.f);
     RoundedRectangleShape slider_run({slider_width, slider_height}, 10.f);
@@ -168,6 +170,8 @@ void trie_page(){
     std::string current_input = "";
     bool build_box_active = false;
     std::string build_input = "";
+    ModeType mode = ModeType::Manual;
+    int speed_per_animation = 100;
 
     // Random prepare
     srand(time(NULL));
@@ -269,6 +273,7 @@ void trie_page(){
         speedup_button.update(mousePos);
         slowdown_button.update(mousePos);
         skip_button.update(mousePos);
+        mode_button.update(mousePos);
 
         // 3. Left-Mouse click handle
         if (left_mouse && !left_mouse_last) { 
@@ -280,6 +285,18 @@ void trie_page(){
                 skip_animation();
                 data.clear();
                 return;
+            }
+
+            if (mode_button.contains(mousePos)){
+                if(mode == ModeType::Manual){
+                    mode = ModeType::Auto;
+                    mode_button.setLabel("Auto");
+                    std::cout << "Received Change Mod Query, new mode : Auto" << "\n";
+                } else{
+                    mode = ModeType::Manual;
+                    mode_button.setLabel("Manual");
+                    std::cout << "Received Change Mod Query, new mode : Manual" << "\n";
+                }
             }
 
             // ---- ADD ----
@@ -411,7 +428,10 @@ void trie_page(){
             }
 
             // ---- NEXT ----
-            if (next_button.contains(mousePos) && !anim_queue.empty() && cur_step + 1 < anim_queue.size()) {
+            if (frame_count % speed_per_animation == 0 && mode == ModeType::Auto){
+                std::cerr << "Yes thats right\n";
+            }
+            if ( (next_button.contains(mousePos) || (frame_count % speed_per_animation == 0 && mode == ModeType::Auto)) && !anim_queue.empty() && cur_step + 1 < anim_queue.size()) {
                 int next_step = cur_step + 1;
                 if (next_step < (int)anim_queue.size()) {
                     cur_step = next_step;
@@ -763,6 +783,7 @@ void trie_page(){
         speedup_button.draw(window);
         slowdown_button.draw(window);
         skip_button.draw(window);
+        mode_button.draw(window);
         input_box.draw(window);
         build_box.draw(window);
         speed_box.draw(window);

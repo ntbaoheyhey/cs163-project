@@ -27,6 +27,12 @@ struct NodeTrie{
     NodeTrie();
 };
 
+// --- Mode Type ---
+enum class ModeType{
+    Manual,
+    Auto
+};
+
 // --- Operation Type ---
 enum class OperationType {
     None,
