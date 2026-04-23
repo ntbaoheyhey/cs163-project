@@ -63,6 +63,7 @@ struct AnimStep {
                       // Lerp/Create : node CHA (để tìm pnext[char_id])
     int char_id;      // Lerp/Create : chỉ số ký tự trong pnext[]
     NodeTrie* stored_subtree; // Dùng để cất giữ nhánh khi bị tháo lúc Back
+    int code_line;
 };
 
 node* create_node(int block_x, int block_y, bool isend = false);

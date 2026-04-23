@@ -85,6 +85,34 @@ const std::string words[] = {"apple",
                             "cherry", 
                             "plum"};
 
+const std::string CODE_ADD = 
+    "Node* p = root;\n"                     // 0
+    "for (char c : word) {\n"               // 1
+    "    if (p->next[c] == null)\n"         // 2
+    "        p->next[c] = new Node();\n"    // 3
+    "    p = p->next[c];\n"                 // 4
+    "}\n"                                   // 5
+    "p->is_end = true;";                    // 6
+
+const std::string CODE_FIND = 
+    "Node* p = root;\n"                     // 0
+    "for (char c : word) {\n"               // 1
+    "    if (p->next[c] == null)\n"         // 2
+    "        return false;\n"               // 3
+    "    p = p->next[c];\n"                 // 4
+    "}\n"                                   // 5
+    "return p->is_end;";                    // 6
+
+const std::string CODE_DELETE = 
+    "Node* p = find(word);\n"               // 0
+    "if (!p || !p->is_end) return;\n"       // 1
+    "p->is_end = false;\n"                  // 2
+    "while (p != root && p->is_empty()) {\n"// 3
+    "    Node* par = p->parent;\n"          // 4
+    "    delete p;\n"                       // 5
+    "    p = par;\n"                        // 6
+    "}";                                    // 7
+
 Trie data;
 
 void trie_page(){
@@ -166,6 +194,12 @@ void trie_page(){
     // bgcode.setRadius(17);
     // bgcode.setOutlineThickness(5);
     // bgcode.setOutlineColor(sf::Color(217, 211, 209));
+
+    // Code Box
+    CodeBox codeBox({350.f, 250.f}, font_impact, 18);
+    codeBox.setOrigin({350.f, 250.f});
+    codeBox.setPosition({float(WINDOW_WIDTH) - 10.f, float(WINDOW_HEIGHT) - 10.f});
+    codeBox.setCode("// Choose an operation");
     
     // Boxs
     box input_box(space_button, button_area_bot + section_tilte_word_height + 2 * (button_height + space_button), button_width * 2 + space_button, button_height, BOX_FILL_COLOR, "   Type here", 24);
@@ -452,6 +486,8 @@ void trie_page(){
                 if (!current_input.empty()) {
                     skip_animation();
                     anim_queue = data.add_with_anim(current_input);
+                    codeBox.setCode(CODE_ADD);
+                    codeBox.setStep(0);
                     cur_step = -1;
                     current_animation_type = OperationType::Add;
                 }
@@ -463,6 +499,8 @@ void trie_page(){
                 if (!current_input.empty()) {
                     skip_animation();
                     anim_queue = data.remove_with_anim(current_input);
+                    codeBox.setCode(CODE_DELETE);
+                    codeBox.setStep(-1);
                     cur_step = -1;
                     current_animation_type = OperationType::Delete;
                 }
@@ -474,6 +512,8 @@ void trie_page(){
                 if (!current_input.empty()) {
                     skip_animation();
                     anim_queue = data.find_with_anim(current_input);
+                    codeBox.setCode(CODE_FIND);
+                    codeBox.setStep(0);
                     cur_step = -1;
                     current_animation_type = OperationType::Find;
                 }
@@ -549,6 +589,9 @@ void trie_page(){
                 if (!build_input.empty()) {
                     skip_animation();
                     data.clear();
+
+                    codeBox.setCode(CODE_ADD);
+                    codeBox.setStep(0);
                     
                     std::vector<std::string> words_to_build;
                     std::string current_word = "";
@@ -818,6 +861,11 @@ void trie_page(){
             slider_run.setSize({0.f, slider_fix.getSize().y});
         }
 
+        // --- Cập nhật Line cho Highlight Code nếu có
+        if(current_animation_type != OperationType::None && cur_step >= 0){
+            codeBox.setStep(anim_queue[cur_step].code_line);
+        }
+
         // --- Draw new frame --- //
         window.clear(sf::Color(212, 188, 112, 0.71));
         window.draw(backgroundSprite);
@@ -830,7 +878,6 @@ void trie_page(){
         file_button.draw(window);
         random_button.draw(window);
         window.draw(bgvisual);
-        // window.draw(bgcode);
         back_button.draw(window);
         next_button.draw(window);
         speedup_button.draw(window);
@@ -843,9 +890,10 @@ void trie_page(){
         window.draw(slider_fix);
         window.draw(slider_run);
         data.draw(window);
-        // window.draw(horizontal_line_1);
-        // window.draw(horizontal_line_2);
-        // window.draw(vertical_line_1);
+
+        // Code Box draw
+        window.draw(codeBox);
+
         window.display();
     }
 }
@@ -1145,6 +1193,7 @@ void Trie::draw(sf::RenderWindow &window)
 
 std::vector<AnimStep> Trie::add_with_anim(std::string s)
 {
+
     std::vector<AnimStep> steps;
 
     // Bước 1: Tìm k — vị trí đầu tiên cần tạo node mới
@@ -1178,24 +1227,24 @@ std::vector<AnimStep> Trie::add_with_anim(std::string s)
         last_id = id;
 
         if (i < k) {
-            steps.push_back({ StepType::Move, parent, id, nullptr }); // lưu parent+id, nhất quán với Create/Lerp
+            steps.push_back({ StepType::Move, parent, id, nullptr, 4}); // lưu parent+id, nhất quán với Create/Lerp
         } else if (i == k) {
             // 1 Lerp duy nhất tại điểm rẽ nhánh
-            steps.push_back({ StepType::Lerp,   parent, id, nullptr });
-            steps.push_back({ StepType::Create, parent, id, nullptr });
+            steps.push_back({ StepType::Lerp,   parent, id, nullptr, 3});
+            steps.push_back({ StepType::Create, parent, id, nullptr, 3});
         } else {
             // Các node mới tiếp theo: chỉ Create
-            steps.push_back({ StepType::Create, parent, id, nullptr });
+            steps.push_back({ StepType::Create, parent, id, nullptr, 3});
         }
     }
 
     // MarkEnd
     if (!had_new) {
         // Từ đã tồn tại hoàn toàn → pnow là node thật
-        steps.push_back({ StepType::MarkEnd, last_parent, last_id, nullptr });
+        steps.push_back({ StepType::MarkEnd, last_parent, last_id, nullptr, 6});
     } else {
         // Node cuối là node mới → dùng parent + char_id
-        steps.push_back({ StepType::MarkEnd, last_parent, last_id, nullptr });
+        steps.push_back({ StepType::MarkEnd, last_parent, last_id, nullptr, 6});
     }
 
     return steps;
@@ -1225,17 +1274,17 @@ std::vector<AnimStep> Trie::remove_with_anim(std::string s)
             found = false;
             break;
         }
-        steps.push_back({ StepType::Move, pnow, id, nullptr });
+        steps.push_back({ StepType::Move, pnow, id, nullptr, 0});
         pnow = pnow->pnext[id];
         path.push_back(pnow);
     }
 
     if (!found || !pnow->isend) {
-        steps.push_back({ StepType::NotFound, pnow, -1, nullptr });
+        steps.push_back({ StepType::NotFound, pnow, -1, nullptr, 1});
         return steps;
     }
 
-    steps.push_back({ StepType::UnmarkEnd, pnow, -1, nullptr });
+    steps.push_back({ StepType::UnmarkEnd, pnow, -1, nullptr, 2});
 
     std::vector<int> deleted_indices;
     // Đi ngược để thu thập danh sách các node sẽ bị delete
@@ -1262,9 +1311,9 @@ std::vector<AnimStep> Trie::remove_with_anim(std::string s)
         
         bool is_last_deleted = (k == deleted_indices.size() - 1);
         if (is_last_deleted) {
-            steps.push_back({ StepType::DeleteNodeNotMark, parent, id, nullptr });
+            steps.push_back({ StepType::DeleteNodeNotMark, parent, id, nullptr, 5});
         } else {
-            steps.push_back({ StepType::DeleteNodeMark, parent, id, nullptr });
+            steps.push_back({ StepType::DeleteNodeMark, parent, id, nullptr, 5});
         }
     }
 
@@ -1272,7 +1321,7 @@ std::vector<AnimStep> Trie::remove_with_anim(std::string s)
         int top_idx = deleted_indices.back();
         int top_id = s[top_idx - 1] - 'a';
         NodeTrie* top_parent = path[top_idx - 1];
-        steps.push_back({ StepType::DeleteLerp, top_parent, top_id, nullptr });
+        steps.push_back({ StepType::DeleteLerp, top_parent, top_id, nullptr, 7});
     }
 
     return steps;
@@ -1291,14 +1340,14 @@ std::vector<AnimStep> Trie::find_with_anim(std::string s)
             found = false;
             break;
         }
-        steps.push_back({ StepType::Move, pnow, id, nullptr });
+        steps.push_back({ StepType::Move, pnow, id, nullptr, 4});
         pnow = pnow->pnext[id];
     }
 
     if (!found || !pnow->isend) {
-        steps.push_back({ StepType::NotFound, pnow, -1, nullptr });
+        steps.push_back({ StepType::NotFound, pnow, -1, nullptr, 3});
     } else {
-        steps.push_back({ StepType::Found, pnow, -1, nullptr });
+        steps.push_back({ StepType::Found, pnow, -1, nullptr, 6});
     }
     return steps;
 }
