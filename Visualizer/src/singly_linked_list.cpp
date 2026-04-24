@@ -381,7 +381,7 @@ std::string wrapTextToWidth(const std::string& text, const sf::Font& font, unsig
 
 std::string formatPlaybackSpeed(float speed) {
     std::ostringstream output;
-    output << std::fixed << std::setprecision(2) << speed << "x";
+    output << std::fixed << std::setprecision(1) << speed << "x";
     return output.str();
 }
 
@@ -1068,84 +1068,105 @@ private:
 } // namespace
 
 void singly_linked_list_page() {
-    const float code_box_width = 435.0f;
-    const float code_box_height = 250.0f;
-    const float code_box_right_margin = 10.0f;
+    sf::Texture list_background_texture;
+    const bool has_list_background = loadTextureFromAsset(list_background_texture, "bg_trie.png");
+    if (!has_list_background) {
+        std::cerr << "cannot load singly linked list background" << std::endl;
+    }
+    sf::Sprite list_background_sprite(list_background_texture);
 
-    RoundedRectangleShape visual_panel({975.f, 525.f});
-    visual_panel.setPosition({380.f, 20.f});
+    const float code_box_width = 450.0f;
+    const float code_box_height = 250.0f;
+    const float code_box_right_margin = 0.0f;
+
+    RoundedRectangleShape visual_panel({980.0f, 530.0f});
+    visual_panel.setPosition({386.0f, 50.0f});
     visual_panel.setFillColor(PANEL_FILL_COLOR);
     visual_panel.setRadius(17.0f);
     visual_panel.setOutlineThickness(5.0f);
     visual_panel.setOutlineColor(PANEL_OUTLINE_COLOR);
 
-    const float bottom_panel_x = 380.0f;
-    const float bottom_panel_y = 560.0f;
-    const float bottom_panel_height = 120.0f;
-    const float bottom_panel_gap = 10.0f;
-    const float code_box_left = WINDOW_WIDTH - code_box_right_margin - code_box_width;
-    const float bottom_panel_width = code_box_left - bottom_panel_x - bottom_panel_gap;
-    const float bottom_panel_mid_x = bottom_panel_x + bottom_panel_width / 2.0f;
+    const float footer_panel_x = 400.0f;
+    const float footer_panel_y = 578.0f;
+    const float footer_panel_width = 505.0f;
+    const float footer_panel_height = 112.0f;
+
+    RoundedRectangleShape footer_panel({footer_panel_width, footer_panel_height});
+    footer_panel.setPosition({footer_panel_x, footer_panel_y});
+    footer_panel.setFillColor(sf::Color(243, 243, 251, 205));
+    footer_panel.setRadius(14.0f);
+    footer_panel.setOutlineThickness(3.0f);
+    footer_panel.setOutlineColor(sf::Color(233, 186, 85, 235));
+
+    const float bottom_panel_x = footer_panel_x + 18.0f;
+    const float bottom_panel_y = footer_panel_y + 42.0f;
+    const float bottom_panel_width = footer_panel_width - 36.0f;
+    const float bottom_panel_height = 24.0f;
 
     RoundedRectangleShape bottom_panel({bottom_panel_width, bottom_panel_height});
     bottom_panel.setPosition({bottom_panel_x, bottom_panel_y});
-    bottom_panel.setFillColor(STATUS_FILL_COLOR);
-    bottom_panel.setRadius(17.0f);
-    bottom_panel.setOutlineThickness(4.0f);
-    bottom_panel.setOutlineColor(PANEL_OUTLINE_COLOR);
+    bottom_panel.setFillColor(sf::Color(147, 160, 193, 235));
+    bottom_panel.setRadius(8.0f);
+    bottom_panel.setOutlineThickness(2.0f);
+    bottom_panel.setOutlineColor(sf::Color(233, 186, 85, 220));
 
-    sf::RectangleShape panel_divider({4.0f, bottom_panel_height - 24.0f});
-    panel_divider.setFillColor(PANEL_OUTLINE_COLOR);
-    panel_divider.setPosition({
-        bottom_panel_mid_x - panel_divider.getSize().x / 2.0f,
-        bottom_panel_y + 12.0f
-    });
+    sf::RectangleShape panel_divider({0.0f, bottom_panel_height});
+    panel_divider.setFillColor(sf::Color(28, 41, 114));
+    panel_divider.setPosition({bottom_panel_x, bottom_panel_y});
 
-    const float control_left = 14.0f;
-    const float control_gap = 10.0f;
-    const float button_width = 104.0f;
-    const float double_width = 161.0f;
-    const float control_height = 44.0f;
-    const float box_height = 48.0f;
-    const float return_button_top = 18.0f;
-    const float return_button_height = 52.0f;
-    const float controls_top = return_button_top + return_button_height + 42.0f;
-    const float controls_bottom = WINDOW_HEIGHT - 24.0f;
-    const float total_controls_height = 4.0f * control_height + 2.0f * box_height;
-    const float vertical_gap = (controls_bottom - controls_top - total_controls_height) / 5.0f;
-    const float build_row_y = controls_top;
-    const float build_box_y = build_row_y + control_height + vertical_gap;
-    const float input_row_y = build_box_y + box_height + vertical_gap;
-    const float action_row_1_y = input_row_y + box_height + vertical_gap;
-    const float action_row_2_y = action_row_1_y + control_height + vertical_gap;
-    const float action_row_3_y = action_row_2_y + control_height + vertical_gap;
+    RoundedRectangleShape nodes_badge({154.0f, 34.0f});
+    nodes_badge.setPosition({footer_panel_x + 18.0f, footer_panel_y + 71.0f});
+    nodes_badge.setFillColor(sf::Color(255, 255, 255, 125));
+    nodes_badge.setRadius(10.0f);
+    nodes_badge.setOutlineThickness(1.5f);
+    nodes_badge.setOutlineColor(sf::Color(194, 198, 214, 220));
 
-    const float col_1_x = control_left;
-    const float col_2_x = control_left + button_width + control_gap;
-    const float col_3_x = control_left + 2.0f * (button_width + control_gap);
-    const float wide_col_2_x = control_left + double_width + control_gap;
-    button return_btn(18.f, return_button_top, 104.f, return_button_height, sf::Color(232, 183, 81), "RETURN", 24);
-    button random_btn(col_1_x, build_row_y, button_width, control_height, sf::Color(232, 183, 81), "RANDOM", 18);
-    button file_btn(col_2_x, build_row_y, button_width, control_height, sf::Color(232, 183, 81), "FILE", 18);
-    button build_btn(col_3_x, build_row_y, button_width, control_height, sf::Color(232, 183, 81), "BUILD", 18);
+    const float sidebar_content_width = 336.0f;
+    const float panel_padding_x = 18.0f;
+    const float build_button_gap = 9.0f;
+    const float build_button_width = 94.0f;
+    const float build_button_height = 52.0f;
+    const float build_box_width = sidebar_content_width - 2.0f * panel_padding_x;
+    const float input_box_gap = 14.0f;
+    const float input_box_width = (build_box_width - input_box_gap) / 2.0f;
+    const float input_box_height = 52.0f;
+    const float action_button_height = 44.0f;
+    const float delete_button_width = (build_box_width - input_box_gap) / 2.0f;
 
-    box build_box(control_left, build_box_y, 332.f, box_height, sf::Color(138, 155, 192), "0", 22);
-    box value_box(control_left, input_row_y, double_width, box_height, sf::Color(138, 155, 192), "0", 22);
-    box index_box(wide_col_2_x, input_row_y, double_width, box_height, sf::Color(138, 155, 192), "0", 22);
+    const float left_col_x = panel_padding_x;
+    const float mid_col_x = left_col_x + build_button_width + build_button_gap;
+    const float right_col_x = mid_col_x + build_button_width + build_button_gap;
+    const float input_right_x = left_col_x + input_box_width + input_box_gap;
 
-    button add_btn(col_1_x, action_row_1_y, button_width, control_height, sf::Color(232, 183, 81), "ADD", 20);
-    button search_btn(col_2_x, action_row_1_y, button_width, control_height, sf::Color(232, 183, 81), "SEARCH", 18);
-    button traversal_btn(col_3_x, action_row_1_y, button_width, control_height, sf::Color(232, 183, 81), "TRAVERSE", 15);
+    const float build_row_y = 166.0f;
+    const float build_box_y = build_row_y + build_button_height + 18.0f;
+    const float input_row_y = 470.0f;
+    const float action_row_1_y = input_row_y + input_box_height + 14.0f;
+    const float action_row_2_y = action_row_1_y + action_button_height + 10.0f;
+    const float action_row_3_y = action_row_2_y + action_button_height + 10.0f;
 
-    button ins_head_btn(col_1_x, action_row_2_y, button_width, control_height, sf::Color(232, 183, 81), "INS HEAD", 16);
-    button ins_index_btn(col_2_x, action_row_2_y, button_width, control_height, sf::Color(232, 183, 81), "INS IDX", 16);
-    button update_btn(col_3_x, action_row_2_y, button_width, control_height, sf::Color(232, 183, 81), "UPDATE", 18);
+    button return_btn(25.0f, 46.0f, 110.0f, 52.0f, sf::Color(232, 183, 81), "RETURN", 24);
+    box value_box(left_col_x, input_row_y, input_box_width, input_box_height, sf::Color(138, 155, 192, 230), "0", 24);
+    box index_box(input_right_x, input_row_y, input_box_width, input_box_height, sf::Color(138, 155, 192, 230), "0", 24);
 
-    button del_head_btn(control_left, action_row_3_y, double_width, control_height, sf::Color(232, 183, 81), "DEL HEAD", 18);
-    button del_tail_btn(wide_col_2_x, action_row_3_y, double_width, control_height, sf::Color(232, 183, 81), "DEL TAIL", 18);
-    button speed_down_btn(bottom_panel_mid_x + 18.0f, bottom_panel_y + 48.0f, 52.0f, 42.0f, sf::Color(232, 183, 81), "-", 22);
-    button speed_up_btn(bottom_panel_mid_x + 178.0f, bottom_panel_y + 48.0f, 52.0f, 42.0f, sf::Color(232, 183, 81), "+", 22);
-    box speed_box(bottom_panel_mid_x + 78.0f, bottom_panel_y + 48.0f, 92.0f, 42.0f, sf::Color(138, 155, 192), "1.00x", 18);
+    button random_btn(left_col_x, build_row_y, build_button_width, build_button_height, sf::Color(232, 183, 81), "RANDOM", 18);
+    button file_btn(mid_col_x, build_row_y, build_button_width, build_button_height, sf::Color(232, 183, 81), "FILE", 22);
+    button build_btn(right_col_x, build_row_y, build_button_width, build_button_height, sf::Color(232, 183, 81), "BUILD", 22);
+    box build_box(left_col_x, build_box_y, build_box_width, input_box_height, sf::Color(138, 155, 192, 230), "0", 24);
+
+    button add_btn(left_col_x, action_row_1_y, build_button_width, action_button_height, sf::Color(232, 183, 81), "ADD", 18);
+    button search_btn(mid_col_x, action_row_1_y, build_button_width, action_button_height, sf::Color(232, 183, 81), "SEARCH", 16);
+    button traversal_btn(right_col_x, action_row_1_y, build_button_width, action_button_height, sf::Color(232, 183, 81), "TRAVERSE", 13);
+
+    button ins_head_btn(left_col_x, action_row_2_y, build_button_width, action_button_height, sf::Color(232, 183, 81), "INS HEAD", 13);
+    button ins_index_btn(mid_col_x, action_row_2_y, build_button_width, action_button_height, sf::Color(232, 183, 81), "INS IDX", 14);
+    button update_btn(right_col_x, action_row_2_y, build_button_width, action_button_height, sf::Color(232, 183, 81), "UPDATE", 16);
+
+    button del_head_btn(left_col_x, action_row_3_y, delete_button_width, action_button_height, sf::Color(232, 183, 81), "DEL HEAD", 15);
+    button del_tail_btn(input_right_x, action_row_3_y, delete_button_width, action_button_height, sf::Color(232, 183, 81), "DEL TAIL", 15);
+    button speed_up_btn(footer_panel_x + 306.0f, footer_panel_y + 68.0f, 42.0f, 42.0f, sf::Color(232, 183, 81), "+", 20);
+    button speed_down_btn(footer_panel_x + 355.0f, footer_panel_y + 68.0f, 42.0f, 42.0f, sf::Color(232, 183, 81), "-", 20);
+    box speed_box(footer_panel_x + 404.0f, footer_panel_y + 68.0f, 82.0f, 42.0f, sf::Color(138, 155, 192, 240), "1.0x", 18);
 
     std::vector<button*> all_buttons = {
         &return_btn, &random_btn, &file_btn, &build_btn,
@@ -1155,36 +1176,24 @@ void singly_linked_list_page() {
         &speed_down_btn, &speed_up_btn
     };
     for (button* button_ptr : all_buttons) {
-        button_ptr->setRadius(10.0f);
+        button_ptr->setRadius(12.0f);
     }
 
-    sf::Text status_title(font_impact, "Status", 20);
-    status_title.setFillColor(sf::Color::Black);
-    status_title.setPosition({
-        bottom_panel.getPosition().x + 20.0f,
-        bottom_panel.getPosition().y + 14.0f
-    });
+    sf::Text status_title(font_impact, "Status", 19);
+    status_title.setFillColor(sf::Color(32, 37, 60));
+    status_title.setPosition({footer_panel_x + 18.0f, footer_panel_y + 8.0f});
 
-    sf::Text status_text(font_impact, "Ready", 16);
+    sf::Text status_text(font_impact, "Ready", 14);
     status_text.setFillColor(sf::Color::Black);
-    status_text.setPosition({
-        bottom_panel.getPosition().x + 20.0f,
-        bottom_panel.getPosition().y + 42.0f
-    });
+    status_text.setPosition({footer_panel_x + 92.0f, footer_panel_y + 10.0f});
 
-    sf::Text speed_title(font_impact, "Speed", 20);
-    speed_title.setFillColor(sf::Color::Black);
-    speed_title.setPosition({
-        bottom_panel_mid_x + 18.0f,
-        bottom_panel.getPosition().y + 14.0f
-    });
+    sf::Text speed_title(font_impact, "Speed", 18);
+    speed_title.setFillColor(sf::Color(32, 37, 60));
+    speed_title.setPosition({footer_panel_x + 238.0f, footer_panel_y + 79.0f});
 
-    sf::Text nodes_text(font_impact, "", 16);
-    nodes_text.setFillColor(MUTED_TEXT_COLOR);
-    nodes_text.setPosition({
-        bottom_panel_mid_x + 18.0f,
-        bottom_panel.getPosition().y + 92.0f
-    });
+    sf::Text nodes_text(font_impact, "", 17);
+    nodes_text.setFillColor(sf::Color(32, 37, 60));
+    nodes_text.setPosition({footer_panel_x + 31.0f, footer_panel_y + 78.0f});
 
     std::string build_text = "0";
     std::string value_text = "0";
@@ -1200,7 +1209,7 @@ void singly_linked_list_page() {
     float playback_speed = 1.0f;
 
     SinglyLinkedListVisualizer list_core(visual_panel.getGlobalBounds());
-    CodeBox code_box({code_box_width, code_box_height}, font_impact, 19);
+    CodeBox code_box({code_box_width, code_box_height}, font_impact, 18);
     code_box.setOrigin({code_box_width, code_box_height});
     code_box.setPosition({float(WINDOW_WIDTH) - code_box_right_margin, float(WINDOW_HEIGHT) - 10.0f});
     code_box.setCode(codePanelText(code_mode));
@@ -1263,8 +1272,8 @@ void singly_linked_list_page() {
 
         std::string build_label = build_text;
         if (build_label.empty()) build_label = "0";
-        if (build_label.size() > 21) {
-            build_label = build_label.substr(build_label.size() - 21);
+        if (build_label.size() > 20) {
+            build_label = build_label.substr(build_label.size() - 20);
         }
         if (build_active) build_label += '|';
         build_box.setLabel(build_label);
@@ -1491,18 +1500,31 @@ void singly_linked_list_page() {
             }
         }
 
-        status_text.setString(wrapTextToWidth(page_status.text, font_impact, 16, bottom_panel_width / 2.0f - 40.0f));
+        status_text.setString(wrapTextToWidth(page_status.text, font_impact, 14, 352.0f));
         status_text.setFillColor(statusTextColor(page_status.tone));
+
+        const float speed_ratio = std::clamp(
+            (playback_speed - MIN_PLAYBACK_SPEED) / (MAX_PLAYBACK_SPEED - MIN_PLAYBACK_SPEED),
+            0.0f,
+            1.0f
+        );
+        panel_divider.setSize({bottom_panel_width * speed_ratio, bottom_panel_height});
 
         speed_box.setLabel(formatPlaybackSpeed(playback_speed));
         nodes_text.setString("Nodes: " + std::to_string(list_core.size()) + " / " + std::to_string(list_core.maxNodes()));
 
         window.clear(sf::Color(212, 188, 112, 180));
-        window.draw(background_sprite);
+        if (has_list_background) {
+            window.draw(list_background_sprite);
+        } else {
+            window.draw(background_sprite);
+        }
 
         window.draw(visual_panel);
+        window.draw(footer_panel);
         window.draw(bottom_panel);
         window.draw(panel_divider);
+        window.draw(nodes_badge);
         window.draw(status_title);
         window.draw(status_text);
         window.draw(speed_title);
