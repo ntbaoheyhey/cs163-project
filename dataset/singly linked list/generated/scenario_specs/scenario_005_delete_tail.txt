@@ -1,9 +1,0 @@
-# Singly linked list scenario
-name=scenario_005_delete_tail
-category=single_operation/delete_tail
-initial=743,177,437
-operation_count=1
-op1=delete_tail
-expected1=status=success deleted_tail=437
-after1=743,177
-expected_final=743,177

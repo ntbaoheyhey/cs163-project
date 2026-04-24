@@ -1,9 +1,0 @@
-# Singly linked list scenario
-name=scenario_011_insert_index
-category=single_operation/insert_index
-initial=703,347,437,168
-operation_count=1
-op1=insert_index value=203 index=0
-expected1=status=success inserted=203 index=0
-after1=203,703,347,437,168
-expected_final=203,703,347,437,168

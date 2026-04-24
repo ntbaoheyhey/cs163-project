@@ -1,9 +1,0 @@
-# Singly linked list scenario
-name=scenario_016_update
-category=single_operation/update
-initial=979,681,933,159,843,160,325,482,102,640
-operation_count=1
-op1=update index=3 value=510
-expected1=status=success updated_index=3 old=159 new=510
-after1=979,681,933,510,843,160,325,482,102,640
-expected_final=979,681,933,510,843,160,325,482,102,640

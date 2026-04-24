@@ -1,9 +1,0 @@
-# Singly linked list scenario
-name=scenario_014_search
-category=single_operation/search
-initial=379
-operation_count=1
-op1=search value=739
-expected1=status=success found_index=-1
-after1=379
-expected_final=379

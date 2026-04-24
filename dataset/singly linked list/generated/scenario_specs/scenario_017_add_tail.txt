@@ -1,9 +1,0 @@
-# Singly linked list scenario
-name=scenario_017_add_tail
-category=single_operation/add_tail
-initial=326,812,172
-operation_count=1
-op1=add_tail value=472
-expected1=status=success added=472
-after1=326,812,172,472
-expected_final=326,812,172,472
