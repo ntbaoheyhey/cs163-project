@@ -491,6 +491,12 @@ public:
         Search
     };
 
+    enum class VisualAction {
+        None,
+        SimpleAnimation,
+        Delete
+    };
+
     explicit SinglyLinkedListVisualizer(sf::FloatRect bounds)
         : canvas_bounds(bounds) {
         refreshLayoutMetrics();
@@ -524,6 +530,55 @@ public:
         return hasVisualAnimation();
     }
 
+    float progressRatio() const {
+        if (progress_tracking_active || isBusy()) {
+            return std::clamp(std::max(progress_display_ratio, activeProgressRatio()), 0.0f, 1.0f);
+        }
+
+        return std::clamp(progress_display_ratio, 0.0f, 1.0f);
+    }
+
+    float activeProgressRatio() const {
+        if (build_in_progress) {
+            if (build_values.empty()) return 0.0f;
+
+            float completed_steps = static_cast<float>(build_cursor);
+            if (hasVisualAnimation() && completed_steps > 0.0f) {
+                completed_steps = std::max(0.0f, completed_steps - 1.0f + activeAnimationRatio());
+            }
+
+            return std::clamp(
+                completed_steps / static_cast<float>(build_values.size()),
+                0.0f,
+                1.0f
+            );
+        }
+
+        if (script_mode != ScriptMode::None) {
+            if (scripted_indices.empty()) return 0.0f;
+
+            const float step_ratio = std::clamp(scripted_timer / SCRIPT_STEP_SECONDS, 0.0f, 1.0f);
+            const float progress = (static_cast<float>(scripted_cursor) + step_ratio) /
+                                   static_cast<float>(scripted_indices.size());
+            return std::clamp(progress, 0.0f, 1.0f);
+        }
+
+        if (visual_action == VisualAction::Delete) {
+            if (pending_delete_index >= 0) {
+                const float delete_ratio = std::clamp(pending_delete_timer / DELETE_DELAY_SECONDS, 0.0f, 1.0f);
+                return 0.10f + 0.40f * std::max(delete_ratio, activeAnimationRatio());
+            }
+
+            if (hasVisualAnimation()) {
+                return 0.50f + 0.50f * activeAnimationRatio();
+            }
+        } else if (visual_action == VisualAction::SimpleAnimation && hasVisualAnimation()) {
+            return activeAnimationRatio();
+        }
+
+        return 0.0f;
+    }
+
     std::string insertRangeHint() const {
         return insertRangeLabel(size());
     }
@@ -546,12 +601,14 @@ public:
     bool create_node(int value) {
         if (atCapacity()) return false;
 
+        beginProgressTracking();
         clearVisualState(true);
         refreshLayoutMetrics();
 
         items.emplace_back(value, spawnPositionForIndex(size()), current_radius, labelCharSize());
         applyLayout(true);
         highlightIndex(size() - 1, NODE_FOUND_COLOR, 0.25f);
+        visual_action = VisualAction::SimpleAnimation;
         return true;
     }
 
@@ -559,6 +616,7 @@ public:
         refreshLayoutMetrics();
         if (values.empty() || values.size() > static_cast<std::size_t>(max_visible_nodes)) return false;
 
+        beginProgressTracking();
         clearVisualState(true);
         pending_status.reset();
         items.clear();
@@ -581,12 +639,14 @@ public:
     bool insert_index(int idx, int value) {
         if (idx < 0 || idx > size() || atCapacity()) return false;
 
+        beginProgressTracking();
         clearVisualState(true);
         refreshLayoutMetrics();
 
         items.insert(items.begin() + idx, ListVisualItem(value, spawnPositionForIndex(idx), current_radius, labelCharSize()));
         applyLayout(true);
         highlightIndex(idx, NODE_ACTIVE_COLOR, 0.25f);
+        visual_action = VisualAction::SimpleAnimation;
         return true;
     }
 
@@ -603,16 +663,19 @@ public:
     bool delete_index(int idx) {
         if (idx < 0 || idx >= size()) return false;
 
+        beginProgressTracking();
         clearVisualState(true);
         pending_delete_index = idx;
         pending_delete_timer = 0.0f;
         highlightIndex(idx, NODE_DELETE_COLOR, 0.15f);
+        visual_action = VisualAction::Delete;
         return true;
     }
 
     int search_value(int value) {
         if (empty()) return -1;
 
+        beginProgressTracking();
         clearVisualState(false);
         scripted_search_value = value;
         scripted_found_index = -1;
@@ -639,6 +702,7 @@ public:
     bool traversal() {
         if (empty()) return false;
 
+        beginProgressTracking();
         clearVisualState(false);
         scripted_indices.clear();
         for (int i = 0; i < size(); ++i) {
@@ -657,10 +721,12 @@ public:
     bool update_value(int idx, int value) {
         if (idx < 0 || idx >= size()) return false;
 
+        beginProgressTracking();
         clearVisualState(true);
         items[idx].value = value;
         items[idx].visual.setLabel(std::to_string(value), labelCharSize());
         highlightIndex(idx, NODE_FOUND_COLOR, 0.25f);
+        visual_action = VisualAction::SimpleAnimation;
         return true;
     }
 
@@ -673,6 +739,22 @@ public:
         updatePendingDelete(dt);
         updateScript(dt);
         updateBuild();
+
+        if (progress_tracking_active) {
+            progress_display_ratio = std::max(progress_display_ratio, activeProgressRatio());
+            if (!isBusy()) {
+                progress_display_ratio = 1.0f;
+                progress_tracking_active = false;
+            }
+        }
+
+        if (visual_action != VisualAction::None &&
+            pending_delete_index < 0 &&
+            script_mode == ScriptMode::None &&
+            !build_in_progress &&
+            !hasVisualAnimation()) {
+            visual_action = VisualAction::None;
+        }
     }
 
     void render(sf::RenderWindow& window) const {
@@ -766,6 +848,7 @@ private:
     float pending_delete_timer{0.0f};
 
     ScriptMode script_mode{ScriptMode::None};
+    VisualAction visual_action{VisualAction::None};
     std::vector<int> scripted_indices;
     int scripted_cursor{0};
     float scripted_timer{0.0f};
@@ -774,8 +857,15 @@ private:
     bool build_in_progress{false};
     std::vector<int> build_values;
     std::size_t build_cursor{0};
+    bool progress_tracking_active{false};
+    float progress_display_ratio{0.0f};
 
     std::optional<StatusMessage> pending_status;
+
+    void beginProgressTracking() {
+        progress_tracking_active = true;
+        progress_display_ratio = 0.0f;
+    }
 
     unsigned int labelCharSize() const {
         if (compact_layout || current_radius <= 22.0f) return 18;
@@ -790,6 +880,31 @@ private:
         }
 
         return false;
+    }
+
+    float activeAnimationRatio() const {
+        float ratio = 0.0f;
+        bool has_active_animation = false;
+
+        for (const auto& item : items) {
+            if (item.visual.isMoving && item.visual.movementDuration > 0.0f) {
+                ratio = std::max(
+                    ratio,
+                    std::clamp(item.visual.movementElapsedTime / item.visual.movementDuration, 0.0f, 1.0f)
+                );
+                has_active_animation = true;
+            }
+
+            if (item.visual.isColoring && item.visual.colorDuration > 0.0f) {
+                ratio = std::max(
+                    ratio,
+                    std::clamp(item.visual.colorElapsedTime / item.visual.colorDuration, 0.0f, 1.0f)
+                );
+                has_active_animation = true;
+            }
+        }
+
+        return has_active_animation ? ratio : 0.0f;
     }
 
     int computeRowsForCount(int count) const {
@@ -915,6 +1030,7 @@ private:
         pending_delete_timer = 0.0f;
 
         script_mode = ScriptMode::None;
+        visual_action = VisualAction::None;
         scripted_indices.clear();
         scripted_cursor = 0;
         scripted_timer = 0.0f;
@@ -1098,21 +1214,16 @@ void singly_linked_list_page() {
     footer_panel.setOutlineThickness(3.0f);
     footer_panel.setOutlineColor(sf::Color(233, 186, 85, 235));
 
-    const float bottom_panel_x = footer_panel_x + 18.0f;
-    const float bottom_panel_y = footer_panel_y + 42.0f;
-    const float bottom_panel_width = footer_panel_width - 36.0f;
-    const float bottom_panel_height = 24.0f;
+    RoundedRectangleShape slider({0.0f, 24.0f});
+    slider.setPosition({footer_panel_x + 18.0f, footer_panel_y + 42.0f});
+    slider.setFillColor(sf::Color(28, 41, 114));
 
-    RoundedRectangleShape bottom_panel({bottom_panel_width, bottom_panel_height});
-    bottom_panel.setPosition({bottom_panel_x, bottom_panel_y});
-    bottom_panel.setFillColor(sf::Color(147, 160, 193, 235));
-    bottom_panel.setRadius(8.0f);
-    bottom_panel.setOutlineThickness(2.0f);
-    bottom_panel.setOutlineColor(sf::Color(233, 186, 85, 220));
-
-    sf::RectangleShape panel_divider({0.0f, bottom_panel_height});
-    panel_divider.setFillColor(sf::Color(28, 41, 114));
-    panel_divider.setPosition({bottom_panel_x, bottom_panel_y});
+    RoundedRectangleShape slider_bg({footer_panel_width - 36.0f, 24.0f});
+    slider_bg.setPosition({footer_panel_x + 18.0f, footer_panel_y + 42.0f});
+    slider_bg.setRadius(8.0f);
+    slider_bg.setOutlineThickness(2.0f);
+    slider_bg.setOutlineColor(sf::Color(233, 186, 85, 220));
+    slider_bg.setFillColor(sf::Color(140, 155, 191, 235));
 
     RoundedRectangleShape nodes_badge({154.0f, 34.0f});
     nodes_badge.setPosition({footer_panel_x + 18.0f, footer_panel_y + 71.0f});
@@ -1503,12 +1614,7 @@ void singly_linked_list_page() {
         status_text.setString(wrapTextToWidth(page_status.text, font_impact, 14, 352.0f));
         status_text.setFillColor(statusTextColor(page_status.tone));
 
-        const float speed_ratio = std::clamp(
-            (playback_speed - MIN_PLAYBACK_SPEED) / (MAX_PLAYBACK_SPEED - MIN_PLAYBACK_SPEED),
-            0.0f,
-            1.0f
-        );
-        panel_divider.setSize({bottom_panel_width * speed_ratio, bottom_panel_height});
+        slider.setSize({slider_bg.getSize().x * list_core.progressRatio(), slider_bg.getSize().y});
 
         speed_box.setLabel(formatPlaybackSpeed(playback_speed));
         nodes_text.setString("Nodes: " + std::to_string(list_core.size()) + " / " + std::to_string(list_core.maxNodes()));
@@ -1522,8 +1628,8 @@ void singly_linked_list_page() {
 
         window.draw(visual_panel);
         window.draw(footer_panel);
-        window.draw(bottom_panel);
-        window.draw(panel_divider);
+        window.draw(slider_bg);
+        window.draw(slider);
         window.draw(nodes_badge);
         window.draw(status_title);
         window.draw(status_text);
@@ -1538,8 +1644,8 @@ void singly_linked_list_page() {
         value_box.draw(window);
         index_box.draw(window);
         speed_box.draw(window);
-        list_core.render(window);
         window.draw(code_box);
+        list_core.render(window);
 
         window.display();
     }
