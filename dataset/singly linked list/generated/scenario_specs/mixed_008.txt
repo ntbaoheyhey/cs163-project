@@ -1,0 +1,18 @@
+# Singly linked list scenario
+name=mixed_008
+category=mixed_sequence
+initial=4,555
+operation_count=4
+op1=insert_head value=130
+expected1=status=success inserted_head=130
+after1=130,4,555
+op2=search value=496
+expected2=status=success found_index=-1
+after2=130,4,555
+op3=delete_head
+expected3=status=success deleted_head=130
+after3=4,555
+op4=update index=0 value=695
+expected4=status=success updated_index=0 old=4 new=695
+after4=695,555
+expected_final=695,555

@@ -1,0 +1,9 @@
+# Singly linked list scenario
+name=scenario_004_delete_head
+category=single_operation/delete_head
+initial=973,574
+operation_count=1
+op1=delete_head
+expected1=status=success deleted_head=973
+after1=574
+expected_final=574

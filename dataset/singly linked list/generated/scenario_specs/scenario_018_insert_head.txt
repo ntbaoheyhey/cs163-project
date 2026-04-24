@@ -1,0 +1,9 @@
+# Singly linked list scenario
+name=scenario_018_insert_head
+category=single_operation/insert_head
+initial=511,724,495,667,135,583,869
+operation_count=1
+op1=insert_head value=263
+expected1=status=success inserted_head=263
+after1=263,511,724,495,667,135,583,869
+expected_final=263,511,724,495,667,135,583,869

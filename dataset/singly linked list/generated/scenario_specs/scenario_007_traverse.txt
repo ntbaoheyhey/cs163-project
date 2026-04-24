@@ -1,0 +1,9 @@
+# Singly linked list scenario
+name=scenario_007_traverse
+category=single_operation/traverse
+initial=307,422,465,863,806
+operation_count=1
+op1=traverse
+expected1=status=success order=307,422,465,863,806
+after1=307,422,465,863,806
+expected_final=307,422,465,863,806

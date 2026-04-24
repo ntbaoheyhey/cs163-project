@@ -1,0 +1,15 @@
+# Singly linked list scenario
+name=mixed_009
+category=mixed_sequence
+initial=690,189
+operation_count=3
+op1=search value=647
+expected1=status=success found_index=-1
+after1=690,189
+op2=add_tail value=100
+expected2=status=success added=100
+after2=690,189,100
+op3=delete_tail
+expected3=status=success deleted_tail=100
+after3=690,189
+expected_final=690,189

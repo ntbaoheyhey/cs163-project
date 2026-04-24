@@ -1,0 +1,9 @@
+# Singly linked list scenario
+name=scenario_006_search
+category=single_operation/search
+initial=623,272,897,805
+operation_count=1
+op1=search value=173
+expected1=status=success found_index=-1
+after1=623,272,897,805
+expected_final=623,272,897,805
