@@ -3,7 +3,6 @@
 #include <string>
 #include <fstream>
 #include <random>
-#include "../headers/pseudocode.h"
 
 
 void heap_page(){
