@@ -298,6 +298,7 @@ void setting_page() {
                     }
 
                     current_music_index = i;
+                    is_music_menu_active = false;
                     state_buttons[0] = was_playing;
                     if(was_playing) {
                         background_music.play();
