@@ -263,7 +263,7 @@ void setting_page() {
         if(loop_button.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
             background_music.setLooping(!background_music.isLooping());
             // 1 means loop button
-            state_buttons[1] = !state_buttons[1];
+            state_buttons[1] = background_music.isLooping();
 
             // Need to start playing if loop is enabled and music is not currently playing
 
