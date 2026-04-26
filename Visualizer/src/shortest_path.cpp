@@ -41,31 +41,24 @@ void shortest_path_algorithm::clear() {
 }
 
 void shortest_path_algorithm::init(std::vector<std::pair<int,int>> &edges, std::vector<int> &edge_weights, bool directed_flag, const std::vector<std::string> &label_map) {
-    int max_N = 0;
-    for(auto edge:edges) max_N = std::max(max_N, std::max(edge.first, edge.second));
-    for(auto labels: label_map) {
-        int idx = label_to_index(labels);
-        if(idx != -1) {
-            max_N = std::max(max_N, idx);
-        }
-    }
+    int max_N = label_map.size();
     resize(max_N);
     labels = label_map;
     weights = edge_weights;
-    for(int i=0; i < std::min(edges.size(), edge_weights.size()); ++i) {
+    for(int i=0; i < (int)std::min(edges.size(), edge_weights.size()); ++i) {
         add_edge(edges[i].first, edges[i].second, i, directed_flag);
     }
 }
 
 int shortest_path_algorithm::label_to_index(const std::string &label) const {
-    for(int i = 0; i < labels.size(); ++i) {
+    for(int i = 0; i < (int)labels.size(); ++i) {
         if(labels[i] == label) return i;
     }
     return -1;
 }
 
 void shortest_path_algorithm::add_edge(int u, int v, int id, bool directed_flag) {
-    if(u < 0 || u >= adj.size() || v < 0 || v >= adj.size()) return;
+    if(u < 0 || u >= (int)adj.size() || v < 0 || v >= (int)adj.size()) return;
 
     adj[u].emplace_back(v, id);
     if(!directed_flag) {
@@ -73,20 +66,19 @@ void shortest_path_algorithm::add_edge(int u, int v, int id, bool directed_flag)
     }
 }
 
+// ============================================================
+// FIX: Bỏ kiểm tra label sai, dùng bounds check trên index
+// start là internal index (đã được chuyển từ label bằng label_to_index)
+// ============================================================
 void shortest_path_algorithm::find_shortest_path(int start) {
-    bool start_exists = false;
-    for(int i=0; i<labels.size(); ++i) {
-        if(labels[i] == std::to_string(start)) {
-            start_exists = true;
-            break;
-        }
-    }
-    if(start_exists == false) {
+    if(start < 0 || start >= (int)dist.size()) {
         return;
     }
+
     step_history.clear();
     dist_history.clear();
-    for(int &x:dist) x = 1e9;
+    for(int &x : dist) x = 1e9;
+
     std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<std::pair<int, int>>> heap;
     dist[start] = 0;
     heap.emplace(0, start);
@@ -116,10 +108,9 @@ void shortest_path_algorithm::find_shortest_path(int start) {
             // mark
             step_history.push_back({4, cur});
             dist_history.push_back(dist);
-            if (dist[u] + weights[id]< dist[v]) {
+            if (dist[u] + weights[id] < dist[v]) {
                 cur.nodes_state_changed.push_back({v, 1});
 
-                //mark
                 dist[v] = dist[u] + weights[id];
                 step_history.push_back({5, cur});
                 dist_history.push_back(dist);
@@ -139,9 +130,8 @@ void shortest_path_algorithm::find_shortest_path(int start) {
         cur.nodes_state_changed.push_back({u, 3});
     }
     
-    step_history.push_back({8,cur});
+    step_history.push_back({8, cur});
     dist_history.push_back(dist);
-
 }
 
 void shortest_path_algorithm::find_shortest_path(int start, int algorithm) {
@@ -165,10 +155,14 @@ bool shortest_path_algorithm::has_negative_weight() const {
     return false;
 }
 
+// ============================================================
+// FIX: Bounds check đơn giản thay vì kiểm tra label
+// ============================================================
 void shortest_path_algorithm::find_shortest_path_bellman_ford(int start) {
-    if(start < 0 or start >= dist.size()) {
+    if(start < 0 || start >= (int)dist.size()) {
         return;
     }
+
     for(auto &x : dist) x = 1e9;
     dist[start] = 0;
     step_history.clear();
@@ -220,23 +214,23 @@ void shortest_path_algorithm::_visual(Visual_graph &graph, RoundedRectangleShape
     int id = step_history[cur_step].first;
     Step state = step_history[cur_step].second;
 
-    for(auto [v, st]:state.nodes_state_changed) {
+    for(auto [v, st] : state.nodes_state_changed) {
          graph.setNodeState(v, st);
     }
 
-    for(auto [e, st]:state.edges_state_changed) {
-        graph.setEdgeState(e,st);
+    for(auto [e, st] : state.edges_state_changed) {
+        graph.setEdgeState(e, st);
     }
 
     graph.draw(window, 1);
 
     // Draw distances on nodes
-    if(cur_step < dist_history.size()) {
+    if(cur_step < (int)dist_history.size()) {
         const auto& current_dist = dist_history[cur_step];
         sf::Text dist_text(font_impact, "", 22);
         dist_text.setFillColor(sf::Color(255, 0, 0));
         
-        for(int i = 0; i < current_dist.size(); ++i) {
+        for(int i = 0; i < (int)current_dist.size(); ++i) {
             std::string dist_str;
             if(current_dist[i] >= 1e9) {
                 dist_str = "inf";
@@ -257,28 +251,26 @@ void shortest_path_algorithm::_visual(Visual_graph &graph, RoundedRectangleShape
     highlight.setSize({max_right - highlight.getGlobalBounds().position.x - 20, text_for_code.getLocalBounds().size.y + 5});
     highlight.setOrigin({0, highlight.getSize().y / 2.0f});
     window.draw(visual_code_region);
-    for(int i = 0; i < code.size(); ++i) {
+    for(int i = 0; i < (int)code.size(); ++i) {
         text_for_code.setString(code[i]);
         text_for_code.setFillColor(sf::Color::Black);
         text_for_code.setOrigin({0 , text_for_code.getLocalBounds().size.y / 2.0f});
-
 
         text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x+4, visual_code_region.getGlobalBounds().position.y + 8 * (i+1) + 16 * i + 5});
 
         if(id == i) {
             highlight.setPosition({text_for_code.getGlobalBounds().position.x, text_for_code.getGlobalBounds().position.y + 8});
-
             window.draw(highlight);
         }
 
         window.draw(text_for_code);
     }
 
-    for(auto [v, st]:state.nodes_state_changed) {
+    for(auto [v, st] : state.nodes_state_changed) {
          graph.setNodeState(v, 0);
     }
 
-    for(auto [e, st]:state.edges_state_changed) {
+    for(auto [e, st] : state.edges_state_changed) {
         graph.setEdgeState(e, 0);
     }
 }
@@ -327,11 +319,8 @@ void case_add_edge_by_click(int iidx, Visual_graph& Visual_graph, RoundedRectang
 
         temp_edge.setPoints(pos_u.x, pos_u.y, x, y, Visual_graph.isDirected(), 0);
 
-
         window.draw(visual_region);
-
         temp_edge.draw(window);
-
         Visual_graph.draw(window, 1);
         window.display();
     }
@@ -424,7 +413,7 @@ void random_graph(Visual_graph &vg, shortest_path_algorithm &graph, bool directe
         vg.setNodeLabel(i, std::to_string(i));
     }
 
-    while (edges.size() < M) {
+    while ((int)edges.size() < M) {
         int u = rand() % N;
         int v = rand() % N;
         if (u != v && existing_edges.count({std::min(u,v), std::max(u,v)}) == 0) {
@@ -514,7 +503,10 @@ void shortest_path_page() {
     box input_weight_box(135, 550, button_width + 10.0f, button_height, sf::Color(138,155,192), "5", 18);
     std::string current_input_weight = "5";
 
-    // input for source vertex
+    // ============================================================
+    // FIX: source_vertrix lưu label (string), label_to_index()
+    // sẽ chuyển sang index trước khi gọi find_shortest_path
+    // ============================================================
     std::string source_vertrix = "0";
     int selected_algorithm = shortest_path_algorithm::ALGO_DIJKSTRA;
     bool show_algorithm_options = false;
@@ -523,12 +515,9 @@ void shortest_path_page() {
     box input_source_box(135.0f, 325.0f, button_width - 30.0f, button_height, sf::Color(138,155,192), "0", 18);
 
     button pre_step_button(10.0f, 400.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Prev", 24);
-
     button start_button(135.0f, 400.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Start", 24);
-
     button nxt_step_button(260.0f, 400.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Next", 24);
     button skip_button(260.0f, 325.0f, button_width, button_height - 5, sf::Color(232, 183, 81), "Skip", 24);
-
     button back_button(15.0f, 15.0f, button_width, button_height, sf::Color(232, 183, 81), "Return", 24);
 
     button speed_inc(700, WINDOW_HEIGHT - 75, 50, 50, sf::Color(232, 183, 81), "+", 24);
@@ -583,17 +572,22 @@ void shortest_path_page() {
         return false;
     };
 
+    // ============================================================
+    // FIX: rebuildShortestPath dùng label_to_index đúng cách
+    // ============================================================
     auto rebuildShortestPath = [&](long long current_time) {
         cur_step = 0;
         graph.init(Visual_graph.getEdgeList(), Visual_graph.getEdgeWeightsList(), Visual_graph.isDirected(), Visual_graph.getNodeLabels());
         graph.code = shortest_path_algorithm::algorithm_code[selected_algorithm];
-        int start_index = graph.label_to_index(source_vertrix);
+        int start_index = graph.label_to_index(source_vertrix);  // label -> index
         if(start_index >= 0) {
             if(selected_algorithm == shortest_path_algorithm::ALGO_DIJKSTRA && graph.has_negative_weight()) {
                 error_time = current_time;
             } else {
-                graph.find_shortest_path(start_index, selected_algorithm);
+                graph.find_shortest_path(start_index, selected_algorithm);  // truyền index
             }
+        } else {
+            error_time = current_time;
         }
     };
 
@@ -626,11 +620,11 @@ void shortest_path_page() {
         mouse_left_pressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
 
         if(mouse_left_pressed and !mouse_left_pressed_last) {
-            for(int i = 0; i < buttons.size(); i++) {
+            for(int i = 0; i < (int)buttons.size(); i++) {
                 if(buttons[i].isClicked(sf::Mouse::getPosition(window))) {
                     state_buttons[i] = !state_buttons[i];
                     if(state_buttons[i]) {
-                            for(int j = 0; j < buttons.size(); j++) {
+                        for(int j = 0; j < (int)buttons.size(); j++) {
                             if(j != i) state_buttons[j] = 0;
                         }
                         // case: find path
@@ -639,6 +633,7 @@ void shortest_path_page() {
                             cur_step = 0;
                             graph.init(Visual_graph.getEdgeList(), Visual_graph.getEdgeWeightsList(), Visual_graph.isDirected(), Visual_graph.getNodeLabels());
                             graph.code = shortest_path_algorithm::algorithm_code[selected_algorithm];
+                            // FIX: dùng label_to_index, không truyền thẳng source_vertrix vào find_shortest_path
                             int start_index = graph.label_to_index(source_vertrix);
                             if(start_index >= 0) {
                                 if(selected_algorithm == shortest_path_algorithm::ALGO_DIJKSTRA && graph.has_negative_weight()) {
@@ -650,20 +645,21 @@ void shortest_path_page() {
                                 error_time = now;
                             }
                         }
-                        else if(i == 4) { //case toggle directed/undirected
+                        else if(i == 4) { // case toggle directed/undirected
                             bool cur_directed = Visual_graph.isDirected();
                             Visual_graph.setDirected(!cur_directed);
                             buttons[4].setLabel(Visual_graph.isDirected() ? "Directed" : "Undirected");
-
-                            // Toggle action doesn't remain selected as a mode button
-                            for(int j = 0; j < buttons.size(); j++) state_buttons[j] = 0;
+                            for(int j = 0; j < (int)buttons.size(); j++) state_buttons[j] = 0;
                         }
                         else if(i == 1) { // case load graph from file
                             if(!read_graph_from_file(Visual_graph, graph, Visual_graph.isDirected())) {
                                 error_time = now;
                             } else {
+                                // FIX: set source_vertrix về label đầu tiên trong graph vừa load
                                 const auto &node_labels = Visual_graph.getNodeLabels();
                                 source_vertrix = node_labels.empty() ? "0" : node_labels[0];
+                                input_source_box.setLabel(source_vertrix);
+
                                 int start_index = graph.label_to_index(source_vertrix);
                                 if(start_index >= 0) {
                                     if(selected_algorithm == shortest_path_algorithm::ALGO_DIJKSTRA && graph.has_negative_weight()) {
@@ -681,7 +677,6 @@ void shortest_path_page() {
                                     }
                                 }
                             }
-                            // Toggle off after action
                             state_buttons[i] = 0;
                         }
                     }
@@ -693,7 +688,7 @@ void shortest_path_page() {
             // Algorithm selection
             if (algorithm_button.isClicked(sf::Mouse::getPosition(window))) {
                 show_algorithm_options = !show_algorithm_options;
-                for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
+                for(int i = 0; i < (int)buttons.size(); i++) state_buttons[i] = 0;
                 is_start_button_pressed = 0;
             }
 
@@ -703,14 +698,14 @@ void shortest_path_page() {
                     selected_algorithm = shortest_path_algorithm::ALGO_DIJKSTRA;
                     algorithm_button.setLabel(shortest_path_algorithm::algorithm_names[selected_algorithm]);
                     graph.code = shortest_path_algorithm::algorithm_code[selected_algorithm];
-                    for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
+                    for(int i = 0; i < (int)buttons.size(); i++) state_buttons[i] = 0;
                     is_start_button_pressed = 0;
                     show_algorithm_options = false;
                 } else if (algorithm_option_1.isClicked(sf::Mouse::getPosition(window))) {
                     selected_algorithm = shortest_path_algorithm::ALGO_BELLMAN_FORD;
                     algorithm_button.setLabel(shortest_path_algorithm::algorithm_names[selected_algorithm]);
                     graph.code = shortest_path_algorithm::algorithm_code[selected_algorithm];
-                    for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
+                    for(int i = 0; i < (int)buttons.size(); i++) state_buttons[i] = 0;
                     is_start_button_pressed = 0;
                     show_algorithm_options = false;
                 }
@@ -732,8 +727,7 @@ void shortest_path_page() {
             dragging_slider = false;
         }
 
-        //inc dec speed
-
+        // inc dec speed
         if(speed_inc.isClicked(sf::Mouse::getPosition(window)) and mouse_left_pressed and !mouse_left_pressed_last) {
             step_delay = std::max(10, step_delay - 100);
             slider_knob.setPosition({slider_bar.getPosition().x + slider_bar.getSize().x * (1000 - step_delay) / (1000 - 10) - slider_knob.getRadius(), slider_knob.getPosition().y});
@@ -743,8 +737,6 @@ void shortest_path_page() {
             step_delay = std::min(1000, step_delay + 100);
             slider_knob.setPosition({slider_bar.getPosition().x + slider_bar.getSize().x * (1000 - step_delay) / (1000 - 10) - slider_knob.getRadius(), slider_knob.getPosition().y});
         }
-
-        //
 
         // case: add node 
         if(state_buttons[3] and mouse_left_pressed and !mouse_left_pressed_last) {
@@ -778,13 +770,11 @@ void shortest_path_page() {
 
         if(current_input_weight.size() == 0) current_input_weight = "0";
 
-
         // case: Find path
-
         if(state_buttons[0]) {
             bool source_changed = false;
             for (char32_t unicode : text_entered) {
-                source_changed = updateIntegerInput(source_vertrix, unicode, true) || source_changed;
+                source_changed = updateIntegerInput(source_vertrix, unicode, false) || source_changed;
             }
 
             if(source_vertrix.size() == 0) source_vertrix = "0";
@@ -803,13 +793,13 @@ void shortest_path_page() {
             }
 
             if(mouse_left_pressed == 1 and !mouse_left_pressed_last and nxt_step_button.isClicked(sf::Mouse::getPosition(window))) {
-                if(cur_step < graph.step_history.size()-1) cur_step++;
+                if(cur_step < (int)graph.step_history.size()-1) cur_step++;
                 is_start_button_pressed = 0;
             }
 
             if(is_start_button_pressed and now - last_step > step_delay) {
                 last_step = now;
-                if(cur_step < graph.step_history.size()-1) cur_step++;
+                if(cur_step < (int)graph.step_history.size()-1) cur_step++;
             }
 
             if(mouse_left_pressed == 1 and !mouse_left_pressed_last and skip_button.isClicked(sf::Mouse::getPosition(window))) {
@@ -817,7 +807,7 @@ void shortest_path_page() {
                 is_start_button_pressed = 0;
             }
 
-            if(auto_run_after_load && graph.step_history.size() > 0 && cur_step == graph.step_history.size() - 1) {
+            if(auto_run_after_load && graph.step_history.size() > 0 && cur_step == (int)graph.step_history.size() - 1) {
                 auto_run_after_load = false;
                 is_start_button_pressed = 0;
                 cur_step = 0;
@@ -825,21 +815,15 @@ void shortest_path_page() {
             }
         }
 
-        //
-
-
-        //case: clear
-
+        // case: clear
         if(state_buttons[5] and mouse_left_pressed and !mouse_left_pressed_last) {
             Visual_graph.clearAll();
             graph.clear();
             source_vertrix = "0";
             current_input_weight = "5";
             is_start_button_pressed = 0;
-            for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
+            for(int i = 0; i < (int)buttons.size(); i++) state_buttons[i] = 0;
         }
-
-        //
 
         // case: random graph
         if(state_buttons[6] and mouse_left_pressed and !mouse_left_pressed_last) {
@@ -847,42 +831,38 @@ void shortest_path_page() {
             source_vertrix = "0";
             current_input_weight = "5";
             is_start_button_pressed = 0;
-            for(int i = 0; i < buttons.size(); i++) state_buttons[i] = 0;
+            for(int i = 0; i < (int)buttons.size(); i++) state_buttons[i] = 0;
         }
-        //
 
         // case: not one of buttons is active | move node
         bool no_button_active = 1;
-        for(int i=1; i<buttons.size(); i++) {
+        for(int i=1; i<(int)buttons.size(); i++) {
             no_button_active &= !state_buttons[i];
         }
 
         if(no_button_active and mouse_left_pressed and !mouse_left_pressed_last) {
             case_move_node(Visual_graph, visual_region, safe_region);
         }
-        // 
 
         if(!mouse_left_pressed and mouse_left_pressed_last and back_button.contains(sf::Mouse::getPosition(window))) {
             return;
         }
 
-        window.clear(sf::Color(235, 235, 235)); // soft gray background
+        window.clear(sf::Color(235, 235, 235));
         window.draw(backgroundSprite);
 
         // draw region 
         window.draw(visual_region);
         window.draw(visual_code_region);
 
-        // draw buttons with transparency + hover border
+        // draw buttons
         sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-        for(int i = 0; i < buttons.size(); i++) {
-            // transparent fill for all, active semi-green
+        for(int i = 0; i < (int)buttons.size(); i++) {
             if(state_buttons[i] or buttons[i].contains(mousePos)) {
                 buttons[i].setColor(sf::Color(140, 95, 30));
             } else {
                 buttons[i].setColor(sf::Color(232, 183, 81));
             }
-
             buttons[i].draw(window);
         }
 
@@ -905,11 +885,6 @@ void shortest_path_page() {
             }
         }
 
-        // input boxes hover border
-        bool input_weight_hover = input_weight_box.contains(mousePos);
-
-        bool input_source_hover = input_source_box.contains(mousePos);
-
         if(back_button.contains(mousePos)){
             back_button.setColor(sf::Color(140, 95, 30));
         } else {
@@ -917,13 +892,12 @@ void shortest_path_page() {
         }
         back_button.draw(window);
 
-
         if(state_buttons[2]) {
             input_weight_box.setLabel(current_input_weight);
             input_weight_box.draw(window);
         }
 
-        if(!(state_buttons[0] and cur_step >= 0 and cur_step < graph.step_history.size())) Visual_graph.draw(window, 1);
+        if(!(state_buttons[0] and cur_step >= 0 and cur_step < (int)graph.step_history.size())) Visual_graph.draw(window, 1);
 
         if(state_buttons[0]) {
             input_source_box.setLabel(source_vertrix);
@@ -957,19 +931,19 @@ void shortest_path_page() {
             }
             skip_button.draw(window);
 
-            if(cur_step >= 0 and cur_step < graph.step_history.size()) {
+            if(cur_step >= 0 and cur_step < (int)graph.step_history.size()) {
                 graph._visual(Visual_graph, visual_code_region, text_for_code, cur_step);
             }
         }
 
-        if(!(state_buttons[0] and cur_step >= 0 and cur_step < graph.step_history.size())) for(int i = 0; i < graph.code.size(); ++i) {
-            text_for_code.setString(graph.code[i]);
-            text_for_code.setFillColor(sf::Color::Black);
-            text_for_code.setOrigin({0 , text_for_code.getLocalBounds().size.y / 2.0f});
-
-            text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x + 4, visual_code_region.getGlobalBounds().position.y + 8 * (i+1) + 16 * i + 5});
-
-            window.draw(text_for_code);
+        if(!(state_buttons[0] and cur_step >= 0 and cur_step < (int)graph.step_history.size())) {
+            for(int i = 0; i < (int)graph.code.size(); ++i) {
+                text_for_code.setString(graph.code[i]);
+                text_for_code.setFillColor(sf::Color::Black);
+                text_for_code.setOrigin({0 , text_for_code.getLocalBounds().size.y / 2.0f});
+                text_for_code.setPosition({visual_code_region.getGlobalBounds().position.x + 4, visual_code_region.getGlobalBounds().position.y + 8 * (i+1) + 16 * i + 5});
+                window.draw(text_for_code);
+            }
         }
 
         if (now - error_time < 2000) {
@@ -979,7 +953,7 @@ void shortest_path_page() {
         }
 
         // Draw distance list
-        if(state_buttons[0] && cur_step >= 0 && cur_step < graph.step_history.size() && cur_step < graph.dist_history.size() && graph.labels.size() > 0) {
+        if(state_buttons[0] && cur_step >= 0 && cur_step < (int)graph.step_history.size() && cur_step < (int)graph.dist_history.size() && graph.labels.size() > 0) {
             const auto& current_dist = graph.dist_history[cur_step];
             sf::Text dist_list_text(font_impact, "", 14);
             dist_list_text.setFillColor(sf::Color::Black);
@@ -987,7 +961,7 @@ void shortest_path_page() {
             float list_x = 1370.0f;
             float list_y = 350.0f;
             
-            for(int i = 0; i < current_dist.size() && i < graph.labels.size(); ++i) {
+            for(int i = 0; i < (int)current_dist.size() && i < (int)graph.labels.size(); ++i) {
                 std::string dist_str;
                 if(current_dist[i] == 1e9) {
                     dist_str = graph.labels[i] + ": inf";
