@@ -273,6 +273,7 @@ void setting_page() {
                     continue;
                 }
                 background_music.play();
+                state_buttons[0] = true;
             }
         }
 
