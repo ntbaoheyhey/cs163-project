@@ -50,12 +50,10 @@ void shortest_path_algorithm::init(std::vector<std::pair<int,int>> &edges, std::
         }
     }
     resize(max_N);
-    std::cerr << "max_N = " << max_N << '\n';
     labels = label_map;
     weights = edge_weights;
     for(int i=0; i < std::min(edges.size(), edge_weights.size()); ++i) {
         add_edge(edges[i].first, edges[i].second, i, directed_flag);
-        std::cout << edges[i].first << ' ' << edges[i].second << ' ' << weights[i] << '\n';
     }
 }
 
@@ -84,7 +82,6 @@ void shortest_path_algorithm::find_shortest_path(int start) {
         }
     }
     if(start_exists == false) {
-        std::cerr << "Start vertex does not exist in the graph.\n";
         return;
     }
     step_history.clear();
@@ -145,9 +142,6 @@ void shortest_path_algorithm::find_shortest_path(int start) {
     step_history.push_back({8,cur});
     dist_history.push_back(dist);
 
-    for(int i=0;i<dist.size();++i) {
-        std::cout << labels[i] << ' ' << dist[i] << '\n';
-    }
 }
 
 void shortest_path_algorithm::find_shortest_path(int start, int algorithm) {
@@ -448,7 +442,6 @@ void shortest_path_page() {
     // load background
     sf::Texture backgroundTexture;
     if (!loadTextureFromAsset(backgroundTexture, "bg.png")) {
-        std::cerr << "cannot load background" << std::endl;
         !backgroundTexture.loadFromFile("cs163-project/Visualizer/assets/bg.png");
     } 
     sf::Sprite backgroundSprite(backgroundTexture);

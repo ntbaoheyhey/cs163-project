@@ -11,9 +11,7 @@ void heap_page(){
     // Lưu ý: Đảm bảo file "background.png" nằm cùng thư mục với file thực thi (executable) 
     // hoặc bạn phải truyền đường dẫn tuyệt đối/tương đối chính xác.
     if (!loadTextureFromAsset(backgroundTexture, "bg.png")) {
-        std::cerr << "cannot load background" << std::endl;
         if (!backgroundTexture.loadFromFile("cs163-project/Visualizer/assets/bg.png")) {
-            std::cerr << "Error: Could not load background texture!" << std::endl;
         }
     }
 
@@ -225,31 +223,18 @@ void heap_page(){
 
             else if (inc_active) {
                 core_heap.animation_speed = std::min(2.0, core_heap.animation_speed + 0.1);
-                std::cout << core_heap.animation_speed << '\n';
             }
             
             else if (dec_active) {
                 core_heap.animation_speed = std::max(0.5, core_heap.animation_speed - 0.1);
-                std::cout << core_heap.animation_speed << '\n';
             }
 
             else if (file_active) {
                 std::string dir = openFileDialog();
                 if (!dir.empty()) {
-                    std::cout << dir << '\n';
                     std::ifstream fin(dir);
-                    if (fin.is_open()) {
-                        std::cout << "Ghi nhan: File da mo thanh cong!\n";
-                    } else {
-                        std::cout << "Loi: Khong the mo file!\n";
-                    }
-                    int n; 
-                    if (fin >> n) {
-                        std::cout << "Gia tri n doc duoc: " << n << '\n';
-                    } else {
-                        std::cout << "Loi: Khong doc duoc so! (Vui long check lai format hoac Encoding cua file txt)\n";
-                    }
-                    if (n) {
+                    int n = 0; 
+                    if (fin >> n && n > 0) {
                         std::vector<int> inp(n);
                         for (int i=0; i<n; ++i) {
                             fin >> inp[i];

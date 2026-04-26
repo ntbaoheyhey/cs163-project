@@ -119,7 +119,6 @@ void trie_page(){
     // load background
     sf::Texture backgroundTexture;
     if (!loadTextureFromAsset(backgroundTexture, "bg_trie.png")) {
-        std::cerr << "cannot load background" << std::endl;
         !backgroundTexture.loadFromFile("cs163-project/Visualizer/assets/bg_trie.png");
     } 
     sf::Sprite backgroundSprite(backgroundTexture);
@@ -187,7 +186,6 @@ void trie_page(){
     bgvisual.setOutlineColor(sf::Color(217, 211, 209));
     block_width = int(bgvisual.getSize().x / block_unit);
     block_height = int(bgvisual.getSize().y / block_unit);
-    std::cerr << "Rectangle -> Block : " << block_width << " " << block_height << "\n";
     RoundedRectangleShape bgcode({400.f, 230.f});
     bgcode.setPosition({float(WINDOW_WIDTH - 315), float(WINDOW_HEIGHT - 280)});
     bgcode.setFillColor(sf::Color(243, 243, 251, 100));
@@ -444,7 +442,6 @@ void trie_page(){
             bool build_button_pressed = false;
 
             if (return_button.contains(mousePos)){
-                std::cout << "Received Return Query: Exit Trie Page" << "\n";
                 skip_animation();
                 data.clear();
                 return;
@@ -454,11 +451,9 @@ void trie_page(){
                 if(mode == ModeType::Manual){
                     mode = ModeType::Auto;
                     mode_button.setLabel("Auto");
-                    std::cout << "Received Change Mod Query, new mode : Auto" << "\n";
                 } else{
                     mode = ModeType::Manual;
                     mode_button.setLabel("Manual");
-                    std::cout << "Received Change Mod Query, new mode : Manual" << "\n";
                 }
             }
 
@@ -482,7 +477,6 @@ void trie_page(){
 
             // ---- ADD ----
             if (add_button.contains(mousePos)) {
-                std::cout << "Received Add Query: " << current_input << "\n";
                 if (!current_input.empty()) {
                     skip_animation();
                     anim_queue = data.add_with_anim(current_input);
@@ -495,7 +489,6 @@ void trie_page(){
             }
             // ---- DELETE ----
             if (delete_button.contains(mousePos)) {
-                std::cout << "Received Delete Query: " << current_input << "\n";
                 if (!current_input.empty()) {
                     skip_animation();
                     anim_queue = data.remove_with_anim(current_input);
@@ -508,7 +501,6 @@ void trie_page(){
             }
 
             if (find_button.contains(mousePos)) {
-                std::cout << "Received Find Query: " << current_input << "\n";
                 if (!current_input.empty()) {
                     skip_animation();
                     anim_queue = data.find_with_anim(current_input);
@@ -522,17 +514,14 @@ void trie_page(){
 
             // ---- CLEAR ----
             if (clear_button.contains(mousePos)) {
-                std::cout << "Received Clear Query" << "\n";
                 skip_animation();
                 data.clear(); data.create_visual();
                 operation_button_pressed = true;
             }
 
             if (file_button.contains(mousePos)) {
-                std::cout << "Received File Query" << "\n";
                 std::string dir = openFileDialog();
                 if (!dir.empty()) {
-                    std::cout << "Opened file: " << dir << '\n';
                     std::ifstream fin(dir);
                     if (fin.is_open()) {
                         build_input.clear();
@@ -553,14 +542,11 @@ void trie_page(){
                             build_box.setLabel(build_input.substr(build_input.size() - max_character_show, max_character_show) + "|");
                         
                         fin.close();
-                    } else {
-                        std::cerr << "Loi: Khong the mo file!\n";
                     }
                 }
                 build_button_pressed = true;
             }
             if (random_button.contains(mousePos)) {
-                std::cout << "Received Random Query" << "\n";
                 build_input.clear();
                 
                 int total_vocab = sizeof(words) / sizeof(words[0]);
@@ -585,7 +571,6 @@ void trie_page(){
                 build_button_pressed = true;
             }
             if (build_button.contains(mousePos)) {
-                std::cout << "Received build query : " << build_input << "\n";
                 if (!build_input.empty()) {
                     skip_animation();
                     data.clear();
@@ -765,31 +750,26 @@ void trie_page(){
 
             // -- Skip --
             if(skip_button.contains(mousePos)){
-                std::cout << "Received Skip Operation" << "\n";
                 skip_animation();
             }
 
             // Input box handling
             if(input_box.contains(mousePos)){
-                std::cout << "Received Input Box Activation: On" << "\n";
                 input_box_active = true;
                 input_box.update(input_box_active, mousePos);
                 if(current_input.empty()) input_box.setLabel("|");
             } else
             if(!operation_button_pressed && input_box_active){
-                std::cout << "Received Input Box Activation: Off" << "\n";
                 input_box_active = false;
                 if(current_input.empty()) input_box.setLabel("   Type here");
             }
 
             if(build_box.contains(mousePos)){
-                std::cout << "Received Build Box Activation: On" << "\n";
                 build_box_active = true;
                 build_box.update(build_box_active, mousePos);
                 if(build_input.empty()) build_box.setLabel("|");
             } else
             if(!build_button_pressed && build_box_active){
-                std::cout << "Received Build Box Activation: Off" << "\n";
                 build_box_active = false;
                 if(build_input.empty()) build_box.setLabel("   Type here");
             }
@@ -813,7 +793,6 @@ void trie_page(){
                         if (current_input.size() < max_charater) {current_input += static_cast<char>(textEvent->unicode); change = true;}
                     }
                     input_box.setLabel(current_input + "|"); 
-                    if(change) std::cout << "Received new input string: " << current_input << "\n";
                 }
             }
             if (build_box_active) {
@@ -832,15 +811,12 @@ void trie_page(){
                         build_box.setLabel(build_input + "|");
                     else
                         build_box.setLabel(build_input.substr(build_input.size() - max_character_show, max_character_show) + "|");    
-                    if(change) std::cout << "Received new build input string: " << build_input << "\n";
                 }
             }
         }
 
         // Frame count
         ++frame_count;
-        if(frame_count % 20 == 0)
-            std::cerr << "Frame :" << frame_count << "\n";
 
         // --- Cập nhật vị trí node (lerp) và edge ---
         std::function<void(NodeTrie*)> update_nodes = [&](NodeTrie* p) {
@@ -1049,8 +1025,6 @@ bool Trie::cal_block(NodeTrie *pnode)
     for(int i = 0; i < LOWERCASE_CHAR; ++i) if(pnode->pnext[i] != nullptr){
         isleaf = false;
         bool current_leaf = cal_block(pnode->pnext[i]);
-
-        std::cerr << char(i + 'a') << " " << pnode->pnext[i]->block_need << "\n";
 
         pnode->block_need += pnode->pnext[i]->block_need;
         if(previous)

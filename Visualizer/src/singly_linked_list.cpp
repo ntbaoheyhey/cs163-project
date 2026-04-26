@@ -1187,7 +1187,6 @@ void singly_linked_list_page() {
     sf::Texture list_background_texture;
     const bool has_list_background = loadTextureFromAsset(list_background_texture, "bg_trie.png");
     if (!has_list_background) {
-        std::cerr << "cannot load singly linked list background" << std::endl;
     }
     sf::Sprite list_background_sprite(list_background_texture);
 

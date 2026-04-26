@@ -5,7 +5,6 @@ void loadMuisc() {
     std::string path = "../cs163-project/Visualizer/assets/playlist";
     try {
         if(std::filesystem::exists(path) and std::filesystem::is_directory(path)) {
-            std::cerr << "Error: Playlist path is a directory, expected a file: " << path << std::endl;
             for(const auto& entry : std::filesystem::directory_iterator(path)) {
                 std::string extension = entry.path().extension().string();
                 if(extension == ".mp3" or extension == ".ogg" or extension == ".wav") {
@@ -13,7 +12,6 @@ void loadMuisc() {
                 }
             }
         } else {
-            std::cerr << "Playlist path does not exist or is not a directory: " << path << std::endl;
             path = "cs163-project/Visualizer/assets/playlist";
             if(std::filesystem::exists(path) and std::filesystem::is_directory(path)) {
                 for(const auto& entry : std::filesystem::directory_iterator(path)) {
@@ -22,12 +20,9 @@ void loadMuisc() {
                         playlist.push_back(entry.path());
                     }
                 }
-            } else {
-                std::cerr << "Playlist path does not exist or is not a directory: " << path << std::endl;
             }
         }
     } catch (const std::exception& e) {
-        std::cerr << "Error loading music: " << e.what() << std::endl;
     }
 
     current_music_index = -1; // No music loaded yet
@@ -36,15 +31,10 @@ void loadMuisc() {
     if(!playlist.empty()) {
         current_music_index = 0; // Start with the first track
         if(!background_music.openFromFile(playlist[0])) {
-            std::cerr << "Error: Could not play music: " << playlist[0] << std::endl;
             current_music_index = -1; // reset to no music
         }
         background_music.play();
-        for(auto &track : playlist) {
-            std::cout << "Loaded track: " << track.filename().string() << std::endl;
-        }
     } else {
-        std::cerr << "No music files found in playlist directory: " << path << std::endl;
         background_music.pause();
     }
 }
@@ -58,16 +48,13 @@ void openWindow() {
     window.setFramerateLimit(60);
 
     if (!loadFonts()) {
-        std::cerr << "Warning: Could not load font!\n";
     }
     font_impact.setSmooth(true);
 
     loadMuisc();
 
     if (!loadTextureFromAsset(background_texture,"bg_toty.png")) {
-        std::cerr << "cannot load background" << std::endl;
         if(!background_texture.loadFromFile("cs163-project/Visualizer/assets/bg_toty.png")) {
-            std::cerr << "Error: Could not load background texture!" << std::endl;
         }
     } 
     background_sprite.setTexture(background_texture, 1);
@@ -228,7 +215,6 @@ void setting_page() {
                 // NOTE Stopped not Paused: if music is stopped, we need to open it again before playing
                 if(background_music.getStatus() == sf::Music::Status::Stopped) {
                     if(!background_music.openFromFile(playlist[current_music_index])) {
-                        std::cerr << "Error: Could not play music: " << playlist[current_music_index] << std::endl;
                         state_buttons[0] = 0; // reset play button state
                         continue;
                     }
@@ -252,7 +238,6 @@ void setting_page() {
 
             if(state_buttons[1] and background_music.getStatus() == sf::Music::Status::Stopped and current_music_index != -1 and current_music_index < playlist.size()) {
                 if(!background_music.openFromFile(playlist[current_music_index])) {
-                    std::cerr << "Error: Could not play music: " << playlist[current_music_index] << std::endl;
                     state_buttons[1] = 0; // reset loop button state
                     continue;
                 }
@@ -292,7 +277,6 @@ void setting_page() {
                     current_music_index = i;
                     if(background_music.getStatus() == sf::Music::Status::Playing) {
                         if(!background_music.openFromFile(playlist[current_music_index])) {
-                            std::cerr << "Error: Could not play music: " << playlist[current_music_index] << std::endl;
                             continue;
                         }
                         background_music.play();

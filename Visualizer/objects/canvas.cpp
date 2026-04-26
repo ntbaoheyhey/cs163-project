@@ -503,8 +503,6 @@ void node::draw(sf::RenderWindow& window) const {
 }
 
 void node::printInfo() {
-    sf::Vector2f pos = shape.getPosition();
-    std::cout << "Node at (" << pos.x << ", " << pos.y << ")" << std::endl;
 }
 
 // Edge draw
@@ -530,8 +528,6 @@ void box::draw(sf::RenderWindow& window) {
 // Class Visual_graph
 
 void Visual_graph::add_node(float x, float y) {
-    std::cerr << "Adding node at (" << x << ", " << y << ")" << std::endl;
-
     nodes.emplace_back(x, y, node_radius, color_of_node_state[0], sf::Color::Black, outline_thickness);
     nodes_state.push_back(0);
     node_labels.push_back(std::to_string(nodes.size() - 1));

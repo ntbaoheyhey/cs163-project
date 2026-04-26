@@ -91,12 +91,10 @@ std::filesystem::path resolveAssetPath(const std::string& filename) {
 bool loadTextureFromAsset(sf::Texture& texture, const std::string& filename) {
     const auto path = resolveAssetPath(filename);
     if (path.empty()) {
-        std::cerr << "Missing asset: " << filename << std::endl;
         return false;
     }
 
     if (!texture.loadFromFile(path.string())) {
-        std::cerr << "Failed to load texture: " << path << std::endl;
         return false;
     }
 
@@ -112,7 +110,6 @@ bool loadFonts() {
     for (const auto& font_name : asset_fonts) {
         const auto path = resolveAssetPath(font_name);
         if (!path.empty() && font_impact.openFromFile(path.string())) {
-            std::cout << "Font loaded successfully from: " << path << std::endl;
             return true;
         }
     }
@@ -120,11 +117,9 @@ bool loadFonts() {
 #ifdef _WIN32
     const std::filesystem::path system_font = "C:/Windows/Fonts/arial.ttf";
     if (std::filesystem::exists(system_font) && font_impact.openFromFile(system_font.string())) {
-        std::cout << "Font loaded successfully from: " << system_font << std::endl;
         return true;
     }
 #endif
 
-    std::cerr << "Failed to load font from assets and system fallback!" << std::endl;
     return false;
 }
