@@ -298,7 +298,11 @@ void setting_page() {
         //====================================
         //        MUSIC BUTTON              //
         if(music_button.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
-            is_music_menu_active = !is_music_menu_active;
+            if(music_options.empty()) {
+                is_music_menu_active = false;
+            } else {
+                is_music_menu_active = !is_music_menu_active;
+            }
         }
 
         //====================================
