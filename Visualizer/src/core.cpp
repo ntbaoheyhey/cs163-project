@@ -290,11 +290,15 @@ void setting_page() {
         if(is_music_menu_active) {
             for(int i = 0; i < music_options.size(); i++) {
                 if(music_options[i].isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
+                    const bool was_playing = background_music.getStatus() == sf::Music::Status::Playing;
+                    if(!background_music.openFromFile(playlist[i])) {
+                        state_buttons[0] = 0;
+                        continue;
+                    }
+
                     current_music_index = i;
-                    if(background_music.getStatus() == sf::Music::Status::Playing) {
-                        if(!background_music.openFromFile(playlist[current_music_index])) {
-                            continue;
-                        }
+                    state_buttons[0] = was_playing;
+                    if(was_playing) {
                         background_music.play();
                     }
                 }
