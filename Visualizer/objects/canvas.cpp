@@ -382,18 +382,6 @@ void box::setLabel(const std::string& newLabel) {
     text.setPosition({shapeBounds.position.x + std::min(0.1f * shapeBounds.size.x, 10.0f), shapeBounds.position.y + shapeBounds.size.y / 2.f});
 }
 
-char box::KeyboardToChar() {
-    if(auto *key = window.pollEvent()->getIf<sf::Event::KeyPressed>()) {
-        std::string keyp = sf::Keyboard::getDescription(key->scancode).toAnsiString();
-        if(keyp.size() == 1) {
-            return keyp[0];
-        }
-        if(keyp == "Space") return ' ';
-        if(keyp == "Backspace") return '\b';
-    }
-    return '\0';
-}
-
 bool box::isClicked(sf::Vector2i mousePos) {
     bool clicked = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
 

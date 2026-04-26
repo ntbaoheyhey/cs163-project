@@ -205,12 +205,6 @@ public:
     // đổi chữ box
     void setLabel(const std::string &newLabel);
 
-    // chuyển sự kiện bàn phím thành ký tự
-    // '\0' nếu không có gì
-    // ' ' nếu là space, '\b' nếu là backspace
-    // còn lại là kí tư
-    char KeyboardToChar();
-
     // vẽ box lên cửa sổ
     void draw(sf::RenderWindow& window);
 

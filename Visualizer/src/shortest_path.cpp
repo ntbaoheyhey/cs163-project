@@ -557,12 +557,72 @@ void shortest_path_page() {
     auto duration = now_time.time_since_epoch();
     long long last_step = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
 
+    auto updateIntegerInput = [](std::string& value, char32_t unicode, bool allow_negative) {
+        if (unicode == '\b' || unicode == 8 || unicode == 127) {
+            if (!value.empty()) {
+                value.pop_back();
+                return true;
+            }
+            return false;
+        }
+
+        if (value == "0") {
+            value.clear();
+        }
+
+        if (allow_negative && unicode == '-' && value.empty()) {
+            value.push_back('-');
+            return true;
+        }
+
+        if ('0' <= unicode && unicode <= '9') {
+            value.push_back(static_cast<char>(unicode));
+            return true;
+        }
+
+        return false;
+    };
+
+    auto rebuildShortestPath = [&](long long current_time) {
+        cur_step = 0;
+        graph.init(Visual_graph.getEdgeList(), Visual_graph.getEdgeWeightsList(), Visual_graph.isDirected(), Visual_graph.getNodeLabels());
+        graph.code = shortest_path_algorithm::algorithm_code[selected_algorithm];
+        int start_index = graph.label_to_index(source_vertrix);
+        if(start_index >= 0) {
+            if(selected_algorithm == shortest_path_algorithm::ALGO_DIJKSTRA && graph.has_negative_weight()) {
+                error_time = current_time;
+            } else {
+                graph.find_shortest_path(start_index, selected_algorithm);
+            }
+        }
+    };
+
+    auto parseInputNumber = [](const std::string& value, int fallback) {
+        if (value.empty() || value == "-") {
+            return fallback;
+        }
+        return std::stoi(value);
+    };
+
 
     while (window.isOpen()) {
         now_time = std::chrono::system_clock::now();
         duration = now_time.time_since_epoch();
 
         long long now = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+        std::vector<char32_t> text_entered;
+        while (const std::optional event = window.pollEvent())
+        {
+            if (event->is<sf::Event::Closed>())
+                window.close();
+            if (const auto* text_event = event->getIf<sf::Event::TextEntered>()) {
+                text_entered.push_back(text_event->unicode);
+            }
+        }
+        if (!window.isOpen()) {
+            break;
+        }
+
         mouse_left_pressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
 
         if(mouse_left_pressed and !mouse_left_pressed_last) {
@@ -698,7 +758,7 @@ void shortest_path_page() {
         if(state_buttons[2] and mouse_left_pressed and !mouse_left_pressed_last) {
             int idx = Visual_graph.find_node_stored(sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y);
             if(idx != -1) {
-                case_add_edge_by_click(idx, Visual_graph, visual_region, safe_region, std::stoi(current_input_weight));
+                case_add_edge_by_click(idx, Visual_graph, visual_region, safe_region, parseInputNumber(current_input_weight, 0));
             }
         }
 
@@ -711,18 +771,8 @@ void shortest_path_page() {
         }
 
         if(state_buttons[2] and input_weight_box_active) {
-            char c = input_weight_box.KeyboardToChar();
-            if(c != '\0') {
-                if(current_input_weight.size() == 1 and current_input_weight[0] == '0') current_input_weight = "";
-                if(c == '\b') {
-                    if(current_input_weight.size() > 0) current_input_weight.pop_back();
-                }
-                else if(c == '-' && current_input_weight.empty()) {
-                    current_input_weight.push_back(c);
-                }
-                else if('0' <= c and c <= '9') {
-                    current_input_weight.push_back(c);
-                }
+            for (char32_t unicode : text_entered) {
+                updateIntegerInput(current_input_weight, unicode, true);
             }
         }
 
@@ -732,43 +782,13 @@ void shortest_path_page() {
         // case: Find path
 
         if(state_buttons[0]) {
-            char c = input_source_box.KeyboardToChar();
-            if(c != '\0') {
-                if(source_vertrix.size() == 1 and source_vertrix[0] == '0') source_vertrix = "";
-                if(c == '\b') {
-                    if(source_vertrix.size() > 0) source_vertrix.pop_back();
-                }
-                else if(c == '-' && source_vertrix.empty()) {
-                    source_vertrix.push_back(c);
-                    cur_step = 0;
-                    graph.init(Visual_graph.getEdgeList(), Visual_graph.getEdgeWeightsList(), Visual_graph.isDirected(), Visual_graph.getNodeLabels());
-                    graph.code = shortest_path_algorithm::algorithm_code[selected_algorithm];
-                    int start_index = graph.label_to_index(source_vertrix);
-                    if(start_index >= 0) {
-                        if(selected_algorithm == shortest_path_algorithm::ALGO_DIJKSTRA && graph.has_negative_weight()) {
-                            error_time = now;
-                        } else {
-                            graph.find_shortest_path(start_index, selected_algorithm);
-                        }
-                    }
-                }
-                else if('0' <= c and c <= '9') {
-                    source_vertrix.push_back(c);
-                    cur_step = 0;
-                    graph.init(Visual_graph.getEdgeList(), Visual_graph.getEdgeWeightsList(), Visual_graph.isDirected(), Visual_graph.getNodeLabels());
-                    graph.code = shortest_path_algorithm::algorithm_code[selected_algorithm];
-                    int start_index = graph.label_to_index(source_vertrix);
-                    if(start_index >= 0) {
-                        if(selected_algorithm == shortest_path_algorithm::ALGO_DIJKSTRA && graph.has_negative_weight()) {
-                            error_time = now;
-                        } else {
-                            graph.find_shortest_path(start_index, selected_algorithm);
-                        }
-                    }
-                }
+            bool source_changed = false;
+            for (char32_t unicode : text_entered) {
+                source_changed = updateIntegerInput(source_vertrix, unicode, true) || source_changed;
             }
 
             if(source_vertrix.size() == 0) source_vertrix = "0";
+            if(source_changed) rebuildShortestPath(now);
 
             if(mouse_left_pressed == 1 and !mouse_left_pressed_last and start_button.isClicked(sf::Mouse::getPosition(window))) {
                 is_start_button_pressed ^= 1;
@@ -844,12 +864,6 @@ void shortest_path_page() {
 
         if(!mouse_left_pressed and mouse_left_pressed_last and back_button.contains(sf::Mouse::getPosition(window))) {
             return;
-        }
-
-        while (const std::optional event = window.pollEvent())
-        {
-            if (event->is<sf::Event::Closed>())
-                window.close();
         }
 
         window.clear(sf::Color(235, 235, 235)); // soft gray background
