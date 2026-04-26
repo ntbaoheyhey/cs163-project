@@ -213,6 +213,7 @@ void setting_page() {
     std::vector<button*> all_buttons = {&play_button, &loop_button, &inc_vol_button, &dec_vol_button, &back_button};
     std::vector<bool> state_buttons(all_buttons.size(), 0);
     state_buttons[0] = background_music.getStatus() == sf::Music::Status::Playing; // play button state
+    state_buttons[1] = background_music.isLooping(); // loop button state
 
     bool is_mouse_left_pressed = 0;
     bool is_mouse_left_pressed_last = 1;
