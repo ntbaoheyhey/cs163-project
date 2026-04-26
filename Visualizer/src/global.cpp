@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <string>
+#include <system_error>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -75,12 +76,18 @@ std::vector<std::filesystem::path> assetSearchRoots() {
     return unique_roots;
 }
 
+bool pathExists(const std::filesystem::path& path) {
+    std::error_code error;
+    const bool exists = std::filesystem::exists(path, error);
+    return !error && exists;
+}
+
 } // namespace
 
 std::filesystem::path resolveAssetPath(const std::string& filename) {
     for (const auto& root : assetSearchRoots()) {
         const auto candidate = (root / "assets" / filename).lexically_normal();
-        if (std::filesystem::exists(candidate)) {
+        if (pathExists(candidate)) {
             return candidate;
         }
     }
@@ -109,15 +116,19 @@ bool loadFonts() {
 
     for (const auto& font_name : asset_fonts) {
         const auto path = resolveAssetPath(font_name);
-        if (!path.empty() && font_impact.openFromFile(path.string())) {
-            return true;
+        if (!path.empty()) {
+            if (font_impact.openFromFile(path.string())) {
+                return true;
+            }
         }
     }
 
 #ifdef _WIN32
     const std::filesystem::path system_font = "C:/Windows/Fonts/arial.ttf";
-    if (std::filesystem::exists(system_font) && font_impact.openFromFile(system_font.string())) {
-        return true;
+    if (pathExists(system_font)) {
+        if (font_impact.openFromFile(system_font.string())) {
+            return true;
+        }
     }
 #endif
 
