@@ -15,6 +15,10 @@ bool isSupportedMusicFile(const std::filesystem::path& path) {
     return extension == ".mp3" || extension == ".ogg" || extension == ".wav";
 }
 
+bool hasMusicTrack(int index) {
+    return index >= 0 && static_cast<std::size_t>(index) < playlist.size();
+}
+
 } // namespace
 
 void loadMusic() {
@@ -222,7 +226,7 @@ void setting_page() {
         is_mouse_left_pressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
 
         if(state_buttons[0] && background_music.getStatus() == sf::Music::Status::Stopped) {
-            if(current_music_index != -1 && !playlist.empty()) {
+            if(hasMusicTrack(current_music_index)) {
                 const int next_music_index = (current_music_index + 1) % static_cast<int>(playlist.size());
                 if(background_music.openFromFile(playlist[next_music_index])) {
                     current_music_index = next_music_index;
@@ -242,7 +246,7 @@ void setting_page() {
             if(state_buttons[0]) {
                 state_buttons[0] = 0;
                 background_music.pause();
-            } else  if(current_music_index != -1 and current_music_index < playlist.size()) {
+            } else  if(hasMusicTrack(current_music_index)) {
                 // NOTE Stopped not Paused: if music is stopped, we need to open it again before playing
                 if(background_music.getStatus() == sf::Music::Status::Stopped) {
                     if(!background_music.openFromFile(playlist[current_music_index])) {
@@ -267,7 +271,7 @@ void setting_page() {
 
             // Need to start playing if loop is enabled and music is not currently playing
 
-            if(state_buttons[1] and background_music.getStatus() == sf::Music::Status::Stopped and current_music_index != -1 and current_music_index < playlist.size()) {
+            if(state_buttons[1] and background_music.getStatus() == sf::Music::Status::Stopped and hasMusicTrack(current_music_index)) {
                 if(!background_music.openFromFile(playlist[current_music_index])) {
                     state_buttons[1] = 0; // reset loop button state
                     continue;
@@ -345,7 +349,7 @@ void setting_page() {
 
         //=============================
         //      draw music box
-        music_button.setLabel(current_music_index != -1 and current_music_index < playlist.size() ? std::filesystem::path(playlist[current_music_index]).filename().string() : "No Music");
+        music_button.setLabel(hasMusicTrack(current_music_index) ? std::filesystem::path(playlist[current_music_index]).filename().string() : "No Music");
         music_button.draw(window);
 
         if(is_music_menu_active) {
