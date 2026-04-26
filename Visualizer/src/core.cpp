@@ -222,7 +222,17 @@ void setting_page() {
         is_mouse_left_pressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
 
         if(state_buttons[0] && background_music.getStatus() == sf::Music::Status::Stopped) {
-            state_buttons[0] = false;
+            if(current_music_index != -1 && !playlist.empty()) {
+                const int next_music_index = (current_music_index + 1) % static_cast<int>(playlist.size());
+                if(background_music.openFromFile(playlist[next_music_index])) {
+                    current_music_index = next_music_index;
+                    background_music.play();
+                } else {
+                    state_buttons[0] = false;
+                }
+            } else {
+                state_buttons[0] = false;
+            }
         }
 
         //====================================
