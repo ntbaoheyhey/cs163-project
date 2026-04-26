@@ -15,7 +15,7 @@
 #include "shortest_path.h"
 #include "singly_linked_list.h"
 
-void loadMuisc();
+void loadMusic();
 
 void openWindow();
 

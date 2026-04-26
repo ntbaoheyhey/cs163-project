@@ -1,40 +1,55 @@
 #include "../headers/core.h"
 #include "../headers/heap.h"
 
-void loadMuisc() {
-    std::string path = "../cs163-project/Visualizer/assets/playlist";
-    try {
-        if(std::filesystem::exists(path) and std::filesystem::is_directory(path)) {
-            for(const auto& entry : std::filesystem::directory_iterator(path)) {
-                std::string extension = entry.path().extension().string();
-                if(extension == ".mp3" or extension == ".ogg" or extension == ".wav") {
-                    playlist.push_back(entry.path());
-                }
-            }
-        } else {
-            path = "cs163-project/Visualizer/assets/playlist";
-            if(std::filesystem::exists(path) and std::filesystem::is_directory(path)) {
-                for(const auto& entry : std::filesystem::directory_iterator(path)) {
-                    std::string extension = entry.path().extension().string();
-                    if(extension == ".mp3" or extension == ".ogg" or extension == ".wav") {
-                        playlist.push_back(entry.path());
-                    }
-                }
-            }
-        }
-    } catch (const std::exception& e) {
-    }
+#include <algorithm>
+#include <cctype>
 
+namespace {
+
+bool isSupportedMusicFile(const std::filesystem::path& path) {
+    std::string extension = path.extension().string();
+    std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+
+    return extension == ".mp3" || extension == ".ogg" || extension == ".wav";
+}
+
+} // namespace
+
+void loadMusic() {
+    playlist.clear();
     current_music_index = -1; // No music loaded yet
     background_music.setVolume(50);
     background_music.setLooping(false);
-    if(!playlist.empty()) {
-        current_music_index = 0; // Start with the first track
-        if(!background_music.openFromFile(playlist[0])) {
-            current_music_index = -1; // reset to no music
+
+    const std::filesystem::path playlist_dir = resolveAssetPath("playlist");
+    if (playlist_dir.empty() || !std::filesystem::is_directory(playlist_dir)) {
+        background_music.pause();
+        return;
+    }
+
+    try {
+        for (const auto& entry : std::filesystem::directory_iterator(playlist_dir)) {
+            if (entry.is_regular_file() && isSupportedMusicFile(entry.path())) {
+                playlist.push_back(entry.path());
+            }
         }
+    } catch (const std::exception&) {
+        playlist.clear();
+    }
+
+    std::sort(playlist.begin(), playlist.end());
+    if (playlist.empty()) {
+        background_music.pause();
+        return;
+    }
+
+    current_music_index = 0; // Start with the first track
+    if (background_music.openFromFile(playlist[0])) {
         background_music.play();
     } else {
+        current_music_index = -1; // reset to no music
         background_music.pause();
     }
 }
@@ -51,7 +66,7 @@ void openWindow() {
     }
     font_impact.setSmooth(true);
 
-    loadMuisc();
+    loadMusic();
 
     if (!loadTextureFromAsset(background_texture,"bg_toty.png")) {
         if(!background_texture.loadFromFile("cs163-project/Visualizer/assets/bg_toty.png")) {
