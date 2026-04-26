@@ -190,6 +190,7 @@ void setting_page() {
     float button_height = 100.0f;
     float choose_button_width = 80.0f;
     float font_size = 24.0f;
+    const float volume_step = 1.0f;
     float position_button_x = WINDOW_WIDTH / 2.0f - button_width / 2.0f;
     float position_button_y = WINDOW_HEIGHT / 2.0f - button_height / 2.0f - 100.0f;
 
@@ -264,12 +265,12 @@ void setting_page() {
         //          VOLUME BUTTON            //
         if(inc_vol_button.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
             float current_volume = background_music.getVolume();
-            background_music.setVolume(std::min(100.0f, current_volume + 10.0f));
+            background_music.setVolume(std::min(100.0f, current_volume + volume_step));
         }
 
         if(dec_vol_button.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
             float current_volume = background_music.getVolume();
-            background_music.setVolume(std::max(0.0f, current_volume - 10.0f));
+            background_music.setVolume(std::max(0.0f, current_volume - volume_step));
         }
 
         //====================================
