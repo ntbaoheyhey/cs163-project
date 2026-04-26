@@ -221,6 +221,10 @@ void setting_page() {
     while(window.isOpen()) {
         is_mouse_left_pressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
 
+        if(state_buttons[0] && background_music.getStatus() == sf::Music::Status::Stopped) {
+            state_buttons[0] = false;
+        }
+
         //====================================
         //          PLAY BUTTON              //
         if(play_button.isClicked(sf::Mouse::getPosition(window)) and !is_mouse_left_pressed_last) {
